@@ -2,6 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.69])
 AC_INIT([vlm], [0.99-1], [joachimq@jachemich.de])
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE
 #AC_CONFIG_SRCDIR([include/VLM_configuration.h])
 AC_CONFIG_HEADERS([config.h])
@@ -16,11 +17,34 @@ if test -z $GCC; then
    AC_MSG_ERROR([you probably need a gnu c (gcc) compiler to compile the vlm])
 fi
 
+# macOS toolchain is Apple clang, which differs from GNU gcc in two ways the
+# VLM sources depend on:
+#   * the emulator's floating-point helpers (stub/float2) use GCC's gnu89
+#     inline semantics, where a plain `inline` emits an external definition;
+#     -fgnu89-inline restores that so the helpers link at any -O level.
+#   * several long-standing GCC *warnings* (int<->pointer and pointer-type
+#     mismatches in the generated stubs) are clang hard-errors; they are
+#     value-preserving on LP64, so downgrade them to warnings as GCC has them.
+case $host_os in
+  darwin*)
+    CFLAGS="$CFLAGS -fgnu89-inline"
+    CFLAGS="$CFLAGS -Wno-error=int-conversion"
+    CFLAGS="$CFLAGS -Wno-error=incompatible-pointer-types"
+    CFLAGS="$CFLAGS -Wno-error=incompatible-function-pointer-types"
+    ;;
+esac
+
 AC_CHECK_SIZEOF([int *])
 if test $ac_cv_sizeof_int_p -ne 8 ; then
    AC_MSG_ERROR([you need a 64-bit environment to compile the vlm])
 fi
 # Checks for libraries.
+# On macOS, X11 (XQuartz) lives under /opt/X11 rather than the default search
+# paths, so make its headers and libraries visible before probing for them.
+if test -d /opt/X11 ; then
+   CPPFLAGS="$CPPFLAGS -I/opt/X11/include"
+   LDFLAGS="$LDFLAGS -L/opt/X11/lib"
+fi
 AC_CHECK_LIB([X11], [XKeysymToKeycode],[],
 		    [AC_MSG_ERROR([you need libX11 to compile the vlm])])
 # even if libxcb is found, don't link to it - not needed
@@ -28,8 +52,10 @@ AC_CHECK_LIB([X11], [XKeysymToKeycode],[],
 AC_CHECK_LIB([xcb], [xcb_disconnect],[:])
 AC_CHECK_LIB([c], [fprintf],[],
 		    [AC_MSG_ERROR([you need libc to compile the vlm])])
-AC_CHECK_LIB([crypt], [encrypt],[],
-		    [AC_MSG_ERROR([you need libcrypt to compile the vlm])])
+# encrypt() lives in a standalone libcrypt on Linux but in libSystem on macOS
+# (no -lcrypt), so search rather than insisting on the library.
+AC_SEARCH_LIBS([encrypt], [crypt],[],
+		    [AC_MSG_ERROR([you need encrypt() (libcrypt) to compile the vlm])])
 AC_CHECK_LIB([dl], [dlopen],[],
 		    [AC_MSG_ERROR([you need libdl to compile the vlm])])
 AC_CHECK_LIB([m], [floor],[],

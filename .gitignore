@@ -1,0 +1,52 @@
+# Autotools generated files
+/Makefile
+/Makefile.in
+/aclocal.m4
+/autom4te.cache/
+/config.guess
+/config.h
+/config.h.in
+/config.log
+/config.status
+/config.sub
+/configure~
+/configure.scan
+/install-sh
+/missing
+/depcomp
+/stamp-h1
+/og2vlm
+/port-log
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+
+# Dependency tracking
+.deps/
+**/.deps/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.clang_format
+tags
+TAGS
+
+# Build directories
+/build/
+/dist/
+/obj/
+/src/genera
+/src/byteswap_world
+
+# Libtool
+.libs/
+*.la
+*.lo
