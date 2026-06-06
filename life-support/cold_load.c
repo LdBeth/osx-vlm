@@ -739,15 +739,18 @@ static void handle_input ()
 		  
 	  case Expose:
 		  //    printf ("Expose\n");
+		  /* X delivers damage as a batch of rectangles with count counting
+		     down to 0.  The old code repainted only the final event's single
+		     rectangle, so any region delivered in a count>0 event was dropped
+		     and never restored (e.g. text drawn while the window was being
+		     mapped by clsoSelect).  Repaint the entire model on the last event
+		     of the batch -- the cold-load window is small, so a full redraw is
+		     cheap and robust. */
 		  if (event.xexpose.window == window &&
 		      event.xexpose.count == 0)
 		  {
-			  if (event.xexpose.y < tmarg) show_lights(1);
 			  hide_cursor();
-			  redisplay_screen_array((event.xexpose.x-lmarg)/char_width,
-						 (event.xexpose.y-tmarg)/char_height,
-						 (event.xexpose.x-lmarg+event.xexpose.width-1)/char_width+1,
-						 (event.xexpose.y-tmarg+event.xexpose.height-1)/char_height+1);
+			  redisplay_screen_array(0, 0, width, height);
 			  reset_light_state(True);
 			  show_lights(1);
 			  show_cursor();
@@ -945,12 +948,12 @@ static void redisplay_line (int y, int x, int xlim)
 	else
 	{
 		int cx, wx, wy = y*char_height+tmarg;
-		
+
 		for (cx = x, wx = x*char_width+lmarg;
 		     cx<xlim;
 		     cx++, wx+=char_width)
 			XCopyPlane(display, cptfont_bitmap, window, gc,
-				   (char_width-1)*screen_array[y].chars[cx], 0,
+				   (char_width-1)*(unsigned char)screen_array[y].chars[cx], 0,
 				   (char_width-1), char_height, wx, wy, 1);
 	}
 }
