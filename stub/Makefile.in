@@ -215,6 +215,7 @@ PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
+SBCL = @SBCL@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -562,11 +563,12 @@ uninstall-am:
 stub.o:	blanks.c @abs_top_srcdir@/stub/i*.c float2 dispatch stub.c clisp-support.lisp process.lisp
 
 @abs_top_srcdir@/stub/i*.c: @abs_top_srcdir@/alpha-emulator/*.as @abs_top_srcdir@/alpha-emulator/*.lisp @abs_top_srcdir@/alpha-emulator/*.c @abs_top_srcdir@/alpha-emulator/*.h @abs_top_srcdir@/emulator/aihead* @abs_top_srcdir@/stub/*.lisp @abs_top_srcdir@/assembler/*.lisp 
-@HCLISP_TRUE@	$(CLISP) process.lisp
-@HCLISP_FALSE@	@echo
-@HCLISP_FALSE@	@echo "you don't seem to have clisp installed. Unable to compile $< to $@"
-@HCLISP_FALSE@	@echo
-@HCLISP_FALSE@	@exit -1
+@HSBCL_TRUE@	$(SBCL) --script process.lisp
+@HCLISP_TRUE@@HSBCL_FALSE@	$(CLISP) process.lisp
+@HCLISP_FALSE@@HSBCL_FALSE@	@echo
+@HCLISP_FALSE@@HSBCL_FALSE@	@echo "you don't seem to have sbcl or clisp installed. Unable to compile $< to $@"
+@HCLISP_FALSE@@HSBCL_FALSE@	@echo
+@HCLISP_FALSE@@HSBCL_FALSE@	@exit 1
 
 clean-local:	clean-local-check
 .PHONY:	clean-local-check

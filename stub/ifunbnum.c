@@ -443,8 +443,8 @@ DoLshcBignumStepIM:
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
-g8735:
-  if (_trace) printf("g8735:\n");
+g8507:
+  if (_trace) printf("g8507:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;

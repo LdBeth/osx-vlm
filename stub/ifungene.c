@@ -66,26 +66,26 @@ return0035:
   /* Strip CDR code, low bits */
   t3 = t3 & 62;
   if (t3 != 0)
-    goto g6970;
+    goto g6742;
   /* Strip CDR code */
   t3 = t6 & 63;
   t3 = t3 - Type_NIL;
   if (t3 == 0)
-    goto g6968;
+    goto g6740;
   *(u32 *)(iFP + 16) = t7;
   /* write the stack cache */
   *(u32 *)(iFP + 20) = t6;
-  goto g6969;
+  goto g6741;
 
-g6968:
-  if (_trace) printf("g6968:\n");
+g6740:
+  if (_trace) printf("g6740:\n");
   /* swap message/instance in the frame */
   *(u32 *)(iFP + 16) = t1;
   /* write the stack cache */
   *(u32 *)(iFP + 20) = arg1;
 
-g6969:
-  if (_trace) printf("g6969:\n");
+g6741:
+  if (_trace) printf("g6741:\n");
   *(u64 *)(iFP + 24) = arg4;
   /* Convert real continuation to PC. */
   iPC = t4 & 1;
@@ -93,8 +93,8 @@ g6969:
   iPC = t9 + iPC;
   goto interpretinstructionforjump;
 
-g6970:
-  if (_trace) printf("g6970:\n");
+g6742:
+  if (_trace) printf("g6742:\n");
   /* Convert stack cache address to VMA */
   t2 = *(u64 *)&(processor->stackcachedata);
   t3 = *(u64 *)&(processor->stackcachebasevma);

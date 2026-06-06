@@ -112,7 +112,7 @@ DoPLdbFP:
     goto pldbillop;
   /* Memory Read Internal */
 
-g8200:
+g7972:
   /* Base of stack cache */
   t3 = *(u64 *)&(processor->stackcachebasevma);
   t5 = t2 + ivory;
@@ -126,12 +126,12 @@ g8200:
   arg4 = *(s32 *)arg4;
   arg3 = (u8)(arg3 >> ((t5&7)*8));
   if (t4 != 0)
-    goto g8202;
+    goto g7974;
 
-g8201:
+g7973:
   arg4 = (u32)arg4;
 
-g8208:
+g7980:
   /* t7= -1 */
   t7 = zero - 1;
   /* Size of field */
@@ -170,15 +170,15 @@ pldbillop:
   arg2 = 57;
   goto illegaloperand;
 
-g8202:
-  if (_trace) printf("g8202:\n");
+g7974:
+  if (_trace) printf("g7974:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
   arg4 = *(s32 *)t3;
   /* Read from stack cache */
   arg3 = *(s32 *)(t3 + 4);
-  goto g8201;
+  goto g7973;
 
 /* end DoPLdb */
   /* End of Halfword operand from stack instruction - DoPLdb */
@@ -220,7 +220,7 @@ DoPTagLdbFP:
     goto ptagldbillop;
   /* Memory Read Internal */
 
-g8209:
+g7981:
   /* Base of stack cache */
   t3 = *(u64 *)&(processor->stackcachebasevma);
   t5 = t2 + ivory;
@@ -234,11 +234,11 @@ g8209:
   arg4 = *(s32 *)arg4;
   arg3 = (u8)(arg3 >> ((t5&7)*8));
   if (t4 != 0)
-    goto g8211;
+    goto g7983;
 
-g8210:
+g7982:
 
-g8217:
+g7989:
   /* t7= -1 */
   t7 = zero - 1;
   /* Size of field */
@@ -277,15 +277,15 @@ ptagldbillop:
   arg2 = 57;
   goto illegaloperand;
 
-g8211:
-  if (_trace) printf("g8211:\n");
+g7983:
+  if (_trace) printf("g7983:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
   arg4 = *(s32 *)t3;
   /* Read from stack cache */
   arg3 = *(s32 *)(t3 + 4);
-  goto g8210;
+  goto g7982;
 
 /* end DoPTagLdb */
   /* End of Halfword operand from stack instruction - DoPTagLdb */
@@ -334,17 +334,17 @@ DoDpbFP:
   arg6 = arg3 & 63;
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
-g8230:
-  if (_trace) printf("g8230:\n");
+g8002:
+  if (_trace) printf("g8002:\n");
   if (t2 == 0)
-    goto g8223;
+    goto g7995;
   /* Here if argument TypeFixnum */
   arg5 = (arg6 == Type_Fixnum) ? 1 : 0;
 
-g8227:
-  if (_trace) printf("g8227:\n");
+g7999:
+  if (_trace) printf("g7999:\n");
   if (arg5 == 0)
-    goto g8220;
+    goto g7992;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
   t7 = zero - 2;
@@ -370,15 +370,15 @@ g8227:
   *(u32 *)(iSP + 4) = t4;
   goto cachevalid;
 
-g8224:
-  if (_trace) printf("g8224:\n");
+g7996:
+  if (_trace) printf("g7996:\n");
 
-g8223:
-  if (_trace) printf("g8223:\n");
+g7995:
+  if (_trace) printf("g7995:\n");
   /* Here for all other cases */
 
-g8219:
-  if (_trace) printf("g8219:\n");
+g7991:
+  if (_trace) printf("g7991:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t5;
   /* arg3 = stackp */
@@ -388,10 +388,10 @@ g8219:
   /* arg4 = arithmeticp */
   arg4 = 0;
   goto numericexception;
-  goto g8221;
+  goto g7993;
 
-g8220:
-  if (_trace) printf("g8220:\n");
+g7992:
+  if (_trace) printf("g7992:\n");
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
   /* arg3 = stackp */
@@ -402,11 +402,11 @@ g8220:
   arg4 = 0;
   goto numericexception;
 
-g8221:
-  if (_trace) printf("g8221:\n");
+g7993:
+  if (_trace) printf("g7993:\n");
 
-g8222:
-  if (_trace) printf("g8222:\n");
+g7994:
+  if (_trace) printf("g7994:\n");
 
 /* end DoDpb */
   /* End of Halfword operand from stack instruction - DoDpb */
@@ -455,17 +455,17 @@ DoCharDpbFP:
   arg6 = arg3 & 63;
   t2 = (t1 == Type_Character) ? 1 : 0;
 
-g8243:
-  if (_trace) printf("g8243:\n");
+g8015:
+  if (_trace) printf("g8015:\n");
   if (t2 == 0)
-    goto g8236;
+    goto g8008;
   /* Here if argument TypeCharacter */
   arg5 = (arg6 == Type_Fixnum) ? 1 : 0;
 
-g8240:
-  if (_trace) printf("g8240:\n");
+g8012:
+  if (_trace) printf("g8012:\n");
   if (arg5 == 0)
-    goto g8233;
+    goto g8005;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
   t7 = zero - 2;
@@ -491,15 +491,15 @@ g8240:
   *(u32 *)(iSP + 4) = t4;
   goto cachevalid;
 
-g8237:
-  if (_trace) printf("g8237:\n");
+g8009:
+  if (_trace) printf("g8009:\n");
 
-g8236:
-  if (_trace) printf("g8236:\n");
+g8008:
+  if (_trace) printf("g8008:\n");
   /* Here for all other cases */
 
-g8232:
-  if (_trace) printf("g8232:\n");
+g8004:
+  if (_trace) printf("g8004:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t5;
   /* arg3 = stackp */
@@ -511,19 +511,19 @@ g8232:
   arg5 = 0;
   arg2 = 27;
   goto spareexception;
-  goto g8234;
+  goto g8006;
 
-g8233:
-  if (_trace) printf("g8233:\n");
+g8005:
+  if (_trace) printf("g8005:\n");
   arg5 = 0;
   arg2 = 27;
   goto illegaloperand;
 
-g8234:
-  if (_trace) printf("g8234:\n");
+g8006:
+  if (_trace) printf("g8006:\n");
 
-g8235:
-  if (_trace) printf("g8235:\n");
+g8007:
+  if (_trace) printf("g8007:\n");
 
 /* end DoCharDpb */
   /* End of Halfword operand from stack instruction - DoCharDpb */
@@ -575,7 +575,7 @@ DoPDpbFP:
   arg4 = (u32)arg4;
   /* Memory Read Internal */
 
-g8244:
+g8016:
   /* Base of stack cache */
   t3 = *(u64 *)&(processor->stackcachebasevma);
   t1 = t2 + ivory;
@@ -589,21 +589,21 @@ g8244:
   t6 = *(s32 *)t6;
   t8 = (u8)(t8 >> ((t1&7)*8));
   if (t4 != 0)
-    goto g8246;
+    goto g8018;
 
-g8245:
+g8017:
   t6 = (u32)t6;
 
-g8252:
+g8024:
   t6 = (u32)t6;
   /* Strip off any CDR code bits. */
   t1 = arg3 & 63;
   t10 = (t1 == Type_Fixnum) ? 1 : 0;
 
-g8259:
-  if (_trace) printf("g8259:\n");
+g8031:
+  if (_trace) printf("g8031:\n");
   if (t10 == 0)
-    goto g8254;
+    goto g8026;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
   t7 = zero - 2;
@@ -633,26 +633,26 @@ g8259:
   t4 = (t8 & 0xff) << ((t3&7)*8);
   t1 = t1 & ~(0xffL << (t3&7)*8);
 
-g8256:
-  if (_trace) printf("g8256:\n");
+g8028:
+  if (_trace) printf("g8028:\n");
   t1 = t1 | t4;
   STQ_U(t3, t1);
   *(u32 *)t5 = t6;
   /* J. if in cache */
   if (t10 != 0)
-    goto g8255;
+    goto g8027;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
 
-g8254:
-  if (_trace) printf("g8254:\n");
+g8026:
+  if (_trace) printf("g8026:\n");
   /* Here for all other cases */
   arg5 = 0;
   arg2 = 6;
   goto illegaloperand;
 
-g8253:
-  if (_trace) printf("g8253:\n");
+g8025:
+  if (_trace) printf("g8025:\n");
 
 pdpbillop:
   if (_trace) printf("pdpbillop:\n");
@@ -669,12 +669,12 @@ pdpbillop:
   arg2 = 57;
   goto illegaloperand;
 
-g8255:
-  if (_trace) printf("g8255:\n");
+g8027:
+  if (_trace) printf("g8027:\n");
   t4 = *(u64 *)&(processor->stackcachebasevma);
 
-g8260:
-  if (_trace) printf("g8260:\n");
+g8032:
+  if (_trace) printf("g8032:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t4 = t2 - t4;
@@ -686,15 +686,15 @@ g8260:
   *(u32 *)(t3 + 4) = t8;
   goto NEXTINSTRUCTION;
 
-g8246:
-  if (_trace) printf("g8246:\n");
+g8018:
+  if (_trace) printf("g8018:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
   t6 = *(s32 *)t3;
   /* Read from stack cache */
   t8 = *(s32 *)(t3 + 4);
-  goto g8245;
+  goto g8017;
 
 /* end DoPDpb */
   /* End of Halfword operand from stack instruction - DoPDpb */
@@ -746,7 +746,7 @@ DoPTagDpbFP:
   arg4 = (u32)arg4;
   /* Memory Read Internal */
 
-g8261:
+g8033:
   /* Base of stack cache */
   t3 = *(u64 *)&(processor->stackcachebasevma);
   t1 = t2 + ivory;
@@ -760,19 +760,19 @@ g8261:
   t8 = *(s32 *)t8;
   t6 = (u8)(t6 >> ((t1&7)*8));
   if (t4 != 0)
-    goto g8263;
+    goto g8035;
 
-g8262:
+g8034:
 
-g8269:
+g8041:
   /* Strip off any CDR code bits. */
   t1 = arg3 & 63;
   t10 = (t1 == Type_Fixnum) ? 1 : 0;
 
-g8276:
-  if (_trace) printf("g8276:\n");
+g8048:
+  if (_trace) printf("g8048:\n");
   if (t10 == 0)
-    goto g8271;
+    goto g8043;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
   t7 = zero - 2;
@@ -802,26 +802,26 @@ g8276:
   t4 = (t6 & 0xff) << ((t3&7)*8);
   t1 = t1 & ~(0xffL << (t3&7)*8);
 
-g8273:
-  if (_trace) printf("g8273:\n");
+g8045:
+  if (_trace) printf("g8045:\n");
   t1 = t1 | t4;
   STQ_U(t3, t1);
   *(u32 *)t5 = t8;
   /* J. if in cache */
   if (t10 != 0)
-    goto g8272;
+    goto g8044;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
 
-g8271:
-  if (_trace) printf("g8271:\n");
+g8043:
+  if (_trace) printf("g8043:\n");
   /* Here for all other cases */
   arg5 = 0;
   arg2 = 6;
   goto illegaloperand;
 
-g8270:
-  if (_trace) printf("g8270:\n");
+g8042:
+  if (_trace) printf("g8042:\n");
 
 ptagdpbillop:
   if (_trace) printf("ptagdpbillop:\n");
@@ -838,12 +838,12 @@ ptagdpbillop:
   arg2 = 57;
   goto illegaloperand;
 
-g8272:
-  if (_trace) printf("g8272:\n");
+g8044:
+  if (_trace) printf("g8044:\n");
   t4 = *(u64 *)&(processor->stackcachebasevma);
 
-g8277:
-  if (_trace) printf("g8277:\n");
+g8049:
+  if (_trace) printf("g8049:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t4 = t2 - t4;
@@ -855,15 +855,15 @@ g8277:
   *(u32 *)(t3 + 4) = t6;
   goto NEXTINSTRUCTION;
 
-g8263:
-  if (_trace) printf("g8263:\n");
+g8035:
+  if (_trace) printf("g8035:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
   t8 = *(s32 *)t3;
   /* Read from stack cache */
   t6 = *(s32 *)(t3 + 4);
-  goto g8262;
+  goto g8034;
 
 /* end DoPTagDpb */
   /* End of Halfword operand from stack instruction - DoPTagDpb */

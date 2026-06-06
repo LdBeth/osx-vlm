@@ -62,7 +62,7 @@ begindopushlexicalvarn:
   arg6 = *(s32 *)&processor->scovlimit;
   /* Memory Read Internal */
 
-g8278:
+g8050:
   t6 = t1 + ivory;
   t3 = (t6 * 4);
   t2 = LDQ_U(t6);
@@ -74,16 +74,16 @@ g8278:
   t3 = *(s32 *)t3;
   t2 = (u8)(t2 >> ((t6&7)*8));
   if (t5 != 0)
-    goto g8280;
+    goto g8052;
 
-g8279:
+g8051:
   t6 = zero + 240;
   t7 = t7 >> (t2 & 63);
   t6 = t6 >> (t2 & 63);
   if (t7 & 1)
-    goto g8282;
+    goto g8054;
 
-g8289:
+g8061:
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* set CDR-NEXT */
@@ -100,26 +100,26 @@ pushlexvariop:
   arg2 = 82;
   goto illegaloperand;
 
-g8280:
-  if (_trace) printf("g8280:\n");
+g8052:
+  if (_trace) printf("g8052:\n");
   t5 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t4 = (t4 * 8) + t5;
   t3 = *(s32 *)t4;
   /* Read from stack cache */
   t2 = *(s32 *)(t4 + 4);
-  goto g8279;
+  goto g8051;
 
-g8282:
-  if (_trace) printf("g8282:\n");
+g8054:
+  if (_trace) printf("g8054:\n");
   if ((t6 & 1) == 0)
-    goto g8281;
+    goto g8053;
   /* Do the indirect thing */
   t1 = (u32)t3;
-  goto g8278;
+  goto g8050;
 
-g8281:
-  if (_trace) printf("g8281:\n");
+g8053:
+  if (_trace) printf("g8053:\n");
   /* Load the memory action table for cycle */
   t7 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -132,26 +132,26 @@ g8281:
   /* Get the memory action */
   t7 = *(s32 *)t6;
 
-g8286:
-  if (_trace) printf("g8286:\n");
+g8058:
+  if (_trace) printf("g8058:\n");
   t6 = t7 & MemoryActionTransform;
   if (t6 == 0)
-    goto g8285;
+    goto g8057;
   t2 = t2 & ~63L;
   t2 = t2 | Type_ExternalValueCellPointer;
-  goto g8289;
+  goto g8061;
 #ifndef MINIMA
 
-g8285:
+g8057:
 #endif
 #ifdef MINIMA
 
-g8285:
-  if (_trace) printf("g8285:\n");
+g8057:
+  if (_trace) printf("g8057:\n");
   t6 = t7 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
   if (t6 == 0)
-    goto g8284;
+    goto g8056;
   t4 = t1 << 1;
   t6 = *(u64 *)&(processor->dbcbase);
   /* Hash index */
@@ -170,17 +170,17 @@ g8285:
   t6 = (s32)t1 - (s32)t4;
   /* Trap on miss */
   if (t6 != 0)
-    goto g8288;
+    goto g8060;
   /* Extract the pointer, and indirect */
   t1 = (u32)t3;
-  goto g8278;
+  goto g8050;
 
-g8288:
-  if (_trace) printf("g8288:\n");
+g8060:
+  if (_trace) printf("g8060:\n");
   goto dbcachemisstrap;
 #endif
 
-g8284:
+g8056:
   /* Perform memory action */
   arg1 = t7;
   arg2 = 0;
@@ -256,7 +256,7 @@ begindopoplexicalvarn:
   arg6 = *(s32 *)&processor->scovlimit;
   /* Memory Read Internal */
 
-g8290:
+g8062:
   t8 = t1 + ivory;
   t5 = (t8 * 4);
   t4 = LDQ_U(t8);
@@ -268,16 +268,16 @@ g8290:
   t5 = *(s32 *)t5;
   t4 = (u8)(t4 >> ((t8&7)*8));
   if (t7 != 0)
-    goto g8292;
+    goto g8064;
 
-g8291:
+g8063:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
   if (t9 & 1)
-    goto g8294;
+    goto g8066;
 
-g8300:
+g8072:
   /* Merge cdr-code */
   t5 = t2 & 63;
   t4 = t4 & 192;
@@ -292,14 +292,14 @@ g8300:
   t7 = (t4 & 0xff) << ((t6&7)*8);
   t8 = t8 & ~(0xffL << (t6&7)*8);
 
-g8302:
-  if (_trace) printf("g8302:\n");
+g8074:
+  if (_trace) printf("g8074:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t3;
   /* J. if in cache */
   if (t9 != 0)
-    goto g8301;
+    goto g8073;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
 
@@ -309,8 +309,8 @@ poplexvariop:
   arg2 = 17;
   goto illegaloperand;
 
-g8301:
-  if (_trace) printf("g8301:\n");
+g8073:
+  if (_trace) printf("g8073:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = t1 - arg5;
@@ -322,26 +322,26 @@ g8301:
   *(u32 *)(t6 + 4) = t4;
   goto NEXTINSTRUCTION;
 
-g8292:
-  if (_trace) printf("g8292:\n");
+g8064:
+  if (_trace) printf("g8064:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
   t5 = *(s32 *)t6;
   /* Read from stack cache */
   t4 = *(s32 *)(t6 + 4);
-  goto g8291;
+  goto g8063;
 
-g8294:
-  if (_trace) printf("g8294:\n");
+g8066:
+  if (_trace) printf("g8066:\n");
   if ((t8 & 1) == 0)
-    goto g8293;
+    goto g8065;
   /* Do the indirect thing */
   t1 = (u32)t5;
-  goto g8290;
+  goto g8062;
 
-g8293:
-  if (_trace) printf("g8293:\n");
+g8065:
+  if (_trace) printf("g8065:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -355,16 +355,16 @@ g8293:
   t9 = *(s32 *)t8;
 #ifndef MINIMA
 
-g8297:
+g8069:
 #endif
 #ifdef MINIMA
 
-g8297:
-  if (_trace) printf("g8297:\n");
+g8069:
+  if (_trace) printf("g8069:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
-    goto g8296;
+    goto g8068;
   t6 = t1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
   /* Hash index */
@@ -383,17 +383,17 @@ g8297:
   t8 = (s32)t1 - (s32)t6;
   /* Trap on miss */
   if (t8 != 0)
-    goto g8299;
+    goto g8071;
   /* Extract the pointer, and indirect */
   t1 = (u32)t5;
-  goto g8290;
+  goto g8062;
 
-g8299:
-  if (_trace) printf("g8299:\n");
+g8071:
+  if (_trace) printf("g8071:\n");
   goto dbcachemisstrap;
 #endif
 
-g8296:
+g8068:
   /* Perform memory action */
   arg1 = t9;
   arg2 = 1;
@@ -467,7 +467,7 @@ begindomovemlexicalvarn:
   arg6 = *(s32 *)&processor->scovlimit;
   /* Memory Read Internal */
 
-g8303:
+g8075:
   t8 = t1 + ivory;
   t5 = (t8 * 4);
   t4 = LDQ_U(t8);
@@ -479,16 +479,16 @@ g8303:
   t5 = *(s32 *)t5;
   t4 = (u8)(t4 >> ((t8&7)*8));
   if (t7 != 0)
-    goto g8305;
+    goto g8077;
 
-g8304:
+g8076:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
   if (t9 & 1)
-    goto g8307;
+    goto g8079;
 
-g8313:
+g8085:
   /* Merge cdr-code */
   t5 = t2 & 63;
   t4 = t4 & 192;
@@ -503,14 +503,14 @@ g8313:
   t7 = (t4 & 0xff) << ((t6&7)*8);
   t8 = t8 & ~(0xffL << (t6&7)*8);
 
-g8315:
-  if (_trace) printf("g8315:\n");
+g8087:
+  if (_trace) printf("g8087:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t3;
   /* J. if in cache */
   if (t9 != 0)
-    goto g8314;
+    goto g8086;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
 
@@ -520,8 +520,8 @@ movemlexvariop:
   arg2 = 17;
   goto illegaloperand;
 
-g8314:
-  if (_trace) printf("g8314:\n");
+g8086:
+  if (_trace) printf("g8086:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = t1 - arg5;
@@ -533,26 +533,26 @@ g8314:
   *(u32 *)(t6 + 4) = t4;
   goto NEXTINSTRUCTION;
 
-g8305:
-  if (_trace) printf("g8305:\n");
+g8077:
+  if (_trace) printf("g8077:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
   t5 = *(s32 *)t6;
   /* Read from stack cache */
   t4 = *(s32 *)(t6 + 4);
-  goto g8304;
+  goto g8076;
 
-g8307:
-  if (_trace) printf("g8307:\n");
+g8079:
+  if (_trace) printf("g8079:\n");
   if ((t8 & 1) == 0)
-    goto g8306;
+    goto g8078;
   /* Do the indirect thing */
   t1 = (u32)t5;
-  goto g8303;
+  goto g8075;
 
-g8306:
-  if (_trace) printf("g8306:\n");
+g8078:
+  if (_trace) printf("g8078:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -566,16 +566,16 @@ g8306:
   t9 = *(s32 *)t8;
 #ifndef MINIMA
 
-g8310:
+g8082:
 #endif
 #ifdef MINIMA
 
-g8310:
-  if (_trace) printf("g8310:\n");
+g8082:
+  if (_trace) printf("g8082:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
-    goto g8309;
+    goto g8081;
   t6 = t1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
   /* Hash index */
@@ -594,17 +594,17 @@ g8310:
   t8 = (s32)t1 - (s32)t6;
   /* Trap on miss */
   if (t8 != 0)
-    goto g8312;
+    goto g8084;
   /* Extract the pointer, and indirect */
   t1 = (u32)t5;
-  goto g8303;
+  goto g8075;
 
-g8312:
-  if (_trace) printf("g8312:\n");
+g8084:
+  if (_trace) printf("g8084:\n");
   goto dbcachemisstrap;
 #endif
 
-g8309:
+g8081:
   /* Perform memory action */
   arg1 = t9;
   arg2 = 1;

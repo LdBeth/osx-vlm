@@ -53,10 +53,10 @@ begindounaryminus:
   t5 = arg5 & 63;
   t4 = (t5 == Type_Fixnum) ? 1 : 0;
 
-g7492:
-  if (_trace) printf("g7492:\n");
+g7264:
+  if (_trace) printf("g7264:\n");
   if (t4 == 0)
-    goto g7488;
+    goto g7260;
   /* Here if argument TypeFixnum */
   t2 = (s32)arg6 - (s32)t2;
   arg2 = (s32)zero - (s32)arg6;
@@ -71,14 +71,14 @@ g7492:
   iSP = iSP + 8;
   goto cachevalid;
 
-g7488:
-  if (_trace) printf("g7488:\n");
+g7260:
+  if (_trace) printf("g7260:\n");
   t4 = (t5 == Type_SingleFloat) ? 1 : 0;
 
-g7493:
-  if (_trace) printf("g7493:\n");
+g7265:
+  if (_trace) printf("g7265:\n");
   if (t4 == 0)
-    goto g7489;
+    goto g7261;
   /* Here if argument TypeSingleFloat */
   /* NIL */
   SUBS(0, f0, 3, f31, 1, f1); /* subs */
@@ -93,8 +93,8 @@ g7493:
   iSP = iSP + 8;
   goto cachevalid;
 
-g7489:
-  if (_trace) printf("g7489:\n");
+g7261:
+  if (_trace) printf("g7261:\n");
   /* Here for all other cases */
 
 unaryminusexc:
@@ -109,8 +109,8 @@ unaryminusexc:
   arg4 = 1;
   goto unarynumericexception;
 
-g7487:
-  if (_trace) printf("g7487:\n");
+g7259:
+  if (_trace) printf("g7259:\n");
 #ifdef TRACING
   goto DoUnaryMinusIM;
 #endif
@@ -187,28 +187,23 @@ begindomultiply:
   t11 = t3 & 63;
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
-g7533:
-  if (_trace) printf("g7533:\n");
+g7305:
+  if (_trace) printf("g7305:\n");
   if (t10 == 0)
-    goto g7504;
+    goto g7276;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7510:
-  if (_trace) printf("g7510:\n");
+g7282:
+  if (_trace) printf("g7282:\n");
   if (t12 == 0)
-    goto g7506;
+    goto g7278;
   /* Here if argument TypeFixnum */
   t6 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   /* compute 64-bit result */
 //  t5 = (s64)((s32)t2 * (s64)(s32)t4); /* mull/v */
-  /* x86_64 replacement for mull/v */
-    asm("movl %k2,%k0 \n\t"
-	"imull %k3,%k0 \n\t"
-	"seto %b1"
-        : "=r"(t5),"=rm"(oflo)
-        : "rm"(t2),"rm"(t4)
-        : "cc");
+  /* portable mull/v: 32-bit signed product with overflow flag */
+    { int32_t _r; oflo = __builtin_mul_overflow((int32_t)t2, (int32_t)t4, &_r); t5 = (u64)(u32)_r; }
 //  if (t5 >> 32)
 //    exception();
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
@@ -222,54 +217,54 @@ g7510:
   iCP = t7;
   goto cachevalid;
 
-g7506:
-  if (_trace) printf("g7506:\n");
+g7278:
+  if (_trace) printf("g7278:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7511:
-  if (_trace) printf("g7511:\n");
+g7283:
+  if (_trace) printf("g7283:\n");
   if (t12 == 0)
-    goto g7507;
+    goto g7279;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQT(1, f1, f31, 1, f1);
-  goto g7494;
+  goto g7266;
 
-g7507:
-  if (_trace) printf("g7507:\n");
+g7279:
+  if (_trace) printf("g7279:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
-g7512:
-  if (_trace) printf("g7512:\n");
+g7284:
+  if (_trace) printf("g7284:\n");
   if (t12 == 0)
-    goto g7501;
+    goto g7273;
   /* Here if argument TypeDoubleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQT(1, f1, f31, 1, f1);
-  goto g7497;
+  goto g7269;
 
-g7505:
-  if (_trace) printf("g7505:\n");
+g7277:
+  if (_trace) printf("g7277:\n");
 
-g7504:
-  if (_trace) printf("g7504:\n");
+g7276:
+  if (_trace) printf("g7276:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
-g7534:
-  if (_trace) printf("g7534:\n");
+g7306:
+  if (_trace) printf("g7306:\n");
   if (t10 == 0)
-    goto g7513;
+    goto g7285;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7519:
-  if (_trace) printf("g7519:\n");
+g7291:
+  if (_trace) printf("g7291:\n");
   if (t12 == 0)
-    goto g7515;
+    goto g7287;
   /* Here if argument TypeSingleFloat */
 
-g7494:
-  if (_trace) printf("g7494:\n");
+g7266:
+  if (_trace) printf("g7266:\n");
   MULS(0, f0, 1, f1, 2, f2); /* muls */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -281,54 +276,54 @@ g7494:
   STS( (u32 *)iSP, 0, f0 );
   goto cachevalid;
 
-g7515:
-  if (_trace) printf("g7515:\n");
+g7287:
+  if (_trace) printf("g7287:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7520:
-  if (_trace) printf("g7520:\n");
+g7292:
+  if (_trace) printf("g7292:\n");
   if (t12 == 0)
-    goto g7516;
+    goto g7288;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQT(2, f2, f31, 2, f2);
-  goto g7494;
+  goto g7266;
 
-g7516:
-  if (_trace) printf("g7516:\n");
+g7288:
+  if (_trace) printf("g7288:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
-g7521:
-  if (_trace) printf("g7521:\n");
+g7293:
+  if (_trace) printf("g7293:\n");
   if (t12 == 0)
-    goto g7501;
+    goto g7273;
   /* Here if argument TypeDoubleFloat */
 
-g7497:
-  if (_trace) printf("g7497:\n");
+g7269:
+  if (_trace) printf("g7269:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
-  goto g7498;
+  goto g7270;
 
-g7514:
-  if (_trace) printf("g7514:\n");
+g7286:
+  if (_trace) printf("g7286:\n");
 
-g7513:
-  if (_trace) printf("g7513:\n");
+g7285:
+  if (_trace) printf("g7285:\n");
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
-g7535:
-  if (_trace) printf("g7535:\n");
+g7307:
+  if (_trace) printf("g7307:\n");
   if (t10 == 0)
-    goto g7522;
+    goto g7294;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
-g7528:
-  if (_trace) printf("g7528:\n");
+g7300:
+  if (_trace) printf("g7300:\n");
   if (t12 == 0)
-    goto g7524;
+    goto g7296;
   /* Here if argument TypeDoubleFloat */
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
@@ -339,16 +334,16 @@ g7528:
 return0049:
   LDT(1, f1, processor->fp0);
 
-g7498:
-  if (_trace) printf("g7498:\n");
+g7270:
+  if (_trace) printf("g7270:\n");
   arg2 = (u32)t4;
   r0 = (u64)&&return0050;
   goto fetchdoublefloat;
 return0050:
   LDT(2, f2, processor->fp0);
 
-g7495:
-  if (_trace) printf("g7495:\n");
+g7267:
+  if (_trace) printf("g7267:\n");
   MULT(0, f0, 1, f1, 2, f2);
   STT( (u64 *)&processor->fp0, 0, f0 );
   r0 = (u64)&&return0051;
@@ -362,18 +357,18 @@ return0051:
   *(u32 *)(iSP + 4) = t8;
   goto cachevalid;
 
-g7524:
-  if (_trace) printf("g7524:\n");
+g7296:
+  if (_trace) printf("g7296:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7529:
-  if (_trace) printf("g7529:\n");
+g7301:
+  if (_trace) printf("g7301:\n");
   if (t12 == 0)
-    goto g7525;
+    goto g7297;
   /* Here if argument TypeSingleFloat */
 
-g7496:
-  if (_trace) printf("g7496:\n");
+g7268:
+  if (_trace) printf("g7268:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
@@ -382,30 +377,30 @@ g7496:
   goto fetchdoublefloat;
 return0052:
   LDT(1, f1, processor->fp0);
-  goto g7495;
+  goto g7267;
 
-g7525:
-  if (_trace) printf("g7525:\n");
+g7297:
+  if (_trace) printf("g7297:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7530:
-  if (_trace) printf("g7530:\n");
+g7302:
+  if (_trace) printf("g7302:\n");
   if (t12 == 0)
-    goto g7501;
+    goto g7273;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQT(2, f2, f31, 2, f2);
-  goto g7496;
+  goto g7268;
 
-g7523:
-  if (_trace) printf("g7523:\n");
+g7295:
+  if (_trace) printf("g7295:\n");
 
-g7522:
-  if (_trace) printf("g7522:\n");
+g7294:
+  if (_trace) printf("g7294:\n");
   /* Here for all other cases */
 
-g7500:
-  if (_trace) printf("g7500:\n");
+g7272:
+  if (_trace) printf("g7272:\n");
 
 domulovfl:
   if (_trace) printf("domulovfl:\n");
@@ -418,18 +413,18 @@ domulovfl:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g7502;
+  goto g7274;
 
-g7501:
-  if (_trace) printf("g7501:\n");
+g7273:
+  if (_trace) printf("g7273:\n");
   t1 = t3;
   goto domulovfl;
 
-g7502:
-  if (_trace) printf("g7502:\n");
+g7274:
+  if (_trace) printf("g7274:\n");
 
-g7503:
-  if (_trace) printf("g7503:\n");
+g7275:
+  if (_trace) printf("g7275:\n");
 #ifdef TRACING
   goto DoMultiplyIM;
 #endif
@@ -445,10 +440,10 @@ DoMultiplyIM:
   t11 = t1 & 63;
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7540:
-  if (_trace) printf("g7540:\n");
+g7312:
+  if (_trace) printf("g7312:\n");
   if (t12 == 0)
-    goto g7537;
+    goto g7309;
   /* Here if argument TypeFixnum */
   /* compute 64-bit result */
   t3 = t2 * arg2;
@@ -468,16 +463,16 @@ g7540:
   iCP = t5;
   goto cachevalid;
 
-g7537:
-  if (_trace) printf("g7537:\n");
+g7309:
+  if (_trace) printf("g7309:\n");
   /* Here for all other cases */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
   arg2 = zero;
   goto begindomultiply;
 
-g7536:
-  if (_trace) printf("g7536:\n");
+g7308:
+  if (_trace) printf("g7308:\n");
 
 /* end DoMultiply */
   /* End of Halfword operand from stack instruction - DoMultiply */
@@ -503,100 +498,100 @@ binaryarithmeticdivisionprelude:
   t11 = t3 & 63;
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
-g7578:
-  if (_trace) printf("g7578:\n");
+g7350:
+  if (_trace) printf("g7350:\n");
   if (t10 == 0)
-    goto g7551;
+    goto g7323;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7557:
-  if (_trace) printf("g7557:\n");
+g7329:
+  if (_trace) printf("g7329:\n");
   if (t12 == 0)
-    goto g7553;
+    goto g7325;
   /* Here if argument TypeFixnum */
   CVTLQ(1, f1, f31, 1, f1);
   CVTLQ(2, f2, f31, 2, f2);
   CVTQT(1, f1, f31, 1, f1);
   CVTQT(2, f2, f31, 2, f2);
 
-g7552:
-  if (_trace) printf("g7552:\n");
+g7324:
+  if (_trace) printf("g7324:\n");
 
-g7550:
-  if (_trace) printf("g7550:\n");
+g7322:
+  if (_trace) printf("g7322:\n");
 
-g7541:
-  if (_trace) printf("g7541:\n");
+g7313:
+  if (_trace) printf("g7313:\n");
   sp = sp + 8;
   goto *r0; /* ret */
 
-g7551:
-  if (_trace) printf("g7551:\n");
+g7323:
+  if (_trace) printf("g7323:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
-g7579:
-  if (_trace) printf("g7579:\n");
+g7351:
+  if (_trace) printf("g7351:\n");
   if (t10 == 0)
-    goto g7558;
+    goto g7330;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7564:
-  if (_trace) printf("g7564:\n");
+g7336:
+  if (_trace) printf("g7336:\n");
   if (t12 != 0)
-    goto g7541;
+    goto g7313;
 
-g7560:
-  if (_trace) printf("g7560:\n");
+g7332:
+  if (_trace) printf("g7332:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7565:
-  if (_trace) printf("g7565:\n");
+g7337:
+  if (_trace) printf("g7337:\n");
   if (t12 == 0)
-    goto g7561;
+    goto g7333;
   /* Here if argument TypeFixnum */
   /* contagion */
   t3 = t1;
   CVTLQ(2, f2, f31, 2, f2);
   CVTQT(2, f2, f31, 2, f2);
-  goto g7541;
+  goto g7313;
 
-g7561:
-  if (_trace) printf("g7561:\n");
+g7333:
+  if (_trace) printf("g7333:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
-g7566:
-  if (_trace) printf("g7566:\n");
+g7338:
+  if (_trace) printf("g7338:\n");
   if (t12 == 0)
-    goto g7548;
+    goto g7320;
   /* Here if argument TypeDoubleFloat */
 
-g7543:
-  if (_trace) printf("g7543:\n");
+g7315:
+  if (_trace) printf("g7315:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
-  goto g7544;
+  goto g7316;
 
-g7559:
-  if (_trace) printf("g7559:\n");
+g7331:
+  if (_trace) printf("g7331:\n");
 
-g7558:
-  if (_trace) printf("g7558:\n");
+g7330:
+  if (_trace) printf("g7330:\n");
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
-g7580:
-  if (_trace) printf("g7580:\n");
+g7352:
+  if (_trace) printf("g7352:\n");
   if (t10 == 0)
-    goto g7567;
+    goto g7339;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
-g7573:
-  if (_trace) printf("g7573:\n");
+g7345:
+  if (_trace) printf("g7345:\n");
   if (t12 == 0)
-    goto g7569;
+    goto g7341;
   /* Here if argument TypeDoubleFloat */
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
@@ -609,8 +604,8 @@ return0053:
   r0 = *(u64 *)sp;
   LDT(1, f1, processor->fp0);
 
-g7544:
-  if (_trace) printf("g7544:\n");
+g7316:
+  if (_trace) printf("g7316:\n");
   arg2 = (u32)t4;
   *(u64 *)sp = r0;
   r0 = (u64)&&return0054;
@@ -618,20 +613,20 @@ g7544:
 return0054:
   r0 = *(u64 *)sp;
   LDT(2, f2, processor->fp0);
-  goto g7541;
+  goto g7313;
 
-g7569:
-  if (_trace) printf("g7569:\n");
+g7341:
+  if (_trace) printf("g7341:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7574:
-  if (_trace) printf("g7574:\n");
+g7346:
+  if (_trace) printf("g7346:\n");
   if (t12 == 0)
-    goto g7570;
+    goto g7342;
   /* Here if argument TypeSingleFloat */
 
-g7542:
-  if (_trace) printf("g7542:\n");
+g7314:
+  if (_trace) printf("g7314:\n");
   /* contagion */
   t3 = t1;
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -644,33 +639,33 @@ g7542:
 return0055:
   r0 = *(u64 *)sp;
   LDT(1, f1, processor->fp0);
-  goto g7541;
+  goto g7313;
 
-g7570:
-  if (_trace) printf("g7570:\n");
+g7342:
+  if (_trace) printf("g7342:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7575:
-  if (_trace) printf("g7575:\n");
+g7347:
+  if (_trace) printf("g7347:\n");
   if (t12 == 0)
-    goto g7548;
+    goto g7320;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQT(2, f2, f31, 2, f2);
-  goto g7542;
+  goto g7314;
 
-g7568:
-  if (_trace) printf("g7568:\n");
+g7340:
+  if (_trace) printf("g7340:\n");
 
-g7567:
-  if (_trace) printf("g7567:\n");
+g7339:
+  if (_trace) printf("g7339:\n");
   /* Here for all other cases */
 
-g7547:
-  if (_trace) printf("g7547:\n");
+g7319:
+  if (_trace) printf("g7319:\n");
 
-g7545:
-  if (_trace) printf("g7545:\n");
+g7317:
+  if (_trace) printf("g7317:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -680,41 +675,41 @@ g7545:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g7549;
+  goto g7321;
 
-g7548:
-  if (_trace) printf("g7548:\n");
+g7320:
+  if (_trace) printf("g7320:\n");
   t1 = t3;
-  goto g7545;
+  goto g7317;
 
-g7549:
-  if (_trace) printf("g7549:\n");
+g7321:
+  if (_trace) printf("g7321:\n");
 
-g7553:
-  if (_trace) printf("g7553:\n");
+g7325:
+  if (_trace) printf("g7325:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7581:
-  if (_trace) printf("g7581:\n");
+g7353:
+  if (_trace) printf("g7353:\n");
   if (t12 == 0)
-    goto g7554;
+    goto g7326;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQT(1, f1, f31, 1, f1);
-  goto g7541;
+  goto g7313;
 
-g7554:
-  if (_trace) printf("g7554:\n");
+g7326:
+  if (_trace) printf("g7326:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
-g7582:
-  if (_trace) printf("g7582:\n");
+g7354:
+  if (_trace) printf("g7354:\n");
   if (t12 == 0)
-    goto g7548;
+    goto g7320;
   /* Here if argument TypeDoubleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQT(1, f1, f31, 1, f1);
-  goto g7543;
+  goto g7315;
 
 /* end BinaryArithmeticDivisionPrelude */
 /* start DoQuotient */
@@ -779,10 +774,10 @@ return0056:
   t8 = t3 & 63;
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
-g7588:
-  if (_trace) printf("g7588:\n");
+g7360:
+  if (_trace) printf("g7360:\n");
   if (t9 == 0)
-    goto g7584;
+    goto g7356;
   /* Here if argument TypeFixnum */
   DIVT(0, f0, 1, f1, 2, f2);
   CVTTQVC(0, f0, f31, 0, f0);
@@ -794,20 +789,20 @@ g7588:
   *(u32 *)(iSP + 4) = t8;
   STS( (u32 *)iSP, 0, f0 );
 
-g7583:
-  if (_trace) printf("g7583:\n");
+g7355:
+  if (_trace) printf("g7355:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
-g7584:
-  if (_trace) printf("g7584:\n");
+g7356:
+  if (_trace) printf("g7356:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
-g7589:
-  if (_trace) printf("g7589:\n");
+g7361:
+  if (_trace) printf("g7361:\n");
   if (t9 == 0)
-    goto g7585;
+    goto g7357;
   /* Here if argument TypeSingleFloat */
   DIVS(0, f0, 1, f1, 2, f2); /* divs */
   /* Force the trap to occur here */
@@ -816,16 +811,16 @@ g7589:
   /* write the stack cache */
   *(u32 *)(iSP + 4) = t8;
   STS( (u32 *)iSP, 0, f0 );
-  goto g7583;
+  goto g7355;
 
-g7585:
-  if (_trace) printf("g7585:\n");
+g7357:
+  if (_trace) printf("g7357:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
-g7590:
-  if (_trace) printf("g7590:\n");
+g7362:
+  if (_trace) printf("g7362:\n");
   if (t9 == 0)
-    goto g7583;
+    goto g7355;
   /* Here if argument TypeDoubleFloat */
   DIVT(0, f0, 1, f1, 2, f2);
   STT( (u64 *)&processor->fp0, 0, f0 );
@@ -836,7 +831,7 @@ return0057:
   *(u32 *)iSP = arg2;
   /* write the stack cache */
   *(u32 *)(iSP + 4) = t8;
-  goto g7583;
+  goto g7355;
 
 /* end DoQuotient */
   /* End of Halfword operand from stack instruction - DoQuotient */
@@ -902,20 +897,18 @@ return0058:
   t8 = t3 & 63;
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
-g7596:
-  if (_trace) printf("g7596:\n");
+g7368:
+  if (_trace) printf("g7368:\n");
   if (t9 == 0)
-    goto g7592;
+    goto g7364;
   /* Here if argument TypeFixnum */
-  /* x86_64 replacement for fixnum rational quotient */
-    asm("movl %k2,%%eax \n\t"       // get arg1 into res
-        "cdq \n\t"                  // sign extend into edx:eax
-        "idivl %k3 \n\t"            // divide by arg2
-        "movl %%eax,%k0 \n\t"       // result into f0
-        "movl %%edx,%k1"            // remainder into im1
-        : "=mr"(f0),"=rm"(im1)      // %0;res, %1:im1
-        : "rm"(t2),"rm"(t4)         // %2:t2, %3:t4
-        : "rax", "rdx", "cc");      // clobbers eax, edx and cc;
+  /* portable signed fixnum quotient.  x86 idivl raised #DE (SIGFPE ->
+   * arithmeticexception) for a zero divisor and the INT_MIN/-1 overflow;
+   * arm64 SDIV does not trap, so route those two cases to the in-emulator
+   * handler to keep the Lisp trap semantics and avoid C undefined behavior. */
+  { int32_t _a = (int32_t)t2, _b = (int32_t)t4;
+    if (_b == 0 || (_a == INT32_MIN && _b == -1)) goto arithmeticexception;
+    f0 = (u64)(u32)(_a / _b); im1 = (int32_t)(_a % _b); }
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
   if (im1)
@@ -925,20 +918,20 @@ g7596:
   *(u32 *)(iSP + 4) = t8;
   STS( (u32 *)iSP, 0, f0 );
 
-g7591:
-  if (_trace) printf("g7591:\n");
+g7363:
+  if (_trace) printf("g7363:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
-g7592:
-  if (_trace) printf("g7592:\n");
+g7364:
+  if (_trace) printf("g7364:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
-g7597:
-  if (_trace) printf("g7597:\n");
+g7369:
+  if (_trace) printf("g7369:\n");
   if (t9 == 0)
-    goto g7593;
+    goto g7365;
   /* Here if argument TypeSingleFloat */
   DIVS(0, f0, 1, f1, 2, f2); /* divs */
   /* Force the trap to occur here */
@@ -947,16 +940,16 @@ g7597:
   /* write the stack cache */
   *(u32 *)(iSP + 4) = t8;
   STS( (u32 *)iSP, 0, f0 );
-  goto g7591;
+  goto g7363;
 
-g7593:
-  if (_trace) printf("g7593:\n");
+g7365:
+  if (_trace) printf("g7365:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
-g7598:
-  if (_trace) printf("g7598:\n");
+g7370:
+  if (_trace) printf("g7370:\n");
   if (t9 == 0)
-    goto g7591;
+    goto g7363;
   /* Here if argument TypeDoubleFloat */
   DIVT(0, f0, 1, f1, 2, f2);
   STT( (u64 *)&processor->fp0, 0, f0 );
@@ -967,7 +960,7 @@ return0059:
   *(u32 *)iSP = arg2;
   /* write the stack cache */
   *(u32 *)(iSP + 4) = t8;
-  goto g7591;
+  goto g7363;
 
 /* end DoRationalQuotient */
   /* End of Halfword operand from stack instruction - DoRationalQuotient */
@@ -1041,10 +1034,10 @@ return0060:
   t8 = t3 & 63;
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
-g7604:
-  if (_trace) printf("g7604:\n");
+g7376:
+  if (_trace) printf("g7376:\n");
   if (t9 == 0)
-    goto g7600;
+    goto g7372;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
   CVTQL(3, f3, f31, 3, f3);
@@ -1060,20 +1053,20 @@ g7604:
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
 
-g7599:
-  if (_trace) printf("g7599:\n");
+g7371:
+  if (_trace) printf("g7371:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
-g7600:
-  if (_trace) printf("g7600:\n");
+g7372:
+  if (_trace) printf("g7372:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
-g7605:
-  if (_trace) printf("g7605:\n");
+g7377:
+  if (_trace) printf("g7377:\n");
   if (t9 == 0)
-    goto g7601;
+    goto g7373;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
   /* Force the trap to occur here */
@@ -1087,16 +1080,16 @@ g7605:
   *(u32 *)(iSP + 12) = t8;
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
-  goto g7599;
+  goto g7371;
 
-g7601:
-  if (_trace) printf("g7601:\n");
+g7373:
+  if (_trace) printf("g7373:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
-g7606:
-  if (_trace) printf("g7606:\n");
+g7378:
+  if (_trace) printf("g7378:\n");
   if (t9 == 0)
-    goto g7599;
+    goto g7371;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -1113,7 +1106,7 @@ return0061:
   /* write the stack cache */
   *(u32 *)(iSP + 12) = t8;
   iSP = iSP + 8;
-  goto g7599;
+  goto g7371;
 
 /* end DoFloor */
   /* End of Halfword operand from stack instruction - DoFloor */
@@ -1187,10 +1180,10 @@ return0062:
   t8 = t3 & 63;
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
-g7612:
-  if (_trace) printf("g7612:\n");
+g7384:
+  if (_trace) printf("g7384:\n");
   if (t9 == 0)
-    goto g7608;
+    goto g7380;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
   CVTQL(3, f3, f31, 3, f3);
@@ -1206,20 +1199,20 @@ g7612:
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
 
-g7607:
-  if (_trace) printf("g7607:\n");
+g7379:
+  if (_trace) printf("g7379:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
-g7608:
-  if (_trace) printf("g7608:\n");
+g7380:
+  if (_trace) printf("g7380:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
-g7613:
-  if (_trace) printf("g7613:\n");
+g7385:
+  if (_trace) printf("g7385:\n");
   if (t9 == 0)
-    goto g7609;
+    goto g7381;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
   /* Force the trap to occur here */
@@ -1233,16 +1226,16 @@ g7613:
   *(u32 *)(iSP + 12) = t8;
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
-  goto g7607;
+  goto g7379;
 
-g7609:
-  if (_trace) printf("g7609:\n");
+g7381:
+  if (_trace) printf("g7381:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
-g7614:
-  if (_trace) printf("g7614:\n");
+g7386:
+  if (_trace) printf("g7386:\n");
   if (t9 == 0)
-    goto g7607;
+    goto g7379;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -1259,7 +1252,7 @@ return0063:
   /* write the stack cache */
   *(u32 *)(iSP + 12) = t8;
   iSP = iSP + 8;
-  goto g7607;
+  goto g7379;
 
 /* end DoCeiling */
   /* End of Halfword operand from stack instruction - DoCeiling */
@@ -1333,10 +1326,10 @@ return0064:
   t8 = t3 & 63;
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
-g7620:
-  if (_trace) printf("g7620:\n");
+g7392:
+  if (_trace) printf("g7392:\n");
   if (t9 == 0)
-    goto g7616;
+    goto g7388;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
   CVTQL(3, f3, f31, 3, f3);
@@ -1352,20 +1345,20 @@ g7620:
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
 
-g7615:
-  if (_trace) printf("g7615:\n");
+g7387:
+  if (_trace) printf("g7387:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
-g7616:
-  if (_trace) printf("g7616:\n");
+g7388:
+  if (_trace) printf("g7388:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
-g7621:
-  if (_trace) printf("g7621:\n");
+g7393:
+  if (_trace) printf("g7393:\n");
   if (t9 == 0)
-    goto g7617;
+    goto g7389;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
   /* Force the trap to occur here */
@@ -1379,16 +1372,16 @@ g7621:
   *(u32 *)(iSP + 12) = t8;
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
-  goto g7615;
+  goto g7387;
 
-g7617:
-  if (_trace) printf("g7617:\n");
+g7389:
+  if (_trace) printf("g7389:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
-g7622:
-  if (_trace) printf("g7622:\n");
+g7394:
+  if (_trace) printf("g7394:\n");
   if (t9 == 0)
-    goto g7615;
+    goto g7387;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -1405,7 +1398,7 @@ return0065:
   /* write the stack cache */
   *(u32 *)(iSP + 12) = t8;
   iSP = iSP + 8;
-  goto g7615;
+  goto g7387;
 
 /* end DoTruncate */
   /* End of Halfword operand from stack instruction - DoTruncate */
@@ -1479,10 +1472,10 @@ return0066:
   t8 = t3 & 63;
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
-g7628:
-  if (_trace) printf("g7628:\n");
+g7400:
+  if (_trace) printf("g7400:\n");
   if (t9 == 0)
-    goto g7624;
+    goto g7396;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
   CVTQL(3, f3, f31, 3, f3);
@@ -1498,20 +1491,20 @@ g7628:
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
 
-g7623:
-  if (_trace) printf("g7623:\n");
+g7395:
+  if (_trace) printf("g7395:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
-g7624:
-  if (_trace) printf("g7624:\n");
+g7396:
+  if (_trace) printf("g7396:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
-g7629:
-  if (_trace) printf("g7629:\n");
+g7401:
+  if (_trace) printf("g7401:\n");
   if (t9 == 0)
-    goto g7625;
+    goto g7397;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
   /* Force the trap to occur here */
@@ -1525,16 +1518,16 @@ g7629:
   *(u32 *)(iSP + 12) = t8;
   STS( (u32 *)(iSP + 8), 3, f3 );
   iSP = iSP + 8;
-  goto g7623;
+  goto g7395;
 
-g7625:
-  if (_trace) printf("g7625:\n");
+g7397:
+  if (_trace) printf("g7397:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
-g7630:
-  if (_trace) printf("g7630:\n");
+g7402:
+  if (_trace) printf("g7402:\n");
   if (t9 == 0)
-    goto g7623;
+    goto g7395;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -1551,7 +1544,7 @@ return0067:
   /* write the stack cache */
   *(u32 *)(iSP + 12) = t8;
   iSP = iSP + 8;
-  goto g7623;
+  goto g7395;
 
 /* end DoRound */
   /* End of Halfword operand from stack instruction - DoRound */
@@ -1627,17 +1620,17 @@ begindomax:
   t11 = t3 & 63;
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
-g7654:
-  if (_trace) printf("g7654:\n");
+g7426:
+  if (_trace) printf("g7426:\n");
   if (t10 == 0)
-    goto g7638;
+    goto g7410;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7643:
-  if (_trace) printf("g7643:\n");
+g7415:
+  if (_trace) printf("g7415:\n");
   if (t12 == 0)
-    goto g7640;
+    goto g7412;
   /* Here if argument TypeFixnum */
   t5 = t2 - t4;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1650,41 +1643,41 @@ g7643:
   *(u32 *)(iSP + 4) = t9;
   goto cachevalid;
 
-g7640:
-  if (_trace) printf("g7640:\n");
+g7412:
+  if (_trace) printf("g7412:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7644:
-  if (_trace) printf("g7644:\n");
+g7416:
+  if (_trace) printf("g7416:\n");
   if (t12 == 0)
-    goto g7635;
+    goto g7407;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQS(1, f1, f31, 1, f1);
-  goto g7632;
+  goto g7404;
 
-g7639:
-  if (_trace) printf("g7639:\n");
+g7411:
+  if (_trace) printf("g7411:\n");
 
-g7638:
-  if (_trace) printf("g7638:\n");
+g7410:
+  if (_trace) printf("g7410:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
-g7655:
-  if (_trace) printf("g7655:\n");
+g7427:
+  if (_trace) printf("g7427:\n");
   if (t10 == 0)
-    goto g7645;
+    goto g7417;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7650:
-  if (_trace) printf("g7650:\n");
+g7422:
+  if (_trace) printf("g7422:\n");
   if (t12 == 0)
-    goto g7647;
+    goto g7419;
   /* Here if argument TypeSingleFloat */
 
-g7632:
-  if (_trace) printf("g7632:\n");
+g7404:
+  if (_trace) printf("g7404:\n");
   /* NIL */
   SUBS(0, f0, 1, f1, 2, f2); /* subs */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1699,31 +1692,31 @@ g7632:
   STS( (u32 *)iSP, 2, f2 );
   goto cachevalid;
 
-g7647:
-  if (_trace) printf("g7647:\n");
+g7419:
+  if (_trace) printf("g7419:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7651:
-  if (_trace) printf("g7651:\n");
+g7423:
+  if (_trace) printf("g7423:\n");
   if (t12 == 0)
-    goto g7635;
+    goto g7407;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQS(2, f2, f31, 2, f2);
-  goto g7632;
+  goto g7404;
 
-g7646:
-  if (_trace) printf("g7646:\n");
+g7418:
+  if (_trace) printf("g7418:\n");
 
-g7645:
-  if (_trace) printf("g7645:\n");
+g7417:
+  if (_trace) printf("g7417:\n");
   /* Here for all other cases */
 
-g7634:
-  if (_trace) printf("g7634:\n");
+g7406:
+  if (_trace) printf("g7406:\n");
 
-g7631:
-  if (_trace) printf("g7631:\n");
+g7403:
+  if (_trace) printf("g7403:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -1733,18 +1726,18 @@ g7631:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g7636;
+  goto g7408;
 
-g7635:
-  if (_trace) printf("g7635:\n");
+g7407:
+  if (_trace) printf("g7407:\n");
   t1 = t3;
-  goto g7631;
+  goto g7403;
 
-g7636:
-  if (_trace) printf("g7636:\n");
+g7408:
+  if (_trace) printf("g7408:\n");
 
-g7637:
-  if (_trace) printf("g7637:\n");
+g7409:
+  if (_trace) printf("g7409:\n");
 
 /* end DoMax */
   /* End of Halfword operand from stack instruction - DoMax */
@@ -1819,17 +1812,17 @@ begindomin:
   t11 = t3 & 63;
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
-g7679:
-  if (_trace) printf("g7679:\n");
+g7451:
+  if (_trace) printf("g7451:\n");
   if (t10 == 0)
-    goto g7663;
+    goto g7435;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7668:
-  if (_trace) printf("g7668:\n");
+g7440:
+  if (_trace) printf("g7440:\n");
   if (t12 == 0)
-    goto g7665;
+    goto g7437;
   /* Here if argument TypeFixnum */
   t5 = t2 - t4;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1842,41 +1835,41 @@ g7668:
   *(u32 *)(iSP + 4) = t9;
   goto cachevalid;
 
-g7665:
-  if (_trace) printf("g7665:\n");
+g7437:
+  if (_trace) printf("g7437:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7669:
-  if (_trace) printf("g7669:\n");
+g7441:
+  if (_trace) printf("g7441:\n");
   if (t12 == 0)
-    goto g7660;
+    goto g7432;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQS(1, f1, f31, 1, f1);
-  goto g7657;
+  goto g7429;
 
-g7664:
-  if (_trace) printf("g7664:\n");
+g7436:
+  if (_trace) printf("g7436:\n");
 
-g7663:
-  if (_trace) printf("g7663:\n");
+g7435:
+  if (_trace) printf("g7435:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
-g7680:
-  if (_trace) printf("g7680:\n");
+g7452:
+  if (_trace) printf("g7452:\n");
   if (t10 == 0)
-    goto g7670;
+    goto g7442;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
-g7675:
-  if (_trace) printf("g7675:\n");
+g7447:
+  if (_trace) printf("g7447:\n");
   if (t12 == 0)
-    goto g7672;
+    goto g7444;
   /* Here if argument TypeSingleFloat */
 
-g7657:
-  if (_trace) printf("g7657:\n");
+g7429:
+  if (_trace) printf("g7429:\n");
   /* NIL */
   SUBS(0, f0, 1, f1, 2, f2); /* subs */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1891,31 +1884,31 @@ g7657:
   STS( (u32 *)iSP, 2, f2 );
   goto cachevalid;
 
-g7672:
-  if (_trace) printf("g7672:\n");
+g7444:
+  if (_trace) printf("g7444:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
-g7676:
-  if (_trace) printf("g7676:\n");
+g7448:
+  if (_trace) printf("g7448:\n");
   if (t12 == 0)
-    goto g7660;
+    goto g7432;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQS(2, f2, f31, 2, f2);
-  goto g7657;
+  goto g7429;
 
-g7671:
-  if (_trace) printf("g7671:\n");
+g7443:
+  if (_trace) printf("g7443:\n");
 
-g7670:
-  if (_trace) printf("g7670:\n");
+g7442:
+  if (_trace) printf("g7442:\n");
   /* Here for all other cases */
 
-g7659:
-  if (_trace) printf("g7659:\n");
+g7431:
+  if (_trace) printf("g7431:\n");
 
-g7656:
-  if (_trace) printf("g7656:\n");
+g7428:
+  if (_trace) printf("g7428:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -1925,18 +1918,18 @@ g7656:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g7661;
+  goto g7433;
 
-g7660:
-  if (_trace) printf("g7660:\n");
+g7432:
+  if (_trace) printf("g7432:\n");
   t1 = t3;
-  goto g7656;
+  goto g7428;
 
-g7661:
-  if (_trace) printf("g7661:\n");
+g7433:
+  if (_trace) printf("g7433:\n");
 
-g7662:
-  if (_trace) printf("g7662:\n");
+g7434:
+  if (_trace) printf("g7434:\n");
 
 /* end DoMin */
   /* End of Halfword operand from stack instruction - DoMin */
@@ -1956,8 +1949,8 @@ DoMultiplyDoubleIM:
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
-g7681:
-  if (_trace) printf("g7681:\n");
+g7453:
+  if (_trace) printf("g7453:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;

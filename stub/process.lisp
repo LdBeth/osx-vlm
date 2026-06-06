@@ -6,6 +6,9 @@
 ;; brad@heeltoe.com
 ;;
 
+;; --- Package-system bootstrap (implementation specific) ------------------
+;; CLISP (the original host): unlock the system packages before extending them.
+#+clisp
 (progn
   (defmacro unlock-package (pack)
     (setf *locked-package-saved-value* (ext:package-lock pack)
@@ -14,9 +17,25 @@
   (unlock-package system)
   (unlock-package common-lisp)
   (unlock-package clos)
-)
+  (unlock-package system))
 
-(unlock-package system)
+;; SBCL: recreate the package landscape CLISP provides for free.  The macro and
+;; .as sources reference the SYS, LISP and CLOS packages throughout, so we add a
+;; LISP nickname to COMMON-LISP, a SYSTEM package (nickname SYS), and a CLOS
+;; package re-exporting the standard CLOS symbols (which live in CL on SBCL).
+#+sbcl
+(progn
+  (sb-ext:unlock-package :common-lisp)
+  (unless (member "LISP" (package-nicknames "COMMON-LISP") :test #'string=)
+    (rename-package "COMMON-LISP" "COMMON-LISP"
+		    (cons "LISP" (package-nicknames "COMMON-LISP"))))
+  (unless (find-package "SYSTEM")
+    (make-package "SYSTEM" :use '("COMMON-LISP") :nicknames '("SYS")))
+  (let ((clos (or (find-package "CLOS")
+		  (make-package "CLOS" :use '("COMMON-LISP")))))
+    (do-external-symbols (s (find-package "COMMON-LISP")) (export s clos)))
+  ;; emit forms in C comments on a single line, as CLISP did (no pretty-print wrap)
+  (setf *print-pretty* nil))
 
 (defpackage ALPHA-AXP-INTERNALS
   (:nicknames AXPI)
@@ -114,6 +133,22 @@
 (defvar *function-epilogue*)
 (defvar *do-check-oflo* nil)
 (defvar *do-check-ratquo* nil)
+
+;; The overflow-checking arithmetic and the fixnum division have an x86_64
+;; inline-asm implementation and a portable (arm64-friendly) builtin one.  Pick
+;; which to emit here, in Lisp, from the host's features -- this is a native
+;; build, so the host is the target -- rather than shipping both behind a C
+;; preprocessor #if.  Defaults to :x86-64 so the original (CLISP/Linux/x86)
+;; behaviour is preserved on hosts whose arch we do not recognise.
+(defparameter *target-arch*
+  (cond ((member :x86-64 *features*) :x86-64)
+	((or (member :arm64 *features*) (member :aarch64 *features*)) :aarch64)
+	(t :x86-64)))
+
+;; clang -- the C compiler on Darwin -- does not implement GCC's nested-function
+;; extension, so the nested debug fn show_loc (defined in the hand-written
+;; stub.c) is excluded there; its sole call site must be omitted to match.
+(defparameter *nested-functions-supported* (not (member :darwin *features*)))
 
 ;
 (defun macroexpand-careful (form env)
@@ -716,6 +751,11 @@
 (defun split-by-one-star (string)
   (split-by-one-char string #\*))
 
+; portable replacement for CLISP's ext:substring (clamps to string length)
+(defun axpi-substring (s a &optional b)
+  (let ((n (length s)))
+    (subseq s (min a n) (if b (min b n) n))))
+
 (defun fixarg (str)
 ;  (format t "fixarg: str ~S~%" str)
   (let ((sym-name (if (symbolp str) (symbol-name str) nil)))
@@ -1118,7 +1158,8 @@
 	   (format destination "~%~A:~%" lname)
 	   (format destination "  if (_trace) printf(\"~A:\\n\");~%" lname)
 	   (if (equal lname "continuecurrentinstruction")
-	       (format destination "  if (_show) show_loc();~%" lname))))
+	       (if *nested-functions-supported*
+		   (format destination "  if (_show) show_loc();~%" lname)))))
 
 	(func-label
 	 (format destination "~%~A:~%" arg1))
@@ -1154,19 +1195,24 @@
 		 (fixarg arg3)
 		 (fixarg arg1)
 		 (fixarg arg2))
-	 (format destination
-		 "  /* x86_64 replacement for addl/v */~%")
-	 (format destination
+	 (if (eq *target-arch* :x86-64)
+	     (progn
+	       (format destination
+		       "  /* x86_64 replacement for addl/v */~%")
+	       (format destination
 		 "    asm(\"movl %k2,%k0 \\n\\t\"
 	\"addl %k3,%k0 \\n\\t\"
 	\"seto %b1\"
         : \"=r\"(~a),\"=rm\"(~a)
         : \"rm\"(~a),\"rm\"(~a)
         : \"cc\");~%"
-	 (fixarg arg3)
-	 "oflo"
-	 (fixarg arg1)
-	 (fixarg arg2))
+		 (fixarg arg3) "oflo" (fixarg arg1) (fixarg arg2)))
+	     (progn
+	       (format destination
+		       "  /* portable addl/v: 32-bit signed add with overflow flag */~%")
+	       (format destination
+		       "    { int32_t _r; oflo = __builtin_add_overflow((int32_t)~a, (int32_t)~a, &_r); ~a = (u64)(u32)_r; }~%"
+		       (fixarg arg1) (fixarg arg2) (fixarg arg3))))
 	 (setq *do-check-oflo* t)
 	 (format destination "//  if (~A >> 32)~%//    exception();~%"
 		 (fixarg arg3)))
@@ -1178,19 +1224,24 @@
 		 (fixarg arg3)
 		 (fixarg arg1)
 		 (fixarg arg2))
-	 (format destination
-		 "  /* x86_64 replacement for subl/v */~%")
-	 (format destination
+	 (if (eq *target-arch* :x86-64)
+	     (progn
+	       (format destination
+		       "  /* x86_64 replacement for subl/v */~%")
+	       (format destination
 		 "    asm(\"movl %k2,%k0 \\n\\t\"
 	\"subl %k3,%k0 \\n\\t\"
 	\"seto %b1\"
         : \"=r\"(~a),\"=rm\"(~a)
         : \"rm\"(~a),\"rm\"(~a)
         : \"cc\");~%"
-	 (fixarg arg3)
-	 "oflo"
-	 (fixarg arg1)
-	 (fixarg arg2))
+		 (fixarg arg3) "oflo" (fixarg arg1) (fixarg arg2)))
+	     (progn
+	       (format destination
+		       "  /* portable subl/v: 32-bit signed subtract with overflow flag */~%")
+	       (format destination
+		       "    { int32_t _r; oflo = __builtin_sub_overflow((int32_t)~a, (int32_t)~a, &_r); ~a = (u64)(u32)_r; }~%"
+		       (fixarg arg1) (fixarg arg2) (fixarg arg3))))
 	 (format destination "//  if (~A >> 32)~%//    exception();~%"
 		 (fixarg arg3))
 	 (setq *do-check-oflo* t))
@@ -1825,28 +1876,35 @@
 		 (fixarg arg3)
 		 (fixarg arg1)
 		 (fixarg arg2))
-	 (format destination
-		 "  /* x86_64 replacement for mull/v */~%")
-	 (format destination
+	 (if (eq *target-arch* :x86-64)
+	     (progn
+	       (format destination
+		       "  /* x86_64 replacement for mull/v */~%")
+	       (format destination
 		 "    asm(\"movl %k2,%k0 \\n\\t\"
 	\"imull %k3,%k0 \\n\\t\"
 	\"seto %b1\"
         : \"=r\"(~a),\"=rm\"(~a)
         : \"rm\"(~a),\"rm\"(~a)
         : \"cc\");~%"
-	 (fixarg arg3)
-	 "oflo"
-	 (fixarg arg1)
-	 (fixarg arg2))
+		 (fixarg arg3) "oflo" (fixarg arg1) (fixarg arg2)))
+	     (progn
+	       (format destination
+		       "  /* portable mull/v: 32-bit signed product with overflow flag */~%")
+	       (format destination
+		       "    { int32_t _r; oflo = __builtin_mul_overflow((int32_t)~a, (int32_t)~a, &_r); ~a = (u64)(u32)_r; }~%"
+		       (fixarg arg1) (fixarg arg2) (fixarg arg3))))
 	 (setq *do-check-oflo* t)
 	 (format destination "//  if (~A >> 32)~%//    exception();~%"
 		 (fixarg arg3)))
 
 	(X64RATQUO
 	 (check-comment arg4)
-	 (format destination
-		 "  /* x86_64 replacement for fixnum rational quotient */~%")
-	 (format destination
+	 (if (eq *target-arch* :x86-64)
+	     (progn
+	       (format destination
+		       "  /* x86_64 replacement for fixnum rational quotient */~%")
+	       (format destination
 		 "    asm(\"movl %k2,%%eax \\n\\t\"~36,4T// get arg1 into res
         \"cdq \\n\\t\"~36,4T// sign extend into edx:eax
         \"idivl %k3 \\n\\t\"~36,4T// divide by arg2
@@ -1855,10 +1913,13 @@
         : \"=mr\"(~a),\"=rm\"(~a)~36,4T// %0;res, %1:im1
         : \"rm\"(~a),\"rm\"(~a)~36,4T// %2:t2, %3:t4
         : \"rax\", \"rdx\", \"cc\");~36,4T// clobbers eax, edx and cc;~%"
-	 (fixarg arg1)
-	 "im1"
-	 (fixarg arg2)
-	 (fixarg arg3))
+		 (fixarg arg1) "im1" (fixarg arg2) (fixarg arg3)))
+	     (progn
+	       (format destination
+		       "  /* portable signed fixnum quotient.  x86 idivl raised #DE (SIGFPE ->~%   * arithmeticexception) for a zero divisor and the INT_MIN/-1 overflow;~%   * arm64 SDIV does not trap, so route those two cases to the in-emulator~%   * handler to keep the Lisp trap semantics and avoid C undefined behavior. */~%")
+	       (format destination
+		       "  { int32_t _a = (int32_t)~a, _b = (int32_t)~a;~%    if (_b == 0 || (_a == INT32_MIN && _b == -1)) goto arithmeticexception;~%    ~a = (u64)(u32)(_a / _b); im1 = (int32_t)(_a % _b); }~%"
+		       (fixarg arg2) (fixarg arg3) (fixarg arg1))))
 	 (setq *do-check-ratquo* t))
 	
 	(LIBMFLOOR
@@ -2186,9 +2247,9 @@
 	       (add-global-label-symbol (intern (car (cdr split-list))))))
 ;;	 (format t "~S~%" global-labels)
 ;;	 (format t "passthru: arg1 ~S form ~S~%" arg1 form)
-	 (if (or (equal (ext:substring arg1 0 5) "#ifde")
-		 (equal (ext:substring arg1 0 5) "#ifnd")
-		 (equal (ext:substring arg1 0 4) "#end"))
+	 (if (or (equal (axpi-substring arg1 0 5) "#ifde")
+		 (equal (axpi-substring arg1 0 5) "#ifnd")
+		 (equal (axpi-substring arg1 0 4) "#end"))
 	     (format destination "~A~%" arg1)))
 	     
 	(otherwise

@@ -36,10 +36,10 @@ collision:
   t4 = t4 >> 30;
   t3 = (r0 == TrapReason_HighPrioritySequenceBreak) ? 1 : 0;
 
-g8871:
-  if (_trace) printf("g8871:\n");
+g8643:
+  if (_trace) printf("g8643:\n");
   if (t3 == 0)
-    goto g8867;
+    goto g8639;
   /* Here if argument TrapReasonHighPrioritySequenceBreak */
   /* Only interrupts EXTRA-STACK and EMULATOR */
   t4 = ((u64)t4 <= (u64)TrapMode_ExtraStack) ? 1 : 0;
@@ -47,22 +47,22 @@ g8871:
     goto continuecurrentinstruction;
   goto highprioritysequencebreak;
 
-g8867:
-  if (_trace) printf("g8867:\n");
+g8639:
+  if (_trace) printf("g8639:\n");
   t3 = (r0 == TrapReason_LowPrioritySequenceBreak) ? 1 : 0;
 
-g8872:
-  if (_trace) printf("g8872:\n");
+g8644:
+  if (_trace) printf("g8644:\n");
   if (t3 == 0)
-    goto g8868;
+    goto g8640;
   /* Here if argument TrapReasonLowPrioritySequenceBreak */
   /* Only interrupts EMULATOR */
   if (t4 != 0)
     goto continuecurrentinstruction;
   goto lowprioritysequencebreak;
 
-g8868:
-  if (_trace) printf("g8868:\n");
+g8640:
+  if (_trace) printf("g8640:\n");
   /* Here for all other cases */
   /* Check for preempt-request trap */
   /* Get the preempt-pending bit */
@@ -75,8 +75,8 @@ g8868:
     goto continuecurrentinstruction;
   goto preemptrequesttrap;
 
-g8866:
-  if (_trace) printf("g8866:\n");
+g8638:
+  if (_trace) printf("g8638:\n");
 
 SUSPENDMACHINE:
   if (_trace) printf("SUSPENDMACHINE:\n");

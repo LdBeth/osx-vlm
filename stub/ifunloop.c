@@ -260,11 +260,11 @@ DoLoopDecrementTosFP:
   /* Strip CDR code */
   t3 = t3 & 63;
   if (t3 != 0)
-    goto g7179;
+    goto g6951;
   t3 = (s32)t2 - (s32)1;
   t4 = ((s64)t3 < (s64)t2) ? 1 : 0;
   if (t4 == 0)
-    goto g7181;
+    goto g6953;
   t6 = Type_Fixnum;
   *(u32 *)iSP = t3;
   /* write the stack cache */
@@ -280,16 +280,16 @@ DoLoopDecrementTosFP:
 #endif
   goto interpretinstructionforbranch;
 
-g7179:
-  if (_trace) printf("g7179:\n");
+g6951:
+  if (_trace) printf("g6951:\n");
   t3 = t1 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t3 = t3 & 56;
   if (t3 != 0)
-    goto g7180;
+    goto g6952;
 
-g7181:
-  if (_trace) printf("g7181:\n");
+g6953:
+  if (_trace) printf("g6953:\n");
   /* Compute next-pc */
   arg5 = iPC + arg1;
   /* arg3 = stackp */
@@ -300,8 +300,8 @@ g7181:
   arg4 = 0;
   goto loopexception;
 
-g7180:
-  if (_trace) printf("g7180:\n");
+g6952:
+  if (_trace) printf("g6952:\n");
   arg5 = 0;
   arg2 = 81;
   goto illegaloperand;
@@ -340,7 +340,7 @@ DoLoopIncrementTosLessThanFP:
   /* Strip CDR code */
   t5 = t5 & 63;
   if (t5 != 0)
-    goto g7182;
+    goto g6954;
   /* Get arg1. */
   t4 = *(s32 *)(iSP + -8);
   t3 = *(s32 *)(iSP + -4);
@@ -349,11 +349,11 @@ DoLoopIncrementTosLessThanFP:
   /* Strip CDR code */
   t5 = t5 & 63;
   if (t5 != 0)
-    goto g7183;
+    goto g6955;
   t5 = (s32)t2 + (s32)1;
   t6 = ((s64)t2 <= (s64)t5) ? 1 : 0;
   if (t6 == 0)
-    goto g7184;
+    goto g6956;
   t6 = Type_Fixnum;
   *(u32 *)iSP = t5;
   /* write the stack cache */
@@ -363,8 +363,8 @@ DoLoopIncrementTosLessThanFP:
     goto NEXTINSTRUCTION;
   /* Here if branch taken. */
 
-g7186:
-  if (_trace) printf("g7186:\n");
+g6958:
+  if (_trace) printf("g6958:\n");
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
@@ -373,24 +373,24 @@ g7186:
 #endif
   goto interpretinstructionforbranch;
 
-g7182:
-  if (_trace) printf("g7182:\n");
+g6954:
+  if (_trace) printf("g6954:\n");
   t5 = t1 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t5 = t5 & 56;
   if (t5 != 0)
-    goto g7185;
+    goto g6957;
 
-g7183:
-  if (_trace) printf("g7183:\n");
+g6955:
+  if (_trace) printf("g6955:\n");
   t5 = t3 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t5 = t5 & 56;
   if (t5 != 0)
-    goto g7185;
+    goto g6957;
 
-g7184:
-  if (_trace) printf("g7184:\n");
+g6956:
+  if (_trace) printf("g6956:\n");
   /* Compute next-pc */
   arg5 = iPC + arg1;
   /* arg3 = stackp */
@@ -401,8 +401,8 @@ g7184:
   arg4 = 0;
   goto loopexception;
 
-g7185:
-  if (_trace) printf("g7185:\n");
+g6957:
+  if (_trace) printf("g6957:\n");
   arg5 = 0;
   arg2 = 16;
   goto illegaloperand;

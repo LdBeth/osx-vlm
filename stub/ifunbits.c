@@ -57,12 +57,12 @@ begindologand:
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8316;
+    goto g8088;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8317;
+    goto g8089;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
   t4 = t4 & arg1;
@@ -78,8 +78,8 @@ begindologand:
   *(u32 *)(iSP + 4) = t1;
   goto cachevalid;
 
-g8316:
-  if (_trace) printf("g8316:\n");
+g8088:
+  if (_trace) printf("g8088:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t3;
   /* arg3 = stackp */
@@ -90,8 +90,8 @@ g8316:
   arg4 = 1;
   goto numericexception;
 
-g8317:
-  if (_trace) printf("g8317:\n");
+g8089:
+  if (_trace) printf("g8089:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -117,7 +117,7 @@ DoLogandIM:
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8318;
+    goto g8090;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
   t4 = t4 & arg2;
@@ -133,8 +133,8 @@ DoLogandIM:
   *(u32 *)(iSP + 4) = t1;
   goto cachevalid;
 
-g8318:
-  if (_trace) printf("g8318:\n");
+g8090:
+  if (_trace) printf("g8090:\n");
   arg1 = Type_Fixnum;
   arg2 = (u32)arg2;
   /* SetTag. */
@@ -205,12 +205,12 @@ begindologior:
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8319;
+    goto g8091;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8320;
+    goto g8092;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
   t4 = t4 | arg1;
@@ -226,8 +226,8 @@ begindologior:
   *(u32 *)(iSP + 4) = t1;
   goto cachevalid;
 
-g8319:
-  if (_trace) printf("g8319:\n");
+g8091:
+  if (_trace) printf("g8091:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t3;
   /* arg3 = stackp */
@@ -238,8 +238,8 @@ g8319:
   arg4 = 1;
   goto numericexception;
 
-g8320:
-  if (_trace) printf("g8320:\n");
+g8092:
+  if (_trace) printf("g8092:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -265,7 +265,7 @@ DoLogiorIM:
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8321;
+    goto g8093;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
   t4 = t4 | arg2;
@@ -281,8 +281,8 @@ DoLogiorIM:
   *(u32 *)(iSP + 4) = t1;
   goto cachevalid;
 
-g8321:
-  if (_trace) printf("g8321:\n");
+g8093:
+  if (_trace) printf("g8093:\n");
   arg1 = Type_Fixnum;
   arg2 = (u32)arg2;
   /* SetTag. */
@@ -353,12 +353,12 @@ begindologxor:
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8322;
+    goto g8094;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8323;
+    goto g8095;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
   t4 = t4 ^ arg1;
@@ -374,8 +374,8 @@ begindologxor:
   *(u32 *)(iSP + 4) = t1;
   goto cachevalid;
 
-g8322:
-  if (_trace) printf("g8322:\n");
+g8094:
+  if (_trace) printf("g8094:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t3;
   /* arg3 = stackp */
@@ -386,8 +386,8 @@ g8322:
   arg4 = 1;
   goto numericexception;
 
-g8323:
-  if (_trace) printf("g8323:\n");
+g8095:
+  if (_trace) printf("g8095:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -413,7 +413,7 @@ DoLogxorIM:
   /* Strip CDR code */
   t6 = t6 & 63;
   if (t6 != 0)
-    goto g8324;
+    goto g8096;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
   t4 = t4 ^ arg2;
@@ -429,8 +429,8 @@ DoLogxorIM:
   *(u32 *)(iSP + 4) = t1;
   goto cachevalid;
 
-g8324:
-  if (_trace) printf("g8324:\n");
+g8096:
+  if (_trace) printf("g8096:\n");
   arg1 = Type_Fixnum;
   arg2 = (u32)arg2;
   /* SetTag. */
@@ -464,8 +464,8 @@ DoAshIM:
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
-g8338:
-  if (_trace) printf("g8338:\n");
+g8110:
+  if (_trace) printf("g8110:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -521,17 +521,17 @@ begindoash:
   t3 = arg3 & 63;
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
-g8337:
-  if (_trace) printf("g8337:\n");
+g8109:
+  if (_trace) printf("g8109:\n");
   if (t2 == 0)
-    goto g8330;
+    goto g8102;
   /* Here if argument TypeFixnum */
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
-g8334:
-  if (_trace) printf("g8334:\n");
+g8106:
+  if (_trace) printf("g8106:\n");
   if (t4 == 0)
-    goto g8327;
+    goto g8099;
   /* Here if argument TypeFixnum */
   /* B. if ash of zero -- trivial case */
   if (arg4 == 0)
@@ -581,15 +581,15 @@ zerash:
   *(u32 *)(iSP + 4) = arg5;
   goto NEXTINSTRUCTION;
 
-g8331:
-  if (_trace) printf("g8331:\n");
+g8103:
+  if (_trace) printf("g8103:\n");
 
-g8330:
-  if (_trace) printf("g8330:\n");
+g8102:
+  if (_trace) printf("g8102:\n");
   /* Here for all other cases */
 
-g8326:
-  if (_trace) printf("g8326:\n");
+g8098:
+  if (_trace) printf("g8098:\n");
   arg1 = (u32)arg1;
   /* SetTag. */
   t2 = arg2 << 32;
@@ -603,10 +603,10 @@ g8326:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g8328;
+  goto g8100;
 
-g8327:
-  if (_trace) printf("g8327:\n");
+g8099:
+  if (_trace) printf("g8099:\n");
   arg1 = (u32)arg1;
   /* SetTag. */
   t2 = arg2 << 32;
@@ -621,11 +621,11 @@ g8327:
   arg4 = 1;
   goto numericexception;
 
-g8328:
-  if (_trace) printf("g8328:\n");
+g8100:
+  if (_trace) printf("g8100:\n");
 
-g8329:
-  if (_trace) printf("g8329:\n");
+g8101:
+  if (_trace) printf("g8101:\n");
 
 ashovexc:
   if (_trace) printf("ashovexc:\n");
@@ -686,8 +686,8 @@ begindorot:
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
-g8340:
-  if (_trace) printf("g8340:\n");
+g8112:
+  if (_trace) printf("g8112:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -704,14 +704,14 @@ g8340:
   /* Strip CDR code if any. */
   t5 = t5 & 63;
   if (t4 != 0)
-    goto g8339;
+    goto g8111;
   t2 = (u32)t2;
   t5 = t5 - Type_Fixnum;
 
-g8341:
-  if (_trace) printf("g8341:\n");
+g8113:
+  if (_trace) printf("g8113:\n");
   if (t5 != 0)
-    goto g8339;
+    goto g8111;
   /* Get low 5 bits of the rotation */
   t2 = t2 & 31;
   /* Shift left to get new high bits */
@@ -721,8 +721,8 @@ g8341:
   /* Glue two parts of shifted operand together */
   t3 = t3 | t6;
 
-g8342:
-  if (_trace) printf("g8342:\n");
+g8114:
+  if (_trace) printf("g8114:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -736,10 +736,10 @@ DoRotIM:
   if (_trace) printf("DoRotIM:\n");
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
-  goto g8340;
+  goto g8112;
 
-g8339:
-  if (_trace) printf("g8339:\n");
+g8111:
+  if (_trace) printf("g8111:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
@@ -787,8 +787,8 @@ begindolsh:
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
-g8344:
-  if (_trace) printf("g8344:\n");
+g8116:
+  if (_trace) printf("g8116:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -805,13 +805,13 @@ g8344:
   /* Strip CDR code if any. */
   t5 = t5 & 63;
   if (t4 != 0)
-    goto g8343;
+    goto g8115;
   t5 = t5 - Type_Fixnum;
 
-g8345:
-  if (_trace) printf("g8345:\n");
+g8117:
+  if (_trace) printf("g8117:\n");
   if (t5 != 0)
-    goto g8343;
+    goto g8115;
   /* B. if negative lsh. */
   if ((s64)t2 < 0)
     goto neglsh;
@@ -839,8 +839,8 @@ returnzero:
 lshdone:
   if (_trace) printf("lshdone:\n");
 
-g8346:
-  if (_trace) printf("g8346:\n");
+g8118:
+  if (_trace) printf("g8118:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -855,16 +855,16 @@ DoLshIM:
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
-g8347:
-  if (_trace) printf("g8347:\n");
+g8119:
+  if (_trace) printf("g8119:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
-  goto g8344;
+  goto g8116;
 
-g8343:
-  if (_trace) printf("g8343:\n");
+g8115:
+  if (_trace) printf("g8115:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
@@ -912,8 +912,8 @@ begindo32bitplus:
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
-g8349:
-  if (_trace) printf("g8349:\n");
+g8121:
+  if (_trace) printf("g8121:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -930,19 +930,19 @@ g8349:
   /* Strip CDR code if any. */
   t5 = t5 & 63;
   if (t4 != 0)
-    goto g8348;
+    goto g8120;
   t2 = (u32)t2;
   t5 = t5 - Type_Fixnum;
 
-g8350:
-  if (_trace) printf("g8350:\n");
+g8122:
+  if (_trace) printf("g8122:\n");
   if (t5 != 0)
-    goto g8348;
+    goto g8120;
   /* Perform the 32 bit Add. */
   t3 = t1 + t2;
 
-g8351:
-  if (_trace) printf("g8351:\n");
+g8123:
+  if (_trace) printf("g8123:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -956,10 +956,10 @@ Do32BitPlusIM:
   if (_trace) printf("Do32BitPlusIM:\n");
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
-  goto g8349;
+  goto g8121;
 
-g8348:
-  if (_trace) printf("g8348:\n");
+g8120:
+  if (_trace) printf("g8120:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
@@ -1007,8 +1007,8 @@ begindo32bitdifference:
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
-g8353:
-  if (_trace) printf("g8353:\n");
+g8125:
+  if (_trace) printf("g8125:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1025,19 +1025,19 @@ g8353:
   /* Strip CDR code if any. */
   t5 = t5 & 63;
   if (t4 != 0)
-    goto g8352;
+    goto g8124;
   t2 = (u32)t2;
   t5 = t5 - Type_Fixnum;
 
-g8354:
-  if (_trace) printf("g8354:\n");
+g8126:
+  if (_trace) printf("g8126:\n");
   if (t5 != 0)
-    goto g8352;
+    goto g8124;
   /* Perform the 32 bit Difference. */
   t3 = t1 - t2;
 
-g8355:
-  if (_trace) printf("g8355:\n");
+g8127:
+  if (_trace) printf("g8127:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -1051,10 +1051,10 @@ Do32BitDifferenceIM:
   if (_trace) printf("Do32BitDifferenceIM:\n");
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
-  goto g8353;
+  goto g8125;
 
-g8352:
-  if (_trace) printf("g8352:\n");
+g8124:
+  if (_trace) printf("g8124:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;

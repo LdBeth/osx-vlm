@@ -193,17 +193,17 @@ begindogreaterp:
   t4 = t1 & 63;
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
-g8001:
-  if (_trace) printf("g8001:\n");
+g7773:
+  if (_trace) printf("g7773:\n");
   if (t6 == 0)
-    goto g7989;
+    goto g7761;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
-g7993:
-  if (_trace) printf("g7993:\n");
+g7765:
+  if (_trace) printf("g7765:\n");
   if (t3 == 0)
-    goto g7984;
+    goto g7756;
   /* Here if argument TypeFixnum */
   t2 = arg4 - arg2;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -216,24 +216,24 @@ g7993:
   *(u64 *)iSP = t11;
   goto cachevalid;
 
-g7990:
-  if (_trace) printf("g7990:\n");
+g7762:
+  if (_trace) printf("g7762:\n");
 
-g7989:
-  if (_trace) printf("g7989:\n");
+g7761:
+  if (_trace) printf("g7761:\n");
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
-g8002:
-  if (_trace) printf("g8002:\n");
+g7774:
+  if (_trace) printf("g7774:\n");
   if (t6 == 0)
-    goto g7994;
+    goto g7766;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
-g7998:
-  if (_trace) printf("g7998:\n");
+g7770:
+  if (_trace) printf("g7770:\n");
   if (t3 == 0)
-    goto g7984;
+    goto g7756;
   /* Here if argument TypeSingleFloat */
 
 greaterpmmexcfltflt:
@@ -251,19 +251,19 @@ greaterpmmexcfltflt:
   *(u64 *)iSP = t11;
   goto cachevalid;
 
-g7995:
-  if (_trace) printf("g7995:\n");
+g7767:
+  if (_trace) printf("g7767:\n");
 
-g7994:
-  if (_trace) printf("g7994:\n");
+g7766:
+  if (_trace) printf("g7766:\n");
   /* Here for all other cases */
 
-g7984:
-  if (_trace) printf("g7984:\n");
+g7756:
+  if (_trace) printf("g7756:\n");
   goto greaterpmmexc;
 
-g7988:
-  if (_trace) printf("g7988:\n");
+g7760:
+  if (_trace) printf("g7760:\n");
 #ifdef TRACING
   goto DoGreaterpIM;
 #endif
@@ -284,10 +284,10 @@ DoGreaterpIM:
   t3 = arg3 & 63;
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
-g8007:
-  if (_trace) printf("g8007:\n");
+g7779:
+  if (_trace) printf("g7779:\n");
   if (t4 == 0)
-    goto g8004;
+    goto g7776;
   /* Here if argument TypeFixnum */
   t2 = arg4 - arg2;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -299,8 +299,8 @@ g8007:
   *(u64 *)iSP = t11;
   goto cachevalid;
 
-g8004:
-  if (_trace) printf("g8004:\n");
+g7776:
+  if (_trace) printf("g7776:\n");
   /* Here for all other cases */
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
@@ -312,8 +312,8 @@ g8004:
   arg4 = 1;
   goto numericexception;
 
-g8003:
-  if (_trace) printf("g8003:\n");
+g7775:
+  if (_trace) printf("g7775:\n");
 
 /* end DoGreaterp */
   /* End of Halfword operand from stack instruction - DoGreaterp */
@@ -376,17 +376,17 @@ begindologtest:
   t4 = t1 & 63;
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
-g8020:
-  if (_trace) printf("g8020:\n");
+g7792:
+  if (_trace) printf("g7792:\n");
   if (t6 == 0)
-    goto g8013;
+    goto g7785;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
-g8017:
-  if (_trace) printf("g8017:\n");
+g7789:
+  if (_trace) printf("g7789:\n");
   if (t3 == 0)
-    goto g8010;
+    goto g7782;
   /* Here if argument TypeFixnum */
   t2 = arg4 & arg2;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -399,15 +399,15 @@ g8017:
   *(u64 *)iSP = t11;
   goto cachevalid;
 
-g8014:
-  if (_trace) printf("g8014:\n");
+g7786:
+  if (_trace) printf("g7786:\n");
 
-g8013:
-  if (_trace) printf("g8013:\n");
+g7785:
+  if (_trace) printf("g7785:\n");
   /* Here for all other cases */
 
-g8009:
-  if (_trace) printf("g8009:\n");
+g7781:
+  if (_trace) printf("g7781:\n");
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
   /* arg3 = stackp */
@@ -417,10 +417,10 @@ g8009:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g8011;
+  goto g7783;
 
-g8010:
-  if (_trace) printf("g8010:\n");
+g7782:
+  if (_trace) printf("g7782:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -431,11 +431,11 @@ g8010:
   arg4 = 1;
   goto numericexception;
 
-g8011:
-  if (_trace) printf("g8011:\n");
+g7783:
+  if (_trace) printf("g7783:\n");
 
-g8012:
-  if (_trace) printf("g8012:\n");
+g7784:
+  if (_trace) printf("g7784:\n");
 #ifdef TRACING
   goto DoLogtestIM;
 #endif
@@ -456,10 +456,10 @@ DoLogtestIM:
   t3 = arg3 & 63;
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
-g8025:
-  if (_trace) printf("g8025:\n");
+g7797:
+  if (_trace) printf("g7797:\n");
   if (t4 == 0)
-    goto g8022;
+    goto g7794;
   /* Here if argument TypeFixnum */
   t2 = arg4 & arg2;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -471,8 +471,8 @@ g8025:
   *(u64 *)iSP = t11;
   goto cachevalid;
 
-g8022:
-  if (_trace) printf("g8022:\n");
+g7794:
+  if (_trace) printf("g7794:\n");
   /* Here for all other cases */
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
@@ -484,8 +484,8 @@ g8022:
   arg4 = 1;
   goto numericexception;
 
-g8021:
-  if (_trace) printf("g8021:\n");
+g7793:
+  if (_trace) printf("g7793:\n");
 
 /* end DoLogtest */
   /* End of Halfword operand from stack instruction - DoLogtest */
@@ -500,54 +500,54 @@ equalnumbermmexc:
   t4 = t1 & 63;
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
-g8043:
-  if (_trace) printf("g8043:\n");
+g7815:
+  if (_trace) printf("g7815:\n");
   if (t6 == 0)
-    goto g8031;
+    goto g7803;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
-g8035:
-  if (_trace) printf("g8035:\n");
+g7807:
+  if (_trace) printf("g7807:\n");
   if (t3 == 0)
-    goto g8028;
+    goto g7800;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQS(1, f1, f31, 1, f1);
   goto equalnumbermmexcfltflt;
 
-g8032:
-  if (_trace) printf("g8032:\n");
+g7804:
+  if (_trace) printf("g7804:\n");
 
-g8031:
-  if (_trace) printf("g8031:\n");
+g7803:
+  if (_trace) printf("g7803:\n");
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
-g8044:
-  if (_trace) printf("g8044:\n");
+g7816:
+  if (_trace) printf("g7816:\n");
   if (t6 == 0)
-    goto g8036;
+    goto g7808;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
-g8040:
-  if (_trace) printf("g8040:\n");
+g7812:
+  if (_trace) printf("g7812:\n");
   if (t3 == 0)
-    goto g8028;
+    goto g7800;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQS(2, f2, f31, 2, f2);
   goto equalnumbermmexcfltflt;
 
-g8037:
-  if (_trace) printf("g8037:\n");
+g7809:
+  if (_trace) printf("g7809:\n");
 
-g8036:
-  if (_trace) printf("g8036:\n");
+g7808:
+  if (_trace) printf("g7808:\n");
   /* Here for all other cases */
 
-g8027:
-  if (_trace) printf("g8027:\n");
+g7799:
+  if (_trace) printf("g7799:\n");
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
   /* arg3 = stackp */
@@ -557,10 +557,10 @@ g8027:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g8029;
+  goto g7801;
 
-g8028:
-  if (_trace) printf("g8028:\n");
+g7800:
+  if (_trace) printf("g7800:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -571,11 +571,11 @@ g8028:
   arg4 = 1;
   goto numericexception;
 
-g8029:
-  if (_trace) printf("g8029:\n");
+g7801:
+  if (_trace) printf("g7801:\n");
 
-g8030:
-  if (_trace) printf("g8030:\n");
+g7802:
+  if (_trace) printf("g7802:\n");
 
 /* end EqualNumberMMExc */
 /* start LesspMMExc */
@@ -589,54 +589,54 @@ lesspmmexc:
   t4 = t1 & 63;
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
-g8062:
-  if (_trace) printf("g8062:\n");
+g7834:
+  if (_trace) printf("g7834:\n");
   if (t6 == 0)
-    goto g8050;
+    goto g7822;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
-g8054:
-  if (_trace) printf("g8054:\n");
+g7826:
+  if (_trace) printf("g7826:\n");
   if (t3 == 0)
-    goto g8047;
+    goto g7819;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQS(1, f1, f31, 1, f1);
   goto lesspmmexcfltflt;
 
-g8051:
-  if (_trace) printf("g8051:\n");
+g7823:
+  if (_trace) printf("g7823:\n");
 
-g8050:
-  if (_trace) printf("g8050:\n");
+g7822:
+  if (_trace) printf("g7822:\n");
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
-g8063:
-  if (_trace) printf("g8063:\n");
+g7835:
+  if (_trace) printf("g7835:\n");
   if (t6 == 0)
-    goto g8055;
+    goto g7827;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
-g8059:
-  if (_trace) printf("g8059:\n");
+g7831:
+  if (_trace) printf("g7831:\n");
   if (t3 == 0)
-    goto g8047;
+    goto g7819;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQS(2, f2, f31, 2, f2);
   goto lesspmmexcfltflt;
 
-g8056:
-  if (_trace) printf("g8056:\n");
+g7828:
+  if (_trace) printf("g7828:\n");
 
-g8055:
-  if (_trace) printf("g8055:\n");
+g7827:
+  if (_trace) printf("g7827:\n");
   /* Here for all other cases */
 
-g8046:
-  if (_trace) printf("g8046:\n");
+g7818:
+  if (_trace) printf("g7818:\n");
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
   /* arg3 = stackp */
@@ -646,10 +646,10 @@ g8046:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g8048;
+  goto g7820;
 
-g8047:
-  if (_trace) printf("g8047:\n");
+g7819:
+  if (_trace) printf("g7819:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -660,11 +660,11 @@ g8047:
   arg4 = 1;
   goto numericexception;
 
-g8048:
-  if (_trace) printf("g8048:\n");
+g7820:
+  if (_trace) printf("g7820:\n");
 
-g8049:
-  if (_trace) printf("g8049:\n");
+g7821:
+  if (_trace) printf("g7821:\n");
 
 /* end LesspMMExc */
 /* start GreaterpMMExc */
@@ -678,54 +678,54 @@ greaterpmmexc:
   t4 = t1 & 63;
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
-g8081:
-  if (_trace) printf("g8081:\n");
+g7853:
+  if (_trace) printf("g7853:\n");
   if (t6 == 0)
-    goto g8069;
+    goto g7841;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
-g8073:
-  if (_trace) printf("g8073:\n");
+g7845:
+  if (_trace) printf("g7845:\n");
   if (t3 == 0)
-    goto g8066;
+    goto g7838;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
   CVTQS(1, f1, f31, 1, f1);
   goto greaterpmmexcfltflt;
 
-g8070:
-  if (_trace) printf("g8070:\n");
+g7842:
+  if (_trace) printf("g7842:\n");
 
-g8069:
-  if (_trace) printf("g8069:\n");
+g7841:
+  if (_trace) printf("g7841:\n");
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
-g8082:
-  if (_trace) printf("g8082:\n");
+g7854:
+  if (_trace) printf("g7854:\n");
   if (t6 == 0)
-    goto g8074;
+    goto g7846;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
-g8078:
-  if (_trace) printf("g8078:\n");
+g7850:
+  if (_trace) printf("g7850:\n");
   if (t3 == 0)
-    goto g8066;
+    goto g7838;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
   CVTQS(2, f2, f31, 2, f2);
   goto greaterpmmexcfltflt;
 
-g8075:
-  if (_trace) printf("g8075:\n");
+g7847:
+  if (_trace) printf("g7847:\n");
 
-g8074:
-  if (_trace) printf("g8074:\n");
+g7846:
+  if (_trace) printf("g7846:\n");
   /* Here for all other cases */
 
-g8065:
-  if (_trace) printf("g8065:\n");
+g7837:
+  if (_trace) printf("g7837:\n");
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
   /* arg3 = stackp */
@@ -735,10 +735,10 @@ g8065:
   /* arg4 = arithmeticp */
   arg4 = 1;
   goto numericexception;
-  goto g8067;
+  goto g7839;
 
-g8066:
-  if (_trace) printf("g8066:\n");
+g7838:
+  if (_trace) printf("g7838:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -749,11 +749,11 @@ g8066:
   arg4 = 1;
   goto numericexception;
 
-g8067:
-  if (_trace) printf("g8067:\n");
+g7839:
+  if (_trace) printf("g7839:\n");
 
-g8068:
-  if (_trace) printf("g8068:\n");
+g7840:
+  if (_trace) printf("g7840:\n");
 
 /* end GreaterpMMExc */
   /* Fin. */

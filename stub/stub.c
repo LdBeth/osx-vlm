@@ -6,6 +6,15 @@
 #include <setjmp.h>
 #include "std.h"
 
+#if defined(OS_DARWIN)
+/* glibc's fedisableexcept() has no macOS equivalent. The sole live use disables
+   the FE_INEXACT trap, which is already off by default on Darwin, and the VLM
+   raises float traps in emulated code rather than via host FP signals (there is
+   no feenableexcept anywhere), so a no-op is behavior-preserving. feclearexcept
+   is standard C99 and is provided by <fenv.h>. */
+#define fedisableexcept(excepts) ((void)0)
+#endif
+
 #ifdef STATISTICS
 #ifdef EXECTIMES
 #include <sys/times.h>
@@ -152,8 +161,14 @@ hwdispatch	22	; = T9 (the halfword dispatch table)
 #define fwdispatch	r21
 #define hwdispatch	r22
 
+#if defined(ARCH_X86_64)
 #define rdtscll(val) \
      __asm__ __volatile__ ("rdtsc" : "=A" (val))
+#else
+/* rdtscll is currently unused; provide a portable no-op definition so the
+   x86-only rdtsc instruction never reaches a non-x86 assembler. */
+#define rdtscll(val) ((val) = 0)
+#endif
 
 
 // these need to be in-line for DECODEFAULT to work
@@ -541,7 +556,13 @@ int iInterpret (PROCESSORSTATEP ivoryp) {
   int im1 ;
 
   arexp = &&arex;
+#if defined(ARCH_X86_64)
   asm("movq %%rsp,%0" : "=m"(iipsp) : : );
+#elif defined(ARCH_AARCH64)
+  asm("mov %0, sp" : "=r"(iipsp) : : );
+#else
+  iipsp = (uint64_t)__builtin_frame_address(0);
+#endif
   //
 #include "dispatch"
 #ifdef STATISTICS
@@ -555,6 +576,11 @@ int iInterpret (PROCESSORSTATEP ivoryp) {
 #endif // EXECTIMES
 #endif
 
+/* dumpcache and show_loc are nested functions (they reference iInterpret's
+   locals).  clang does not implement GCC's nested-function extension, but both
+   are dead debug code -- dumpcache is never called and show_loc only under
+   the always-false `if (_show)` -- so exclude them when building with clang. */
+#if !defined(__clang__)
 void
 dumpcache(PROCESSORSTATEP p)
 {
@@ -621,6 +647,7 @@ show_loc(void)
 	 (int)(0xf8000101 + ((iSP - bsp) / 8)),
 	 cc, t, v, str ? " " : "", str ? str : "");
 }
+#endif /* !__clang__ (nested debug functions) */
 
 
 //  printf("[iInterpret]\n");

@@ -145,7 +145,7 @@ settocdrpushcarlocative:
   arg2 = t2;
   /* Memory Read Internal */
 
-g7187:
+g6959:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
   arg5 = LDQ_U(t7);
@@ -157,16 +157,16 @@ g7187:
   arg6 = *(s32 *)arg6;
   arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
-    goto g7189;
+    goto g6961;
 
-g7188:
+g6960:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   if (t8 & 1)
-    goto g7191;
+    goto g6963;
 
-g7198:
+g6970:
   /* TagType. */
   t1 = t1 & 63;
   *(u32 *)(iSP + 8) = arg6;
@@ -180,23 +180,23 @@ g7198:
   *(u32 *)(arg1 + 4) = arg5;
   goto NEXTINSTRUCTION;
 
-g7191:
-  if (_trace) printf("g7191:\n");
+g6963:
+  if (_trace) printf("g6963:\n");
   if ((t7 & 1) == 0)
-    goto g7190;
+    goto g6962;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
-  goto g7187;
+  goto g6959;
 
-g7190:
-  if (_trace) printf("g7190:\n");
+g6962:
+  if (_trace) printf("g6962:\n");
 
-g7189:
-  if (_trace) printf("g7189:\n");
+g6961:
+  if (_trace) printf("g6961:\n");
   r0 = (u64)&&return0042;
   goto memoryreaddatadecode;
 return0042:
-  goto g7198;
+  goto g6970;
 
 /* end SetToCdrPushCarLocative */
 /* start DoAssoc */
@@ -261,7 +261,7 @@ begindoassoc:
   if (t5 & 1)
     goto assocexc;
   t6 = zero;
-  goto g7200;
+  goto g6972;
 
 assoccdr:
   if (_trace) printf("assoccdr:\n");
@@ -272,14 +272,14 @@ assoccdr:
   t1 = arg5 & 63;
   t2 = arg6;
 
-g7200:
-  if (_trace) printf("g7200:\n");
+g6972:
+  if (_trace) printf("g6972:\n");
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
   if (t6 != 0)
-    goto g7199;
+    goto g6971;
   if (t5 == 0)
-    goto g7201;
+    goto g6973;
   r0 = (u64)&&return0043;
   goto carcdrinternal;
 return0043:
@@ -287,17 +287,17 @@ return0043:
   t7 = t1 & 63;
   t8 = (t7 == Type_List) ? 1 : 0;
 
-g7219:
-  if (_trace) printf("g7219:\n");
+g6991:
+  if (_trace) printf("g6991:\n");
   if (t8 == 0)
-    goto g7203;
+    goto g6975;
   /* Here if argument TypeList */
   arg2 = t2;
   t3 = arg5;
   arg1 = arg6;
   /* Memory Read Internal */
 
-g7204:
+g6976:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
   arg5 = LDQ_U(t7);
@@ -309,16 +309,16 @@ g7204:
   arg6 = *(s32 *)arg6;
   arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
-    goto g7206;
+    goto g6978;
 
-g7205:
+g6977:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   if (t8 & 1)
-    goto g7208;
+    goto g6980;
 
-g7215:
+g6987:
   /* TagType. */
   t5 = arg5 & 63;
   arg5 = t3;
@@ -341,19 +341,19 @@ g7215:
   *(u32 *)(iSP + 4) = t1;
   goto NEXTINSTRUCTION;
 
-g7203:
-  if (_trace) printf("g7203:\n");
+g6975:
+  if (_trace) printf("g6975:\n");
   t8 = (t7 == Type_NIL) ? 1 : 0;
 
-g7220:
-  if (_trace) printf("g7220:\n");
+g6992:
+  if (_trace) printf("g6992:\n");
   if (t8 == 0)
-    goto g7216;
+    goto g6988;
   /* Here if argument TypeNIL */
   goto assoccdr;
 
-g7216:
-  if (_trace) printf("g7216:\n");
+g6988:
+  if (_trace) printf("g6988:\n");
   /* Here for all other cases */
   /* SetTag. */
   t1 = arg4 << 32;
@@ -362,11 +362,11 @@ g7216:
   arg2 = 14;
   goto illegaloperand;
 
-g7202:
-  if (_trace) printf("g7202:\n");
+g6974:
+  if (_trace) printf("g6974:\n");
 
-g7201:
-  if (_trace) printf("g7201:\n");
+g6973:
+  if (_trace) printf("g6973:\n");
   /* Return NIL */
   t1 = *(u64 *)&(processor->niladdress);
   /* push the data */
@@ -383,26 +383,26 @@ assocexc:
   arg4 = 0;
   goto exception;
 
-g7208:
-  if (_trace) printf("g7208:\n");
+g6980:
+  if (_trace) printf("g6980:\n");
   if ((t7 & 1) == 0)
-    goto g7207;
+    goto g6979;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
-  goto g7204;
+  goto g6976;
 
-g7207:
-  if (_trace) printf("g7207:\n");
+g6979:
+  if (_trace) printf("g6979:\n");
 
-g7206:
-  if (_trace) printf("g7206:\n");
+g6978:
+  if (_trace) printf("g6978:\n");
   r0 = (u64)&&return0044;
   goto memoryreaddatadecode;
 return0044:
-  goto g7215;
+  goto g6987;
 
-g7199:
-  if (_trace) printf("g7199:\n");
+g6971:
+  if (_trace) printf("g6971:\n");
   iSP = *(u64 *)&(processor->restartsp);
   goto INTERPRETINSTRUCTION;
 #ifdef TRACING
@@ -475,7 +475,7 @@ begindomember:
   if (t5 & 1)
     goto memberexc;
   t6 = zero;
-  goto g7222;
+  goto g6994;
 
 membercdr:
   if (_trace) printf("membercdr:\n");
@@ -486,17 +486,17 @@ membercdr:
   t1 = arg5 & 63;
   t2 = arg6;
 
-g7222:
-  if (_trace) printf("g7222:\n");
+g6994:
+  if (_trace) printf("g6994:\n");
   /* TagType. */
   t3 = t1 & 63;
   arg1 = t2;
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
   if (t6 != 0)
-    goto g7221;
+    goto g6993;
   if (t5 == 0)
-    goto g7223;
+    goto g6995;
   r0 = (u64)&&return0045;
   goto carcdrinternal;
 return0045:
@@ -518,8 +518,8 @@ return0045:
   *(u32 *)(iSP + 4) = t3;
   goto NEXTINSTRUCTION;
 
-g7223:
-  if (_trace) printf("g7223:\n");
+g6995:
+  if (_trace) printf("g6995:\n");
   /* Return NIL */
   t1 = *(u64 *)&(processor->niladdress);
   /* push the data */
@@ -536,8 +536,8 @@ memberexc:
   arg4 = 0;
   goto exception;
 
-g7221:
-  if (_trace) printf("g7221:\n");
+g6993:
+  if (_trace) printf("g6993:\n");
   iSP = *(u64 *)&(processor->restartsp);
   goto INTERPRETINSTRUCTION;
 #ifdef TRACING
@@ -610,7 +610,7 @@ begindorgetf:
   if (t5 & 1)
     goto rgetfexc;
   t6 = zero;
-  goto g7225;
+  goto g6997;
 
 rgetfcdr:
   if (_trace) printf("rgetfcdr:\n");
@@ -624,14 +624,14 @@ return0046:
   t1 = arg5 & 63;
   t2 = arg6;
 
-g7225:
-  if (_trace) printf("g7225:\n");
+g6997:
+  if (_trace) printf("g6997:\n");
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
   if (t6 != 0)
-    goto g7224;
+    goto g6996;
   if (t5 == 0)
-    goto g7226;
+    goto g6998;
   r0 = (u64)&&return0047;
   goto carcdrinternal;
 return0047:
@@ -675,8 +675,8 @@ return0048:
   iSP = iSP + 8;
   goto NEXTINSTRUCTION;
 
-g7226:
-  if (_trace) printf("g7226:\n");
+g6998:
+  if (_trace) printf("g6998:\n");
   /* Return NIL */
   arg2 = *(u64 *)&(processor->niladdress);
   *(u64 *)iSP = arg2;
@@ -695,8 +695,8 @@ rgetfexc:
   arg4 = 0;
   goto exception;
 
-g7224:
-  if (_trace) printf("g7224:\n");
+g6996:
+  if (_trace) printf("g6996:\n");
   iSP = *(u64 *)&(processor->restartsp);
   goto INTERPRETINSTRUCTION;
 #ifdef TRACING

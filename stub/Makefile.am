@@ -11,13 +11,17 @@ libstub_a_SOURCES = stub.c
 stub.o:	blanks.c @abs_top_srcdir@/stub/i*.c float2 dispatch stub.c clisp-support.lisp process.lisp
 
 @abs_top_srcdir@/stub/i*.c: @abs_top_srcdir@/alpha-emulator/*.as @abs_top_srcdir@/alpha-emulator/*.lisp @abs_top_srcdir@/alpha-emulator/*.c @abs_top_srcdir@/alpha-emulator/*.h @abs_top_srcdir@/emulator/aihead* @abs_top_srcdir@/stub/*.lisp @abs_top_srcdir@/assembler/*.lisp 
+if HSBCL
+	$(SBCL) --script process.lisp
+else
 if HCLISP
 	$(CLISP) process.lisp
 else
 	@echo
-	@echo "you don't seem to have clisp installed. Unable to compile $< to $@"
+	@echo "you don't seem to have sbcl or clisp installed. Unable to compile $< to $@"
 	@echo
-	@exit -1
+	@exit 1
+endif
 endif
 
 clean-local:	clean-local-check
