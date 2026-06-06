@@ -179,10 +179,10 @@ AUTOMAKE = ${SHELL} '/Users/ldbeth/Public/Projects/linux-vlm/missing' automake-1
 AWK = nawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2 -fgnu89-inline -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-error=incompatible-function-pointer-types -g0 -fno-strict-aliasing -march=native -Wall
+CFLAGS = -g -O2 -fgnu89-inline -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-error=incompatible-function-pointer-types -g0 -fno-strict-aliasing -march=native -Wall -fblocks
 CLISP = 
 CPP = gcc -E
-CPPFLAGS =  -I/opt/X11/include -DGENERA -DAUTOSTART -DUSE_TAP
+CPPFLAGS =  -I/opt/X11/include -DGENERA -DAUTOSTART -DUSE_TAP -DUSE_VMNET
 CSCOPE = cscope
 CTAGS = ctags
 CYGPATH_W = echo
@@ -200,7 +200,7 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LDFLAGS =  -L/opt/X11/lib
 LIBOBJS = 
-LIBS = -lpthread -lm -ldl -lc -lX11 
+LIBS = -lpthread -lm -ldl -lc -lX11  -framework vmnet
 LTLIBOBJS = 
 MAKEINFO = ${SHELL} '/Users/ldbeth/Public/Projects/linux-vlm/missing' makeinfo
 MKDIR_P = mkdir -p
@@ -217,6 +217,7 @@ PTHREAD_CC = gcc
 PTHREAD_CFLAGS = -D_THREAD_SAFE 
 PTHREAD_LIBS = 
 RANLIB = ranlib
+SBCL = /usr/local/bin/sbcl
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 

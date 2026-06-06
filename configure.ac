@@ -64,13 +64,15 @@ ACX_PTHREAD([],
 	[AC_MSG_ERROR([you need pthreads to compile the vlm])])
 AC_CHECK_LIB([pthread], [pthread_cancel],[],
 		    [AC_MSG_ERROR([you need libpthread to compile the vlm])])
-# need clisp
+# need a Common Lisp to (re)generate stub/*.c -- prefer SBCL, fall back to CLISP
+AC_PATH_PROGS([SBCL],[sbcl])
 AC_PATH_PROGS([CLISP],[clisp])
-if test -z "$CLISP" || test "X$CLISP" = "Xno"; then
-   AC_MSG_WARN([clisp has not been detected on your system.
+if test -z "$SBCL" && { test -z "$CLISP" || test "X$CLISP" = "Xno"; }; then
+   AC_MSG_WARN([neither sbcl nor clisp has been detected on your system.
    		You won't be able to (re)generate stub/*.c files
 		from alpha-emulator/*.as and ...*.lisp files])
 fi
+AM_CONDITIONAL([HSBCL], [test -n "$SBCL" && test "X$SBCL" != Xno])
 AM_CONDITIONAL([HCLISP], [test "x$CLISP" != x])
 
 # Checks for header files.
@@ -290,6 +292,30 @@ then
 else
     AS_ECHO(["using tun network interface"])
     CPPFLAGS+=" -DUSE_TUN"
+fi
+
+# Apple vmnet.framework backend (Darwin only).  Without it the macOS network
+# backend runs as a sink (boots Genera but moves no host traffic).  vmnet.h
+# pulls in CoreFoundation and the event callbacks are Objective-C blocks, so
+# -fblocks is required, and -framework vmnet must be on the link line.
+AC_ARG_WITH(vmnet,
+	AS_HELP_STRING([--with-vmnet],
+		[use Apple vmnet.framework for host networking (Darwin only, default=no)]),
+	[],
+	[with_vmnet=no])
+if test ! -z $with_vmnet && test "x$with_vmnet" = "xyes"
+then
+    case $host_os in
+      darwin*)
+	AS_ECHO(["using vmnet.framework for host networking"])
+	CPPFLAGS+=" -DUSE_VMNET"
+	CFLAGS+=" -fblocks"
+	LIBS+=" -framework vmnet"
+	;;
+      *)
+	AC_MSG_ERROR([--with-vmnet is only supported on macOS (Darwin)])
+	;;
+    esac
 fi
 
 AC_CONFIG_FILES([Makefile
