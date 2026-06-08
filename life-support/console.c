@@ -650,8 +650,8 @@ void CloseDisplay (EmbConsoleChannel* consoleChannel)
 	  {
 		begin_MUTEX_LOCKED (XLock);
 		// jj
-		handle = dlopen("libX11-xcb.so.1", RTLD_LAZY );
-//		fprintf(stderr,"handle =%p\n", handle);
+		handle = dlopen("/opt/X11/lib/libX11-xcb.dylib", RTLD_LAZY );
+		// fprintf(stderr,"handle =%p\n", handle);
 		if (haveXcb == XcbLoaded) {
 		  xcb_connection_t *c ;
 
@@ -661,7 +661,7 @@ void CloseDisplay (EmbConsoleChannel* consoleChannel)
 		  if (xcbdisconnect == NULL) 
 			  xcbdisconnect = dlsym( RTLD_NEXT, "xcb_disconnect");
 
-//		  fprintf(stderr,"xgetxcbconnection = %p\n",xgetxcbconnection);
+		  // fprintf(stderr,"xgetxcbconnection = %p\n",xgetxcbconnection);
 		  c = xgetxcbconnection(consoleChannel->display);
 		  xcbflush(c);
 		  xcbdisconnect(c);
