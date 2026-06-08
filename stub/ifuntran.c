@@ -15,7 +15,7 @@ nativeexception:
   /* Restore SP (Just in case?) */
   iSP = *(u64 *)&(processor->restartsp);
   *(u64 *)&processor->linkage = zero;
-  goto *t1; /* ret */
+  goto *(void *)t1; /* ret */
 
 /* end NativeException */
 /* start PadPastAref1 */
@@ -37,7 +37,7 @@ padpastaref1:
   /* Restore SP (Just in case?) */
   iSP = *(u64 *)&(processor->restartsp);
   *(u64 *)&processor->linkage = zero;
-  goto *t1; /* ret */
+  goto *(void *)t1; /* ret */
 
 /* end PadPastAref1 */
 /* start CarSubroutine */
@@ -59,7 +59,7 @@ return0093:
   r0 = *(u64 *)sp;
   *(u64 *)&processor->linkage = zero;
   sp = sp + 8;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 /* end CarSubroutine */
 /* start CdrSubroutine */
@@ -81,7 +81,7 @@ return0094:
   r0 = *(u64 *)sp;
   *(u64 *)&processor->linkage = zero;
   sp = sp + 8;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 /* end CdrSubroutine */
 /* start CarCdrSubroutine */
@@ -103,7 +103,7 @@ return0095:
   r0 = *(u64 *)sp;
   *(u64 *)&processor->linkage = zero;
   sp = sp + 8;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 /* end CarCdrSubroutine */
 

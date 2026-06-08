@@ -72,7 +72,7 @@ g8669:
     goto g8645;
   *(u32 *)&processor->fp0 = arg6;
   sp = sp + 8;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 g8662:
   if (_trace) printf("g8662:\n");
@@ -187,7 +187,7 @@ g8672:
   STQ_U(t5, t7);
   *(u32 *)t8 = arg6;
   sp = sp + 8;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 g8670:
   if (_trace) printf("g8670:\n");

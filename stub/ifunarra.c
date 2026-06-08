@@ -1934,12 +1934,12 @@ g7583:
 g7538:
   if (_trace) printf("g7538:\n");
   t2 = ReturnValue_Exception;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 g7546:
   if (_trace) printf("g7546:\n");
   t2 = ReturnValue_Normal;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 g7623:
   if (_trace) printf("g7623:\n");

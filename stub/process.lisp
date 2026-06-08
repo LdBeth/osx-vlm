@@ -1607,7 +1607,7 @@
 
 	(JMP
 	 (check-comment arg4)
-	 (format destination "    goto *~A; /* jmp */~%"
+	 (format destination "    goto *(void *)~A; /* jmp */~%"
 		 (fixarg arg2)))
 
 	(JSR
@@ -2220,7 +2220,7 @@
 
 	(RET
 	 (if (eq arg1 'zero)
-	     (format destination "  goto *~A; /* ret */~%" (fixarg arg2))
+	     (format destination "  goto *(void *)~A; /* ret */~%" (fixarg arg2))
 	   (format t "*** RET w/arg1")))
 
 	(TAGTYPE

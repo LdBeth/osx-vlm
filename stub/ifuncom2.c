@@ -1916,7 +1916,7 @@ g6596:
     goto g6599;
 
 g6604:
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 memoryreadwritedecode:
   if (_trace) printf("memoryreadwritedecode:\n");

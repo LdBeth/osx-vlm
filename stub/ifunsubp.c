@@ -3420,7 +3420,7 @@ cpwriteexc:
 
 getrpcc:
   if (_trace) printf("getrpcc:\n");
-  goto *ra; /* ret */
+  goto *(void *)ra; /* ret */
 
 /* end GetRPCC */
 /* start SpinWheels */
@@ -3436,7 +3436,7 @@ spinwheelaxis:
   arg1 = arg1 + -1;
   if ((s64)arg1 > 0)
     goto spinwheelaxis;
-  goto *ra; /* ret */
+  goto *(void *)ra; /* ret */
 
 /* end SpinWheels */
   /* Fin. */

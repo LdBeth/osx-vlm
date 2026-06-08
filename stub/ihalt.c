@@ -128,7 +128,7 @@ stopinterp:
   r29 = *(u64 *)&(processor->asrr29);
   r30 = *(u64 *)&(processor->asrr30);
   r14 = *(u64 *)&(processor->asrr14);
-  goto *ra; /* ret */
+  goto *(void *)ra; /* ret */
 
 /* end iOutOfLine */
 

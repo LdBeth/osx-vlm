@@ -524,7 +524,7 @@ g7322:
 g7313:
   if (_trace) printf("g7313:\n");
   sp = sp + 8;
-  goto *r0; /* ret */
+  goto *(void *)r0; /* ret */
 
 g7323:
   if (_trace) printf("g7323:\n");
