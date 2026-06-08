@@ -529,6 +529,7 @@ uint64_t _exectimes[0x2000];
 #endif // EXECTIMES
 #endif
 
+__attribute__((optnone))
 int iInterpret (PROCESSORSTATEP ivoryp) {
   PROCESSORSTATEP processor;
   u64 ivory = (u64)ivoryp;
@@ -541,13 +542,13 @@ int iInterpret (PROCESSORSTATEP ivoryp) {
   u64 iword, ecp, ocp, icsize;
   u64 volatile epc, opc;
   u64 volatile count;
-  u64 r9;
-  u64 volatile r10, r11;
-  u64 r12, r13, r14=0;
-  u64 volatile r15, r16;
+  u64 r9=0;
+  u64 volatile r10=0, r11=0;
+  u64 r12=0, r13=0, r14=0;
+  u64 volatile r15=0, r16;
   u64 volatile r17;
   u64 r18, r19;
-  u64 volatile r20, r21, r22, r23, r24, r25, r26, r27, r29;
+  u64 volatile r20, r21, r22, r23, r24, r25, r26, r27=0, r29=0;
   u64 sp;
   u64 r31 = 0;
   // 

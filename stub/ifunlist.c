@@ -243,7 +243,7 @@ begindoassoc:
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
   t5 = zero + -2048;
-  t5 = t5 + ((1) << 16);
+  t5 = t5 + ((u64)(1) << 16);
   arg3 = (u32)(arg6 >> ((4&7)*8));
   arg4 = (u32)arg6;
   t1 = *(s32 *)(arg1 + 4);
@@ -323,7 +323,7 @@ g6987:
   t5 = arg5 & 63;
   arg5 = t3;
   /* t6=0 if data same */
-  t6 = (s32)arg4 - (s32)arg6;
+  t6 = (s32)((u32)arg4 - (u32)arg6);
   arg6 = arg1;
   /* J. if different */
   if (t6 != 0)
@@ -457,7 +457,7 @@ begindomember:
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
   t5 = zero + -2048;
-  t5 = t5 + ((1) << 16);
+  t5 = t5 + ((u64)(1) << 16);
   arg3 = (u32)(arg6 >> ((4&7)*8));
   arg4 = (u32)arg6;
   t1 = *(s32 *)(arg1 + 4);
@@ -592,7 +592,7 @@ begindorgetf:
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
   t5 = zero + -2048;
-  t5 = t5 + ((1) << 16);
+  t5 = t5 + ((u64)(1) << 16);
   arg3 = (u32)(arg6 >> ((4&7)*8));
   arg4 = (u32)arg6;
   t1 = *(s32 *)(arg1 + 4);

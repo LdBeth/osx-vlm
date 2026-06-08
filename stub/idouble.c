@@ -165,7 +165,7 @@ consdoublefloat:
   t8 = (t5 * 4);
   t7 = LDQ_U(t5);
   t6 = (t9 & 0xff) << ((t5&7)*8);
-  t7 = t7 & ~(0xffL << (t5&7)*8);
+  t7 = t7 & ~(0xffUL << (t5&7)*8);
 
 g8671:
   if (_trace) printf("g8671:\n");
@@ -179,7 +179,7 @@ g8671:
   t8 = (t5 * 4);
   t7 = LDQ_U(t5);
   t6 = (t9 & 0xff) << ((t5&7)*8);
-  t7 = t7 & ~(0xffL << (t5&7)*8);
+  t7 = t7 & ~(0xffUL << (t5&7)*8);
 
 g8672:
   if (_trace) printf("g8672:\n");

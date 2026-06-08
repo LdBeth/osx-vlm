@@ -534,7 +534,7 @@ DoReturnSingleFP:
   arg5 = *(s32 *)&processor->control;
   /* Clear cdr */
   arg3 = arg6 << 26;
-  t3 = (12) << 16;
+  t3 = (u64)(12) << 16;
   t1 = *(u64 *)&(processor->niladdress);
   /* Clear cdr */
   arg3 = arg3 >> 26;
@@ -556,7 +556,7 @@ returncommontail:
   if (_trace) printf("returncommontail:\n");
   /* Restore machine state from frame header. */
   t3 = *(s32 *)iFP;
-  t1 = (1792) << 16;
+  t1 = (u64)(1792) << 16;
   t5 = *(s32 *)&processor->continuation;
   /* Mask */
   t1 = arg5 & t1;
@@ -571,7 +571,7 @@ returncommontail:
 #ifdef IVERIFY
   /* check for instruction verification suite end-of-test */
   /* check for end of run */
-  t6 = (s32)t2 - (s32)Type_NIL;
+  t6 = (s32)((u32)t2 - (u32)Type_NIL);
   if (t6 == 0)
     goto g6087;
 #endif
@@ -602,7 +602,7 @@ g6089:
   t1 = t1 & 255;
   /* *8 */
   t1 = (t1 * 8) + 0;
-  t2 = (2048) << 16;
+  t2 = (u64)(2048) << 16;
   t2 = t2 & arg5;
   /* Get the preempt-pending bit */
   t3 = *(s32 *)&processor->interruptreg;
@@ -732,7 +732,7 @@ g6102:
   t3 = *(s32 *)&processor->control;
   t6 = Type_Fixnum+0xC0;
   t8 = *(s32 *)&processor->continuation;
-  t5 = (64) << 16;
+  t5 = (u64)(64) << 16;
   /* Set CDR code 3 */
   t7 = t7 | 192;
   /* push continuation */
@@ -906,7 +906,7 @@ finishcallmerge:
   /* Set return address */
   *((u32 *)(&processor->continuation)+1) = t6;
   /* Update CP */
-  t7 = (4096) << 16;
+  t7 = (u64)(4096) << 16;
   t5 = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   t7 = t7 & t1;
   /* Shift into trace pending place */
@@ -1074,7 +1074,7 @@ g6104:
 
 verifygenericarity:
   if (_trace) printf("verifygenericarity:\n");
-  t11 = (2) << 16;
+  t11 = (u64)(2) << 16;
   t11 = t11 & arg2;
   /* not applying */
   if (t11 == 0)
@@ -1186,7 +1186,7 @@ g6114:
   t6 = t6 + t7;
   /* Update the arg size */
   t5 = t6 + t5;
-  t6 = (2) << 16;
+  t6 = (u64)(2) << 16;
   /* turn off cr.apply */
   t5 = t5 & ~t6;
   *(u32 *)&processor->control = t5;
@@ -1319,7 +1319,7 @@ g6137:
   /* Here if argument TypeNIL */
   /* Get the control register */
   t6 = *(s32 *)&processor->control;
-  t7 = (2) << 16;
+  t7 = (u64)(2) << 16;
   /* Discard that silly nil */
   iSP = iSP - 8;
   /* Blast away the apply arg bit. */
@@ -1711,7 +1711,7 @@ begindoaref1:
   /* Get the array tag/data */
   arg4 = (u32)arg6;
   /* (sign-extended, for fast bounds check) Index Data */
-  arg2 = (s32)arg1 + (s32)0;
+  arg2 = (s32)((u32)arg1 + (u32)0);
   t8 = zero + AutoArrayRegMask;
   t8 = arg4 & t8;
   /* Index Tag */
@@ -2035,7 +2035,7 @@ g6172:
   t2 = t2 & t3;
   t3 = 1;
   t3 = t3 << (ivorymemorydata & 63);
-  t2 = (s32)t2 + (s32)t5;
+  t2 = (s32)((u32)t2 + (u32)t5);
   /* Clear sign-extension */
   t2 = (u32)t2;
   t3 = (t2 * 4) + t3;
@@ -2044,7 +2044,7 @@ g6172:
   /* Fetch value */
   t9 = *(s32 *)(t3 + 4);
   /* Compare */
-  t5 = (s32)t1 - (s32)t2;
+  t5 = (s32)((u32)t1 - (u32)t2);
   /* Trap on miss */
   if (t5 != 0)
     goto g6175;
@@ -2167,7 +2167,7 @@ begindopointerplus:
   /* Get the data of op2 */
   t2 = *(s32 *)arg1;
   /* (%32-bit-plus (data arg1) (data arg2)) */
-  t3 = (s32)arg6 + (s32)t2;
+  t3 = (s32)((u32)arg6 + (u32)t2);
   /* Put result back on the stack */
   *(u32 *)iSP = t3;
   goto cachevalid;
@@ -2185,7 +2185,7 @@ DoPointerPlusIM:
 g6178:
   if (_trace) printf("g6178:\n");
   /* (%32-bit-plus (data arg1) (data arg2)) */
-  t3 = (s32)arg6 + (s32)t2;
+  t3 = (s32)((u32)arg6 + (u32)t2);
   /* Put result back on the stack */
   *(u32 *)iSP = t3;
   goto cachevalid;
@@ -2875,7 +2875,7 @@ g6244:
   t5 = (arg1 == arg5) ? 1 : 0;
   if (t5 == 0)
     goto g6232;
-  t5 = (s32)t1 - (s32)arg6;
+  t5 = (s32)((u32)t1 - (u32)arg6);
   if (t5 != 0)
     goto g6232;
 
@@ -3638,7 +3638,7 @@ DoReadInternalRegisterFP:
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   t2 = *(u64 *)&(processor->internalregisterread2);
-  t3 = (s32)arg1 - (s32)512;
+  t3 = (s32)((u32)arg1 - (u32)512);
   t1 = *(u64 *)&(processor->internalregisterread1);
   /* We're in the 1000's */
   if ((s64)t3 >= 0)
@@ -3696,7 +3696,7 @@ DoWriteInternalRegisterFP:
   /* Pop Stack. */
   iSP = iSP - 8;
   t2 = *(u64 *)&(processor->internalregisterwrite2);
-  t3 = (s32)arg1 - (s32)512;
+  t3 = (s32)((u32)arg1 - (u32)512);
   t1 = *(u64 *)&(processor->internalregisterwrite1);
   /* We're in the 1000's */
   if ((s64)t3 >= 0)
@@ -4069,7 +4069,7 @@ blockwrite:
   /* In range? */
   t7 = ((u64)t4 < (u64)t12) ? 1 : 0;
   t4 = (t2 & 0xff) << ((t8&7)*8);
-  t5 = t5 & ~(0xffL << (t8&7)*8);
+  t5 = t5 & ~(0xffUL << (t8&7)*8);
 
 g6364:
   if (_trace) printf("g6364:\n");
@@ -4320,7 +4320,7 @@ startcallcompiledmerge:
   t3 = *(s32 *)&processor->control;
   t6 = Type_Fixnum+0xC0;
   t8 = *(s32 *)&processor->continuation;
-  t5 = (64) << 16;
+  t5 = (u64)(64) << 16;
   /* Set CDR code 3 */
   t7 = t7 | 192;
   /* push continuation */

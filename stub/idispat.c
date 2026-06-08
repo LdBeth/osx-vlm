@@ -107,7 +107,7 @@ g6028:
   t5 = t5 & t6;
   t6 = 1;
   t6 = t6 << (ivorymemorydata & 63);
-  t5 = (s32)t5 + (s32)t7;
+  t5 = (s32)((u32)t5 + (u32)t7);
   /* Clear sign-extension */
   t5 = (u32)t5;
   t6 = (t5 * 4) + t6;
@@ -116,7 +116,7 @@ g6028:
   /* Fetch value */
   arg6 = *(s32 *)(t6 + 4);
   /* Compare */
-  t7 = (s32)arg2 - (s32)t5;
+  t7 = (s32)((u32)arg2 - (u32)t5);
   /* Trap on miss */
   if (t7 != 0)
     goto g6031;
@@ -238,7 +238,7 @@ g6039:
   t5 = t5 & t6;
   t6 = 1;
   t6 = t6 << (ivorymemorydata & 63);
-  t5 = (s32)t5 + (s32)t7;
+  t5 = (s32)((u32)t5 + (u32)t7);
   /* Clear sign-extension */
   t5 = (u32)t5;
   t6 = (t5 * 4) + t6;
@@ -247,7 +247,7 @@ g6039:
   /* Fetch value */
   arg6 = *(s32 *)(t6 + 4);
   /* Compare */
-  t7 = (s32)arg2 - (s32)t5;
+  t7 = (s32)((u32)arg2 - (u32)t5);
   /* Trap on miss */
   if (t7 != 0)
     goto g6042;
@@ -436,7 +436,7 @@ ICACHEMISS:
   epc = iPC & ~1L;
   ecp = epc >> (CacheLine_RShift & 63);
   arg1 = zero + -1;
-  arg1 = arg1 + ((4) << 16);
+  arg1 = arg1 + ((u64)(4) << 16);
   ecp = ecp << (CacheLine_LShift & 63);
   /* instn is instruction address here */
   instn = iPC >> 1;
@@ -822,7 +822,7 @@ interpretinstructionforbranch:
   /* get the base of the icache */
   t5 = *(u64 *)&(processor->icachebase);
   t4 = zero + -1;
-  t4 = t4 + ((4) << 16);
+  t4 = t4 + ((u64)(4) << 16);
   arg2 = iPC >> 10;
   t3 = zero + -64;
   arg2 = arg2 & t3;

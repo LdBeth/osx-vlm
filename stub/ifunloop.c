@@ -261,7 +261,7 @@ DoLoopDecrementTosFP:
   t3 = t3 & 63;
   if (t3 != 0)
     goto g6951;
-  t3 = (s32)t2 - (s32)1;
+  t3 = (s32)((u32)t2 - (u32)1);
   t4 = ((s64)t3 < (s64)t2) ? 1 : 0;
   if (t4 == 0)
     goto g6953;
@@ -350,7 +350,7 @@ DoLoopIncrementTosLessThanFP:
   t5 = t5 & 63;
   if (t5 != 0)
     goto g6955;
-  t5 = (s32)t2 + (s32)1;
+  t5 = (s32)((u32)t2 + (u32)1);
   t6 = ((s64)t2 <= (s64)t5) ? 1 : 0;
   if (t6 == 0)
     goto g6956;

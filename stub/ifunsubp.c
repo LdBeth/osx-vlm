@@ -262,7 +262,7 @@ begindoallocatelistblock:
     goto g7857;
   /* Fetch address */
   t1 = *(u64 *)&(processor->lcaddress);
-  t3 = (-16384) << 16;
+  t3 = (u64)(-16384) << 16;
   t3 = (u32)t3;
   /* Store remaining length */
   *(u32 *)&processor->lclength = t2;
@@ -281,7 +281,7 @@ begindoallocatelistblock:
   /* Already above emulator mode */
   if (t3 != 0)
     goto NEXTINSTRUCTION;
-  t3 = (16384) << 16;
+  t3 = (u64)(16384) << 16;
   t4 = t4 | t3;
   *(u32 *)&processor->control = t4;
   goto NEXTINSTRUCTION;
@@ -380,7 +380,7 @@ begindoallocatestructureblock:
     goto g7859;
   /* Fetch address */
   t1 = *(u64 *)&(processor->scaddress);
-  t3 = (-16384) << 16;
+  t3 = (u64)(-16384) << 16;
   t3 = (u32)t3;
   /* Store remaining length */
   *(u32 *)&processor->sclength = t2;
@@ -399,7 +399,7 @@ begindoallocatestructureblock:
   /* Already above emulator mode */
   if (t3 != 0)
     goto NEXTINSTRUCTION;
-  t3 = (16384) << 16;
+  t3 = (u64)(16384) << 16;
   t4 = t4 | t3;
   *(u32 *)&processor->control = t4;
   goto NEXTINSTRUCTION;
@@ -473,7 +473,7 @@ begindopointerdifference:
   /* Get the data of ARG2 */
   t2 = (u32)arg1;
   /* (%32-bit-difference (data arg1) (data arg2)) */
-  t3 = (s32)t1 - (s32)t2;
+  t3 = (s32)((u32)t1 - (u32)t2);
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   t4 = Type_Fixnum;
@@ -493,7 +493,7 @@ DoPointerDifferenceIM:
   t1 = *(s32 *)iSP;
   t2 = (s64)t2 >> 56;
   /* (%32-bit-difference (data arg1) (data arg2)) */
-  t3 = (s32)t1 - (s32)t2;
+  t3 = (s32)((u32)t1 - (u32)t2);
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   t4 = Type_Fixnum;
@@ -546,7 +546,7 @@ begindopointerincrement:
   /* Get the data of arg2 */
   t2 = *(s32 *)arg1;
   /* (%32-bit-plus (data arg1) 1) */
-  t3 = (s32)t2 + (s32)1;
+  t3 = (s32)((u32)t2 + (u32)1);
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* Put result back */
@@ -671,7 +671,7 @@ g7861:
 
 g7871:
   /* Check for data match - NOT */
-  t1 = (s32)arg4 - (s32)t5;
+  t1 = (s32)((u32)arg4 - (u32)t5);
   /* Zero if tags match */
   t2 = arg3 ^ t4;
   /* Jump if data didn't match */
@@ -699,7 +699,7 @@ g7871:
   /* In range? */
   t6 = ((u64)t2 < (u64)t6) ? 1 : 0;
   t2 = (t4 & 0xff) << ((t1&7)*8);
-  t3 = t3 & ~(0xffL << (t1&7)*8);
+  t3 = t3 & ~(0xffUL << (t1&7)*8);
 
 g7874:
   if (_trace) printf("g7874:\n");
@@ -810,7 +810,7 @@ g7867:
   t1 = t1 & t2;
   t2 = 1;
   t2 = t2 << (ivorymemorydata & 63);
-  t1 = (s32)t1 + (s32)t3;
+  t1 = (s32)((u32)t1 + (u32)t3);
   /* Clear sign-extension */
   t1 = (u32)t1;
   t2 = (t1 * 4) + t2;
@@ -819,7 +819,7 @@ g7867:
   /* Fetch value */
   t5 = *(s32 *)(t2 + 4);
   /* Compare */
-  t3 = (s32)arg6 - (s32)t1;
+  t3 = (s32)((u32)arg6 - (u32)t1);
   /* Trap on miss */
   if (t3 != 0)
     goto g7870;
@@ -916,7 +916,7 @@ begindomemorywrite:
   /* In range? */
   t5 = ((u64)t2 < (u64)t5) ? 1 : 0;
   t2 = (arg2 & 0xff) << ((t1&7)*8);
-  t3 = t3 & ~(0xffL << (t1&7)*8);
+  t3 = t3 & ~(0xffUL << (t1&7)*8);
 
 g7878:
   if (_trace) printf("g7878:\n");
@@ -1051,7 +1051,7 @@ g7889:
   /* In range? */
   t9 = ((u64)t7 < (u64)t9) ? 1 : 0;
   t7 = (t4 & 0xff) << ((t6&7)*8);
-  t8 = t8 & ~(0xffL << (t6&7)*8);
+  t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g7891:
   if (_trace) printf("g7891:\n");
@@ -1267,7 +1267,7 @@ begindojump:
   t5 = *(u64 *)&(processor->control);
   /* shift into cleanup-in-progress place */
   t6 = t6 << 17;
-  t7 = (128) << 16;
+  t7 = (u64)(128) << 16;
   /* Mask */
   t5 = t5 & ~t7;
   /* Set */
@@ -1354,7 +1354,7 @@ DoHaltFP:
   /* Isolate current trap mode (FEP mode = -1) */
   t1 = t1 >> 30;
   /* t1 is zero iff we're in trap mode FEP */
-  t1 = (s32)t1 + (s32)1;
+  t1 = (s32)((u32)t1 + (u32)1);
   if (t1 != 0)
     goto haltexc;
   goto haltmachine;
@@ -3196,7 +3196,7 @@ DoCoprocessorWriteFP:
   /* Get saved control register */
   t2 = *(s32 *)(iFP + 8);
   t2 = (u32)t2;
-  t3 = (256) << 16;
+  t3 = (u64)(256) << 16;
   /* Remove saved control register's trap-on-exit bit */
   t2 = t2 & ~t3;
   /* Extract control register's trap-on-exit bit */
@@ -3284,7 +3284,7 @@ g7967:
   /* get the base of the icache */
   t4 = *(u64 *)&(processor->icachebase);
   t3 = zero + -1;
-  t3 = t3 + ((4) << 16);
+  t3 = t3 + ((u64)(4) << 16);
   /* Now third byte is zero-shifted */
   t2 = t2 << (CacheLine_LShift & 63);
   t2 = t1 + t2;

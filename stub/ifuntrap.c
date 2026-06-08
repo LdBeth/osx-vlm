@@ -67,7 +67,7 @@ handleunwindprotect:
 #ifdef MINIMA
   t4 = t1 >> 32;
 #endif
-  t3 = (s32)t1 - (s32)t2;
+  t3 = (s32)((u32)t1 - (u32)t2);
   /* J. if binding level= binding stack */
   if (t3 == 0)
     goto g8508;
@@ -86,7 +86,7 @@ g8509:
   t4 = *(s32 *)&processor->control;
   /* vma only */
   t1 = (u32)t1;
-  arg1 = (512) << 16;
+  arg1 = (u64)(512) << 16;
   t5 = t1 - 1;
   t3 = t4 & arg1;
   /* Turn off the bit */
@@ -191,7 +191,7 @@ g8540:
   t9 = (t10 * 4);
   t12 = LDQ_U(t10);
   t11 = (t8 & 0xff) << ((t10&7)*8);
-  t12 = t12 & ~(0xffL << (t10&7)*8);
+  t12 = t12 & ~(0xffUL << (t10&7)*8);
 
 g8543:
   if (_trace) printf("g8543:\n");
@@ -218,7 +218,7 @@ g8541:
   t4 = t4 | t3;
   *(u32 *)&processor->control = t4;
   t1 = *(u64 *)&(processor->bindingstackpointer);
-  t3 = (s32)t1 - (s32)t2;
+  t3 = (s32)((u32)t1 - (u32)t2);
   /* J. if binding level/= binding stack */
   if (t3 != 0)
     goto g8509;
@@ -266,7 +266,7 @@ g8508:
   iPC = t5 & 1;
   iPC = t6 + iPC;
   iPC = t6 + iPC;
-  t1 = (128) << 16;
+  t1 = (u64)(128) << 16;
   arg1 = arg1 | t1;
   t10 = *(s32 *)(t3 + 16);
   t5 = *(s32 *)(t3 + 20);
@@ -847,7 +847,7 @@ exception:
 g8576:
   if (_trace) printf("g8576:\n");
   t1 = zero + -32768;
-  t1 = t1 + ((2) << 16);
+  t1 = t1 + ((u64)(2) << 16);
   t2 = arg2 & t1;
   t3 = (t1 == t2) ? 1 : 0;
   /* J. if not address-format operand */
@@ -973,7 +973,7 @@ g8585:
 g8582:
   if (_trace) printf("g8582:\n");
   t1 = zero + -32768;
-  t1 = t1 + ((2) << 16);
+  t1 = t1 + ((u64)(2) << 16);
   t2 = arg2 & t1;
   t3 = (t1 == t2) ? 1 : 0;
   /* J. if not address-format operand */
@@ -1106,7 +1106,7 @@ loopexception:
 g8588:
   if (_trace) printf("g8588:\n");
   t1 = zero + -32768;
-  t1 = t1 + ((2) << 16);
+  t1 = t1 + ((u64)(2) << 16);
   t2 = arg2 & t1;
   t3 = (t1 == t2) ? 1 : 0;
   /* J. if not address-format operand */
@@ -1171,7 +1171,7 @@ handleexception:
   t4 = *(s32 *)&processor->control;
   t9 = *(u64 *)&(processor->fepmodetrapvecaddress);
   t8 = *(u64 *)&(processor->trapvecbase);
-  t5 = (-16384) << 16;
+  t5 = (u64)(-16384) << 16;
   t6 = t4 >> 30;
   /* Set trap mode to 3 */
   t5 = t4 | t5;
@@ -1263,7 +1263,7 @@ g8592:
   t5 = *(s32 *)&processor->continuation;
   t7 = *((s32 *)(&processor->continuation)+1);
   t5 = (u32)t5;
-  t8 = (8192) << 16;
+  t8 = (u64)(8192) << 16;
   t4 = (u32)t4;
   t7 = t7 | 192;
   *(u32 *)iFP = t5;
@@ -1293,7 +1293,7 @@ g8592:
   /* Get CR mask */
   t7 = *(u64 *)&(processor->fccrtrapmask);
   /* 1<<18! */
-  t5 = (ValueDisposition_Value*4) << 16;
+  t5 = (u64)(ValueDisposition_Value*4) << 16;
   /* Arg size */
   t6 = iLP - iFP;
   /* Caller Frame Size */
@@ -1363,7 +1363,7 @@ g8592:
   /* get the base of the icache */
   t9 = *(u64 *)&(processor->icachebase);
   t8 = zero + -1;
-  t8 = t8 + ((4) << 16);
+  t8 = t8 + ((u64)(4) << 16);
   /* Now third byte is zero-shifted */
   iCP = iCP << (CacheLine_LShift & 63);
   iCP = iPC + iCP;
@@ -1448,7 +1448,7 @@ g8602:
   t9 = t9 & t7;
   t7 = 1;
   t7 = t7 << (ivorymemorydata & 63);
-  t9 = (s32)t9 + (s32)t6;
+  t9 = (s32)((u32)t9 + (u32)t6);
   /* Clear sign-extension */
   t9 = (u32)t9;
   t7 = (t9 * 4) + t7;
@@ -1457,7 +1457,7 @@ g8602:
   /* Fetch value */
   t3 = *(s32 *)(t7 + 4);
   /* Compare */
-  t6 = (s32)t8 - (s32)t9;
+  t6 = (s32)((u32)t8 - (u32)t9);
   /* Trap on miss */
   if (t6 != 0)
     goto g8605;
@@ -1492,7 +1492,7 @@ stackoverflow:
   t4 = *(s32 *)&processor->control;
   t9 = *(u64 *)&(processor->fepmodetrapvecaddress);
   t8 = *(u64 *)&(processor->trapvecbase);
-  t5 = (-16384) << 16;
+  t5 = (u64)(-16384) << 16;
   t6 = t4 >> 30;
   /* Set trap mode to 3 */
   t5 = t4 | t5;
@@ -1580,7 +1580,7 @@ g8608:
   t5 = *(s32 *)&processor->continuation;
   t7 = *((s32 *)(&processor->continuation)+1);
   t5 = (u32)t5;
-  t8 = (8192) << 16;
+  t8 = (u64)(8192) << 16;
   t4 = (u32)t4;
   t7 = t7 | 192;
   *(u32 *)iFP = t5;
@@ -1610,7 +1610,7 @@ g8608:
   /* Get CR mask */
   t7 = *(u64 *)&(processor->fccrtrapmask);
   /* 1<<18! */
-  t5 = (ValueDisposition_Value*4) << 16;
+  t5 = (u64)(ValueDisposition_Value*4) << 16;
   /* Arg size */
   t6 = iLP - iFP;
   /* Caller Frame Size */
@@ -1680,7 +1680,7 @@ g8608:
   /* get the base of the icache */
   t9 = *(u64 *)&(processor->icachebase);
   t8 = zero + -1;
-  t8 = t8 + ((4) << 16);
+  t8 = t8 + ((u64)(4) << 16);
   /* Now third byte is zero-shifted */
   iCP = iCP << (CacheLine_LShift & 63);
   iCP = iPC + iCP;
@@ -1765,7 +1765,7 @@ g8618:
   t9 = t9 & t7;
   t7 = 1;
   t7 = t7 << (ivorymemorydata & 63);
-  t9 = (s32)t9 + (s32)t6;
+  t9 = (s32)((u32)t9 + (u32)t6);
   /* Clear sign-extension */
   t9 = (u32)t9;
   t7 = (t9 * 4) + t7;
@@ -1774,7 +1774,7 @@ g8618:
   /* Fetch value */
   t3 = *(s32 *)(t7 + 4);
   /* Compare */
-  t6 = (s32)t8 - (s32)t9;
+  t6 = (s32)((u32)t8 - (u32)t9);
   /* Trap on miss */
   if (t6 != 0)
     goto g8621;
@@ -1809,7 +1809,7 @@ startpretrap:
   t4 = *(s32 *)&processor->control;
   t9 = *(u64 *)&(processor->fepmodetrapvecaddress);
   t8 = *(u64 *)&(processor->trapvecbase);
-  t5 = (-16384) << 16;
+  t5 = (u64)(-16384) << 16;
   t6 = t4 >> 30;
   /* Set trap mode to 3 */
   t5 = t4 | t5;
@@ -1972,7 +1972,7 @@ g8632:
   t9 = t9 & t7;
   t7 = 1;
   t7 = t7 << (ivorymemorydata & 63);
-  t9 = (s32)t9 + (s32)t6;
+  t9 = (s32)((u32)t9 + (u32)t6);
   /* Clear sign-extension */
   t9 = (u32)t9;
   t7 = (t9 * 4) + t7;
@@ -1981,7 +1981,7 @@ g8632:
   /* Fetch value */
   t3 = *(s32 *)(t7 + 4);
   /* Compare */
-  t6 = (s32)t8 - (s32)t9;
+  t6 = (s32)((u32)t8 - (u32)t9);
   /* Trap on miss */
   if (t6 != 0)
     goto g8635;
@@ -2018,7 +2018,7 @@ finishpretrap:
   /* Get CR mask */
   t4 = *(u64 *)&(processor->fccrtrapmask);
   /* 1<<18! */
-  t5 = (ValueDisposition_Value*4) << 16;
+  t5 = (u64)(ValueDisposition_Value*4) << 16;
   /* Arg size */
   t6 = iLP - iFP;
   /* Caller Frame Size */
@@ -2079,7 +2079,7 @@ finishpretrap:
   /* get the base of the icache */
   t9 = *(u64 *)&(processor->icachebase);
   t8 = zero + -1;
-  t8 = t8 + ((4) << 16);
+  t8 = t8 + ((u64)(4) << 16);
   /* Now third byte is zero-shifted */
   iCP = iCP << (CacheLine_LShift & 63);
   iCP = iPC + iCP;

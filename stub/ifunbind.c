@@ -144,7 +144,7 @@ g8397:
   /* In range? */
   t8 = ((u64)t5 < (u64)t8) ? 1 : 0;
   t5 = (t11 & 0xff) << ((t4&7)*8);
-  t6 = t6 & ~(0xffL << (t4&7)*8);
+  t6 = t6 & ~(0xffUL << (t4&7)*8);
 
 g8400:
   if (_trace) printf("g8400:\n");
@@ -167,7 +167,7 @@ g8398:
   /* In range? */
   t8 = ((u64)t5 < (u64)t8) ? 1 : 0;
   t5 = (t2 & 0xff) << ((t4&7)*8);
-  t6 = t6 & ~(0xffL << (t4&7)*8);
+  t6 = t6 & ~(0xffUL << (t4&7)*8);
 
 g8403:
   if (_trace) printf("g8403:\n");
@@ -179,7 +179,7 @@ g8403:
     goto g8402;
 
 g8401:
-  t1 = (512) << 16;
+  t1 = (u64)(512) << 16;
   /* Memory Read Internal */
 
 g8404:
@@ -221,7 +221,7 @@ g8413:
   /* In range? */
   t10 = ((u64)t7 < (u64)t10) ? 1 : 0;
   t7 = (t4 & 0xff) << ((t6&7)*8);
-  t8 = t8 & ~(0xffL << (t6&7)*8);
+  t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g8416:
   if (_trace) printf("g8416:\n");
@@ -512,7 +512,7 @@ g8430:
   /* In range? */
   t8 = ((u64)t5 < (u64)t8) ? 1 : 0;
   t5 = (t11 & 0xff) << ((t4&7)*8);
-  t6 = t6 & ~(0xffL << (t4&7)*8);
+  t6 = t6 & ~(0xffUL << (t4&7)*8);
 
 g8433:
   if (_trace) printf("g8433:\n");
@@ -535,7 +535,7 @@ g8431:
   /* In range? */
   t8 = ((u64)t5 < (u64)t8) ? 1 : 0;
   t5 = (t2 & 0xff) << ((t4&7)*8);
-  t6 = t6 & ~(0xffL << (t4&7)*8);
+  t6 = t6 & ~(0xffUL << (t4&7)*8);
 
 g8436:
   if (_trace) printf("g8436:\n");
@@ -547,7 +547,7 @@ g8436:
     goto g8435;
 
 g8434:
-  t1 = (512) << 16;
+  t1 = (u64)(512) << 16;
   /* Set cr.cleanup-bindings bit */
   t9 = t1 | t9;
   *(u32 *)&processor->control = t9;
@@ -746,7 +746,7 @@ unbindntoploop:
   t4 = *(s32 *)&processor->control;
   /* vma only */
   t1 = (u32)t1;
-  t2 = (512) << 16;
+  t2 = (u64)(512) << 16;
   t5 = t1 - 1;
   t3 = t4 & t2;
   /* Turn off the bit */
@@ -842,7 +842,7 @@ g8469:
   arg3 = (arg4 * 4);
   arg6 = LDQ_U(arg4);
   arg5 = (t8 & 0xff) << ((arg4&7)*8);
-  arg6 = arg6 & ~(0xffL << (arg4&7)*8);
+  arg6 = arg6 & ~(0xffUL << (arg4&7)*8);
 
 g8472:
   if (_trace) printf("g8472:\n");
@@ -1117,7 +1117,7 @@ restorebstoploop:
   t4 = *(s32 *)&processor->control;
   /* vma only */
   t1 = (u32)t1;
-  t2 = (512) << 16;
+  t2 = (u64)(512) << 16;
   t5 = t1 - 1;
   t3 = t4 & t2;
   /* Turn off the bit */
@@ -1213,7 +1213,7 @@ g8503:
   arg3 = (arg4 * 4);
   arg6 = LDQ_U(arg4);
   arg5 = (t8 & 0xff) << ((arg4&7)*8);
-  arg6 = arg6 & ~(0xffL << (arg4&7)*8);
+  arg6 = arg6 & ~(0xffUL << (arg4&7)*8);
 
 g8506:
   if (_trace) printf("g8506:\n");
@@ -1241,7 +1241,7 @@ g8504:
 
 restorebsendloop:
   if (_trace) printf("restorebsendloop:\n");
-  arg4 = (s32)t1 - (s32)arg1;
+  arg4 = (s32)((u32)t1 - (u32)arg1);
   if ((s64)arg4 > 0)
     goto restorebstoploop;
   t3 = *(s32 *)&processor->interruptreg;

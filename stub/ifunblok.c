@@ -447,7 +447,7 @@ g8140:
   t9 = t9 & t10;
   t10 = 1;
   t10 = t10 << (ivorymemorydata & 63);
-  t9 = (s32)t9 + (s32)t11;
+  t9 = (s32)((u32)t9 + (u32)t11);
   /* Clear sign-extension */
   t9 = (u32)t9;
   t10 = (t9 * 4) + t10;
@@ -456,7 +456,7 @@ g8140:
   /* Fetch value */
   t7 = *(s32 *)(t10 + 4);
   /* Compare */
-  t11 = (s32)t2 - (s32)t9;
+  t11 = (s32)((u32)t2 - (u32)t9);
   /* Trap on miss */
   if (t11 != 0)
     goto g8143;
@@ -1217,7 +1217,7 @@ g8169:
   t9 = t9 & t10;
   t10 = 1;
   t10 = t10 << (ivorymemorydata & 63);
-  t9 = (s32)t9 + (s32)t11;
+  t9 = (s32)((u32)t9 + (u32)t11);
   /* Clear sign-extension */
   t9 = (u32)t9;
   t10 = (t9 * 4) + t10;
@@ -1226,7 +1226,7 @@ g8169:
   /* Fetch value */
   t3 = *(s32 *)(t10 + 4);
   /* Compare */
-  t11 = (s32)t1 - (s32)t9;
+  t11 = (s32)((u32)t1 - (u32)t9);
   /* Trap on miss */
   if (t11 != 0)
     goto g8172;
@@ -2340,7 +2340,7 @@ g8257:
   t9 = t9 & t10;
   t10 = 1;
   t10 = t10 << (ivorymemorydata & 63);
-  t9 = (s32)t9 + (s32)t11;
+  t9 = (s32)((u32)t9 + (u32)t11);
   /* Clear sign-extension */
   t9 = (u32)t9;
   t10 = (t9 * 4) + t10;
@@ -2349,7 +2349,7 @@ g8257:
   /* Fetch value */
   t3 = *(s32 *)(t10 + 4);
   /* Compare */
-  t11 = (s32)arg3 - (s32)t9;
+  t11 = (s32)((u32)arg3 - (u32)t9);
   /* Trap on miss */
   if (t11 != 0)
     goto g8260;

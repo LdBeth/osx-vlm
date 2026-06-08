@@ -741,7 +741,7 @@ begindoaset1:
   iSP = iSP - 8;
   t6 = (u32)t6;
   /* (sign-extended, for fast bounds check) Index Data */
-  arg2 = (s32)arg1 + (s32)0;
+  arg2 = (s32)((u32)arg1 + (u32)0);
   t8 = zero + AutoArrayRegMask;
   t8 = arg4 & t8;
   /* Index Tag */
@@ -924,7 +924,7 @@ g6540:
   /* In range? */
   arg1 = ((u64)t7 < (u64)arg1) ? 1 : 0;
   t7 = (t2 & 0xff) << ((t4&7)*8);
-  t8 = t8 & ~(0xffL << (t4&7)*8);
+  t8 = t8 & ~(0xffUL << (t4&7)*8);
 
 g6542:
   if (_trace) printf("g6542:\n");
@@ -1049,7 +1049,7 @@ g6521:
   /* In range? */
   t8 = ((u64)t3 < (u64)t8) ? 1 : 0;
   t3 = (arg3 & 0xff) << ((t2&7)*8);
-  t4 = t4 & ~(0xffL << (t2&7)*8);
+  t4 = t4 & ~(0xffUL << (t2&7)*8);
 
 g6558:
   if (_trace) printf("g6558:\n");
@@ -1169,7 +1169,7 @@ g6550:
   t2 = t2 & t3;
   t3 = 1;
   t3 = t3 << (ivorymemorydata & 63);
-  t2 = (s32)t2 + (s32)t4;
+  t2 = (s32)((u32)t2 + (u32)t4);
   /* Clear sign-extension */
   t2 = (u32)t2;
   t3 = (t2 * 4) + t3;
@@ -1178,7 +1178,7 @@ g6550:
   /* Fetch value */
   t9 = *(s32 *)(t3 + 4);
   /* Compare */
-  t4 = (s32)t1 - (s32)t2;
+  t4 = (s32)((u32)t1 - (u32)t2);
   /* Trap on miss */
   if (t4 != 0)
     goto g6553;
@@ -1263,7 +1263,7 @@ g6537:
   t4 = t4 & t7;
   t7 = 1;
   t7 = t7 << (ivorymemorydata & 63);
-  t4 = (s32)t4 + (s32)t8;
+  t4 = (s32)((u32)t4 + (u32)t8);
   /* Clear sign-extension */
   t4 = (u32)t4;
   t7 = (t4 * 4) + t7;
@@ -1272,7 +1272,7 @@ g6537:
   /* Fetch value */
   t3 = *(s32 *)(t7 + 4);
   /* Compare */
-  t8 = (s32)t1 - (s32)t4;
+  t8 = (s32)((u32)t1 - (u32)t4);
   /* Trap on miss */
   if (t8 != 0)
     goto g6539;
@@ -1627,7 +1627,7 @@ g6576:
   t2 = t2 & t3;
   t3 = 1;
   t3 = t3 << (ivorymemorydata & 63);
-  t2 = (s32)t2 + (s32)t4;
+  t2 = (s32)((u32)t2 + (u32)t4);
   /* Clear sign-extension */
   t2 = (u32)t2;
   t3 = (t2 * 4) + t3;
@@ -1636,7 +1636,7 @@ g6576:
   /* Fetch value */
   t9 = *(s32 *)(t3 + 4);
   /* Compare */
-  t4 = (s32)t1 - (s32)t2;
+  t4 = (s32)((u32)t1 - (u32)t2);
   /* Trap on miss */
   if (t4 != 0)
     goto g6579;
@@ -1781,7 +1781,7 @@ g6591:
   /* In range? */
   t8 = ((u64)t6 < (u64)t12) ? 1 : 0;
   t6 = (arg5 & 0xff) << ((t5&7)*8);
-  t7 = t7 & ~(0xffL << (t5&7)*8);
+  t7 = t7 & ~(0xffUL << (t5&7)*8);
 
 g6593:
   if (_trace) printf("g6593:\n");
@@ -1856,7 +1856,7 @@ g6588:
   t5 = t5 & t6;
   t6 = 1;
   t6 = t6 << (ivorymemorydata & 63);
-  t5 = (s32)t5 + (s32)t7;
+  t5 = (s32)((u32)t5 + (u32)t7);
   /* Clear sign-extension */
   t5 = (u32)t5;
   t6 = (t5 * 4) + t6;
@@ -1865,7 +1865,7 @@ g6588:
   /* Fetch value */
   arg6 = *(s32 *)(t6 + 4);
   /* Compare */
-  t7 = (s32)arg2 - (s32)t5;
+  t7 = (s32)((u32)arg2 - (u32)t5);
   /* Trap on miss */
   if (t7 != 0)
     goto g6590;
@@ -1972,7 +1972,7 @@ g6601:
   t5 = t5 & t6;
   t6 = 1;
   t6 = t6 << (ivorymemorydata & 63);
-  t5 = (s32)t5 + (s32)t7;
+  t5 = (s32)((u32)t5 + (u32)t7);
   /* Clear sign-extension */
   t5 = (u32)t5;
   t6 = (t5 * 4) + t6;
@@ -1981,7 +1981,7 @@ g6601:
   /* Fetch value */
   arg6 = *(s32 *)(t6 + 4);
   /* Compare */
-  t7 = (s32)arg2 - (s32)t5;
+  t7 = (s32)((u32)arg2 - (u32)t5);
   /* Trap on miss */
   if (t7 != 0)
     goto g6603;
@@ -2483,7 +2483,7 @@ g6625:
   if (t3 == 0)
     goto g6616;
   /* Here if argument TypeFixnum */
-  t2 = (s32)arg4 - (s32)arg2;
+  t2 = (s32)((u32)arg4 - (u32)arg2);
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   /* Pop/No-pop */
   iSP = (t7 * 8) + iSP;
@@ -2567,7 +2567,7 @@ g6639:
   if (t4 == 0)
     goto g6636;
   /* Here if argument TypeFixnum */
-  t2 = (s32)arg4 - (s32)arg2;
+  t2 = (s32)((u32)arg4 - (u32)arg2);
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iSP = (t7 * 8) + iSP;
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
@@ -3770,7 +3770,7 @@ DoEqIM:
   t12 = *(u64 *)&(processor->taddress);
   /* 1 if no-pop, 0 if pop */
   arg3 = arg3 & 1;
-  arg2 = (s32)t3 - (s32)arg2;
+  arg2 = (s32)((u32)t3 - (u32)arg2);
   t4 = t4 ^ Type_Fixnum;
   /* Either a stack-push or a stack-write */
   iSP = (arg3 * 8) + iSP;

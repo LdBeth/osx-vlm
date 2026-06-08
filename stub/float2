@@ -279,10 +279,10 @@ inline u64 _CVTTQ(int dr, int rv2, u64 v2)
 #ifdef LOUD
   if (subtrace) printf("_CVTTQ %p %g %p -> %p\n", (void *)v2, u.d, (void *)u.l, (void *)(u64)u.d);
 #endif
-  return (u64)(u.d);
+  return (u64)(s64)(u.d);
 }
 
-inline inline u64 _CVTTQVM(int dr, int rv2, u64 v2)
+inline u64 _CVTTQVM(int dr, int rv2, u64 v2)
 {
   union {
     double d;

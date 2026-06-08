@@ -58,8 +58,8 @@ g7264:
   if (t4 == 0)
     goto g7260;
   /* Here if argument TypeFixnum */
-  t2 = (s32)arg6 - (s32)t2;
-  arg2 = (s32)zero - (s32)arg6;
+  t2 = (s32)((u32)arg6 - (u32)t2);
+  arg2 = (s32)((u32)zero - (u32)arg6);
   if (t2 == 0)
     goto unaryminusexc;
   iPC = t6;
@@ -118,7 +118,7 @@ g7259:
 DoUnaryMinusIM:
   if (_trace) printf("DoUnaryMinusIM:\n");
   /* Negate the 8 bit immediate operand */
-  arg2 = (s32)zero - (s32)arg2;
+  arg2 = (s32)((u32)zero - (u32)arg2);
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   t7 = Type_Fixnum;
@@ -1997,7 +1997,7 @@ begindomultiplydouble:
   /* ARG1 data, sign extended */
   t3 = *(s32 *)iSP;
   /* ARG2 data, sign extended */
-  t4 = (s32)arg1 + (s32)0;
+  t4 = (s32)((u32)arg1 + (u32)0);
   /* ARG1 tag */
   t1 = *(s32 *)(iSP + 4);
   /* TagType. */

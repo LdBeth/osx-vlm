@@ -316,7 +316,7 @@ g6757:
     goto g6760;
 
 g6767:
-  t5 = (s32)arg2 - (s32)t2;
+  t5 = (s32)((u32)arg2 - (u32)t2);
   /* CAR forwarded, must CDR the hard way */
   if (t5 != 0)
     goto g6751;
@@ -567,7 +567,7 @@ g6808:
     goto g6811;
 
 g6818:
-  t3 = (s32)t2 - (s32)arg4;
+  t3 = (s32)((u32)t2 - (u32)arg4);
   /* CAR forwarded, must CDR the hard way */
   if (t3 != 0)
     goto g6802;
@@ -818,7 +818,7 @@ g6829:
   t3 = t3 & t4;
   t4 = 1;
   t4 = t4 << (ivorymemorydata & 63);
-  t3 = (s32)t3 + (s32)t5;
+  t3 = (s32)((u32)t3 + (u32)t5);
   /* Clear sign-extension */
   t3 = (u32)t3;
   t4 = (t3 * 4) + t4;
@@ -827,7 +827,7 @@ g6829:
   /* Fetch value */
   arg6 = *(s32 *)(t4 + 4);
   /* Compare */
-  t5 = (s32)t2 - (s32)t3;
+  t5 = (s32)((u32)t2 - (u32)t3);
   /* Trap on miss */
   if (t5 != 0)
     goto g6832;
@@ -904,7 +904,7 @@ g6814:
   t3 = t3 & t4;
   t4 = 1;
   t4 = t4 << (ivorymemorydata & 63);
-  t3 = (s32)t3 + (s32)t5;
+  t3 = (s32)((u32)t3 + (u32)t5);
   /* Clear sign-extension */
   t3 = (u32)t3;
   t4 = (t3 * 4) + t4;
@@ -913,7 +913,7 @@ g6814:
   /* Fetch value */
   arg6 = *(s32 *)(t4 + 4);
   /* Compare */
-  t5 = (s32)t2 - (s32)t3;
+  t5 = (s32)((u32)t2 - (u32)t3);
   /* Trap on miss */
   if (t5 != 0)
     goto g6817;
@@ -1054,7 +1054,7 @@ begindoreturnmultiple:
 returnmultipletop:
   if (_trace) printf("returnmultipletop:\n");
   arg5 = *(s32 *)&processor->control;
-  t3 = (12) << 16;
+  t3 = (u64)(12) << 16;
   t2 = iSP + 8;
   /* Value bytes */
   t1 = arg1 << 3;
@@ -1071,7 +1071,7 @@ returnmultipletop:
     goto returnmultiplesingle;
   /* Restore machine state from frame header. */
   t3 = *(s32 *)iFP;
-  t1 = (1792) << 16;
+  t1 = (u64)(1792) << 16;
   t5 = *(s32 *)&processor->continuation;
   /* Mask */
   t1 = arg5 & t1;
@@ -1086,7 +1086,7 @@ returnmultipletop:
 #ifdef IVERIFY
   /* check for instruction verification suite end-of-test */
   /* check for end of run */
-  t6 = (s32)t2 - (s32)Type_NIL;
+  t6 = (s32)((u32)t2 - (u32)Type_NIL);
   if (t6 == 0)
     goto g6853;
 #endif
@@ -1117,7 +1117,7 @@ g6855:
   t1 = t1 & 255;
   /* *8 */
   t1 = (t1 * 8) + 0;
-  t2 = (2048) << 16;
+  t2 = (u64)(2048) << 16;
   t2 = t2 & arg5;
   /* Get the preempt-pending bit */
   t3 = *(s32 *)&processor->interruptreg;
@@ -1245,7 +1245,7 @@ handleframecleanup:
 
 g6860:
   if (_trace) printf("g6860:\n");
-  t1 = (1024) << 16;
+  t1 = (u64)(1024) << 16;
   t4 = *(s32 *)&processor->catchblock;
   t4 = (u32)t4;
   t2 = t1 & arg5;
@@ -1269,7 +1269,7 @@ g6860:
   /* J. if catch block is UWP variety. */
   if (t12 != 0)
     goto handleunwindprotect;
-  t3 = (1024) << 16;
+  t3 = (u64)(1024) << 16;
   /* Extract the catchcleanup bit */
   t2 = t5 & 64;
   /* Shift into place for CR */
@@ -1286,7 +1286,7 @@ g6860:
 
 g6859:
   if (_trace) printf("g6859:\n");
-  t1 = (512) << 16;
+  t1 = (u64)(512) << 16;
   t2 = t1 & arg5;
   t1 = *(u64 *)&(processor->bindingstackpointer);
   /* J. if cr.cleanup-bindings is 0. */
@@ -1308,7 +1308,7 @@ g6861:
   t4 = *(s32 *)&processor->control;
   /* vma only */
   t1 = (u32)t1;
-  t2 = (512) << 16;
+  t2 = (u64)(512) << 16;
   t5 = t1 - 1;
   t3 = t4 & t2;
   /* Turn off the bit */
@@ -1413,7 +1413,7 @@ g6892:
   t9 = (t10 * 4);
   t12 = LDQ_U(t10);
   t11 = (t8 & 0xff) << ((t10&7)*8);
-  t12 = t12 & ~(0xffL << (t10&7)*8);
+  t12 = t12 & ~(0xffUL << (t10&7)*8);
 
 g6895:
   if (_trace) printf("g6895:\n");
@@ -1440,7 +1440,7 @@ g6893:
   t4 = t4 | t3;
   *(u32 *)&processor->control = t4;
   arg5 = *(s32 *)&processor->control;
-  t1 = (512) << 16;
+  t1 = (u64)(512) << 16;
   t2 = t1 & arg5;
   /* J. if cr.cleanup-bindings is 0. */
   if (t2 != 0)
@@ -1459,7 +1459,7 @@ g6896:
 
 g6858:
   if (_trace) printf("g6858:\n");
-  t3 = (256) << 16;
+  t3 = (u64)(256) << 16;
   t2 = t3 & arg5;
   if (t2 == 0)
     goto INTERPRETINSTRUCTION;
@@ -1981,7 +1981,7 @@ g6909:
   /* Position the new tag */
   t4 = (t4 & 0xff) << ((t2&7)*8);
   /* Remove old tag */
-  t5 = t5 & ~(0xffL << (t2&7)*8);
+  t5 = t5 & ~(0xffUL << (t2&7)*8);
   /* Put in new byte */
   t5 = t4 | t5;
   /* Save packed tags word */
@@ -2101,7 +2101,7 @@ DoReturnKludgeIM:
   t1 = iSP - t1;
   /* Restore machine state from frame header. */
   t5 = *(s32 *)iFP;
-  t3 = (1792) << 16;
+  t3 = (u64)(1792) << 16;
   t7 = *(s32 *)&processor->continuation;
   /* Mask */
   t3 = t2 & t3;
@@ -2116,7 +2116,7 @@ DoReturnKludgeIM:
 #ifdef IVERIFY
   /* check for instruction verification suite end-of-test */
   /* check for end of run */
-  t8 = (s32)t4 - (s32)Type_NIL;
+  t8 = (s32)((u32)t4 - (u32)Type_NIL);
   if (t8 == 0)
     goto g6912;
 #endif
@@ -2145,7 +2145,7 @@ g6914:
   t3 = t3 & 255;
   /* *8 */
   t3 = (t3 * 8) + 0;
-  t4 = (2048) << 16;
+  t4 = (u64)(2048) << 16;
   t4 = t4 & t2;
   /* Get the preempt-pending bit */
   t5 = *(s32 *)&processor->interruptreg;
@@ -2396,7 +2396,7 @@ catchopen2:
   *((u32 *)(&processor->catchblock)+1) = t1;
   /* data */
   *(u32 *)&processor->catchblock = t9;
-  t1 = (1024) << 16;
+  t1 = (u64)(1024) << 16;
   /* set it */
   t1 = t1 | t11;
   *(u32 *)&processor->control = t1;
@@ -2462,7 +2462,7 @@ begindocatchclose:
   arg5 = *(s32 *)(t10 + 20);
   arg6 = (u32)arg6;
   t3 = t4 >> 32;
-  t5 = (s32)arg4 - (s32)t4;
+  t5 = (s32)((u32)arg4 - (u32)t4);
   if (t5 == 0)
     goto catchcloseld;
   t1 = t3 - Type_Locative;
@@ -2477,7 +2477,7 @@ catchcloselt:
   t4 = *(s32 *)&processor->control;
   /* vma only */
   t1 = (u32)t1;
-  t2 = (512) << 16;
+  t2 = (u64)(512) << 16;
   t5 = t1 - 1;
   t3 = t4 & t2;
   /* Turn off the bit */
@@ -2582,7 +2582,7 @@ g6946:
   t9 = (arg1 * 4);
   t11 = LDQ_U(arg1);
   arg2 = (t8 & 0xff) << ((arg1&7)*8);
-  t11 = t11 & ~(0xffL << (arg1&7)*8);
+  t11 = t11 & ~(0xffUL << (arg1&7)*8);
 
 g6949:
   if (_trace) printf("g6949:\n");
@@ -2608,7 +2608,7 @@ g6947:
   *(u32 *)&processor->bindingstackpointer = t1;
   t4 = t4 | t3;
   *(u32 *)&processor->control = t4;
-  t5 = (s32)arg4 - (s32)t1;
+  t5 = (s32)((u32)arg4 - (u32)t1);
   if (t5 != 0)
     goto catchcloselt;
   t3 = *(s32 *)&processor->interruptreg;
@@ -2670,7 +2670,7 @@ catchcloseld:
   /* TagType. */
   t7 = t8 & 63;
   t8 = t8 & 64;
-  t9 = (128) << 16;
+  t9 = (u64)(128) << 16;
   t8 = t8 | 128;
   t7 = t7 | t8;
   *(u32 *)(iSP + 8) = t10;

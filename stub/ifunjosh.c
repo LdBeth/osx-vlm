@@ -218,7 +218,7 @@ g8688:
   t5 = t5 & t6;
   t6 = 1;
   t6 = t6 << (ivorymemorydata & 63);
-  t5 = (s32)t5 + (s32)t7;
+  t5 = (s32)((u32)t5 + (u32)t7);
   /* Clear sign-extension */
   t5 = (u32)t5;
   t6 = (t5 * 4) + t6;
@@ -227,7 +227,7 @@ g8688:
   /* Fetch value */
   t3 = *(s32 *)(t6 + 4);
   /* Compare */
-  t7 = (s32)arg1 - (s32)t5;
+  t7 = (s32)((u32)arg1 - (u32)t5);
   /* Trap on miss */
   if (t7 != 0)
     goto g8691;
@@ -522,7 +522,7 @@ g8715:
   /* In range? */
   t9 = ((u64)t7 < (u64)t9) ? 1 : 0;
   t7 = (t4 & 0xff) << ((t6&7)*8);
-  t8 = t8 & ~(0xffL << (t6&7)*8);
+  t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g8718:
   if (_trace) printf("g8718:\n");
@@ -606,7 +606,7 @@ g8712:
   t6 = t6 & t7;
   t7 = 1;
   t7 = t7 << (ivorymemorydata & 63);
-  t6 = (s32)t6 + (s32)t8;
+  t6 = (s32)((u32)t6 + (u32)t8);
   /* Clear sign-extension */
   t6 = (u32)t6;
   t7 = (t6 * 4) + t7;
@@ -615,7 +615,7 @@ g8712:
   /* Fetch value */
   t5 = *(s32 *)(t7 + 4);
   /* Compare */
-  t8 = (s32)t1 - (s32)t6;
+  t8 = (s32)((u32)t1 - (u32)t6);
   /* Trap on miss */
   if (t8 != 0)
     goto g8714;

@@ -54,7 +54,7 @@ begindoeql:
   t4 = zero + -2048;
   t11 = *(u64 *)&(processor->niladdress);
   /* High part of EQ-NOT-EQL mask */
-  t4 = t4 + ((1) << 16);
+  t4 = t4 + ((u64)(1) << 16);
   /* Assume result will be T */
   t12 = *(u64 *)&(processor->taddress);
   t5 = arg1 ^ t3;
@@ -108,7 +108,7 @@ DoEqlIM:
   /* TagType. */
   t4 = t4 & 63;
   t12 = *(u64 *)&(processor->taddress);
-  arg2 = (s32)t3 - (s32)arg2;
+  arg2 = (s32)((u32)t3 - (u32)arg2);
   t4 = t4 ^ Type_Fixnum;
   /* 1 if no-pop, 0 if pop */
   arg6 = arg6 & 1;

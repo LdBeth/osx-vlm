@@ -1185,7 +1185,7 @@
 	   (format destination "  ~A = (s32)~A;~%"
 		   (fixarg arg3) (fixarg arg1)))
 	  (t
-	   (format destination "  ~A = (s32)~A + (s32)~A;~%"
+	   (format destination "  ~A = (s32)((u32)~A + (u32)~A);~%"
 		   (fixarg arg3) (fixarg arg1) (fixarg arg2)))))
 
 	(ADDL/V
@@ -1639,10 +1639,10 @@
 	 (if (listp arg3)
 	     (setq arg3 (car arg3)))
 	 (if (or (eq arg3 0) (eq arg3 'zero))
-	     (format destination "  ~A = (~A) << 16;~%"
+	     (format destination "  ~A = (u64)(~A) << 16;~%"
 		     (fixarg arg1) (fixarg arg2))
 	   (if (or (numberp arg2) (isconstant arg2))
-	       (format destination "  ~A = ~A + ((~A) << 16);~%"
+	       (format destination "  ~A = ~A + ((u64)(~A) << 16);~%"
 		       (fixarg arg1) (fixarg arg3) (fixarg arg2))
 	     (format destination "  ~A = (u64)&~A->~A;~%"
 		     (fixarg arg1) (structptr arg3 arg2) (fixarg arg2)))))
@@ -1859,7 +1859,7 @@
 
 	(MSKBL
 	 (check-comment arg4)
-	 (format destination "  ~A = ~A & ~~(0xffL << (~A&7)*8);~%"
+	 (format destination "  ~A = ~A & ~~(0xffUL << (~A&7)*8);~%"
 		 (fixarg arg3) (fixarg arg1) (fixarg arg2)))
 
 	(MULQ
@@ -2080,7 +2080,7 @@
 	(SUBL
 	 (check-comment arg4)
 	 (if (not (equal arg3 'zero))
-	     (format destination "  ~A = (s32)~A - (s32)~A;~%"
+	     (format destination "  ~A = (s32)((u32)~A - (u32)~A);~%"
 		     (fixarg arg3) (fixarg arg1) (fixarg arg2))))
 
 	(S4ADDQ
