@@ -8,7 +8,9 @@
 #include <sys/mman.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <linux/unistd.h>
+#if defined(OS_LINUX)
+#include <linux/unistd.h>	/* not used on macOS; nothing here needs it */
+#endif
 
 #include <X11/Xlib.h>
 #include <X11/Xresource.h>
@@ -804,9 +806,60 @@ static void InterpretXOptions (XrmDatabase options, XParams* xParams, char* wind
 
 	GetXOption (options, windowName, windowClass, "display", "Display", value);
 
-	colonPosition = strchr (value, ':');
+	/* XQuartz on macOS uses a Unix-domain socket path as the display
+	   name (e.g., /private/tmp/.../org.xquartz:0).  Detect this and
+	   treat the path as a local display rather than trying to resolve
+	   it via DNS. */
+	if (value[0] == '/')
+	  {
+		/* Use strrchr to find the last colon, since the path itself
+		   may contain colons (unlikely but harmless to guard against). */
+		colonPosition = strrchr (value, ':');
+		if (colonPosition != NULL)
+		  {
+			*colonPosition = 0;
+			xParams->xpHostName = strdup (value);
+			xParams->xpHostAddress = 0;
+			*colonPosition = ':';
+			start = colonPosition + 1;
+			datum = strtoul (start, &end, 10);
+			if (start != end)
+				xParams->xpDisplay = datum;
+			else
+				xParams->xpDisplay = -1;
+			if (*end == '.')
+			  {
+				start = end + 1;
+				datum = strtoul (start, &end, 0);
+				if (start != end)
+					xParams->xpScreen = datum;
+				else
+					xParams->xpScreen = -1;
+				if (*end)
+					vpunt (NULL,
+					       "Invalid display specification %s for %s",
+					       value,
+					       windowEnglishName);
+			  }
+			else if (*end)
+				vpunt (NULL,
+				       "Invalid display specification %s for %s",
+				       value,
+				       windowEnglishName);
+			else
+				xParams->xpScreen = -1;
+		  }
+		else
+		  {
+			/* Path with no colon: whole value is the socket path */
+			xParams->xpHostName = strdup (value);
+			xParams->xpHostAddress = 0;
+			xParams->xpDisplay = -1;
+			xParams->xpScreen = -1;
+		  }
+	  }
 
-	if (colonPosition != NULL)
+	else if ((colonPosition = strchr (value, ':')) != NULL)
 	  {
 		*colonPosition = 0;
 		if (VerifyHostName (value, &hostName, &hostAddress, FALSE))
