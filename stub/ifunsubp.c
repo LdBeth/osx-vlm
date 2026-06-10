@@ -9,19 +9,16 @@
   /* Halfword operand from stack instruction - DoEphemeralp */
 
 doephemeralp:
-  if (_trace) printf("doephemeralp:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoEphemeralpIM:
-  if (_trace) printf("DoEphemeralpIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7855:
-  if (_trace) printf("g7855:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -31,7 +28,6 @@ g7855:
 #endif
 
 DoEphemeralpSP:
-  if (_trace) printf("DoEphemeralpSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -45,23 +41,19 @@ DoEphemeralpSP:
 #endif
 
 DoEphemeralpLP:
-  if (_trace) printf("DoEphemeralpLP:\n");
 #ifdef TRACING
   goto headdoephemeralp;
 #endif
 
 DoEphemeralpFP:
-  if (_trace) printf("DoEphemeralpFP:\n");
 
 headdoephemeralp:
-  if (_trace) printf("headdoephemeralp:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoephemeralp:
-  if (_trace) printf("begindoephemeralp:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* ptr type array */
   t1 = *(u64 *)&(processor->ptrtype);
@@ -88,7 +80,6 @@ begindoephemeralp:
   goto cachevalid;
 
 nonephem:
-  if (_trace) printf("nonephem:\n");
   t6 = *(u64 *)&(processor->niladdress);
   /* push the data */
   *(u64 *)(iSP + 8) = t6;
@@ -103,12 +94,10 @@ nonephem:
   /* arg2 has the preloaded 8 bit operand. */
 
 dounsignedlessp:
-  if (_trace) printf("dounsignedlessp:\n");
 #ifdef TRACING
 #endif
 
 DoUnsignedLesspSP:
-  if (_trace) printf("DoUnsignedLesspSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -122,23 +111,19 @@ DoUnsignedLesspSP:
 #endif
 
 DoUnsignedLesspLP:
-  if (_trace) printf("DoUnsignedLesspLP:\n");
 #ifdef TRACING
   goto headdounsignedlessp;
 #endif
 
 DoUnsignedLesspFP:
-  if (_trace) printf("DoUnsignedLesspFP:\n");
 
 headdounsignedlessp:
-  if (_trace) printf("headdounsignedlessp:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindounsignedlessp:
-  if (_trace) printf("begindounsignedlessp:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get data from arg1 */
   t2 = *(s32 *)iSP;
@@ -166,7 +151,6 @@ begindounsignedlessp:
 #endif
 
 DoUnsignedLesspIM:
-  if (_trace) printf("DoUnsignedLesspIM:\n");
   /* Get data from arg1 */
   t2 = *(s32 *)iSP;
   arg3 = arg3 >> 12;
@@ -195,12 +179,10 @@ DoUnsignedLesspIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 doallocatelistblock:
-  if (_trace) printf("doallocatelistblock:\n");
 #ifdef TRACING
 #endif
 
 DoAllocateListBlockIM:
-  if (_trace) printf("DoAllocateListBlockIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -209,7 +191,6 @@ DoAllocateListBlockIM:
 #endif
 
 DoAllocateListBlockSP:
-  if (_trace) printf("DoAllocateListBlockSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -223,23 +204,19 @@ DoAllocateListBlockSP:
 #endif
 
 DoAllocateListBlockLP:
-  if (_trace) printf("DoAllocateListBlockLP:\n");
 #ifdef TRACING
   goto headdoallocatelistblock;
 #endif
 
 DoAllocateListBlockFP:
-  if (_trace) printf("DoAllocateListBlockFP:\n");
 
 headdoallocatelistblock:
-  if (_trace) printf("headdoallocatelistblock:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoallocatelistblock:
-  if (_trace) printf("begindoallocatelistblock:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   t1 = *(u64 *)&(processor->lcarea);
   arg3 = *(u64 *)iSP;
@@ -287,13 +264,11 @@ begindoallocatelistblock:
   goto NEXTINSTRUCTION;
 
 g7856:
-  if (_trace) printf("g7856:\n");
   arg5 = 0;
   arg2 = 1;
   goto illegaloperand;
 
 g7857:
-  if (_trace) printf("g7857:\n");
   /* SetTag. */
   t1 = arg2 << 32;
   t1 = arg1 | t1;
@@ -313,12 +288,10 @@ g7857:
   /* arg2 has the preloaded 8 bit operand. */
 
 doallocatestructureblock:
-  if (_trace) printf("doallocatestructureblock:\n");
 #ifdef TRACING
 #endif
 
 DoAllocateStructureBlockIM:
-  if (_trace) printf("DoAllocateStructureBlockIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -327,7 +300,6 @@ DoAllocateStructureBlockIM:
 #endif
 
 DoAllocateStructureBlockSP:
-  if (_trace) printf("DoAllocateStructureBlockSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -341,23 +313,19 @@ DoAllocateStructureBlockSP:
 #endif
 
 DoAllocateStructureBlockLP:
-  if (_trace) printf("DoAllocateStructureBlockLP:\n");
 #ifdef TRACING
   goto headdoallocatestructureblock;
 #endif
 
 DoAllocateStructureBlockFP:
-  if (_trace) printf("DoAllocateStructureBlockFP:\n");
 
 headdoallocatestructureblock:
-  if (_trace) printf("headdoallocatestructureblock:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoallocatestructureblock:
-  if (_trace) printf("begindoallocatestructureblock:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   t1 = *(u64 *)&(processor->scarea);
   arg3 = *(u64 *)iSP;
@@ -405,13 +373,11 @@ begindoallocatestructureblock:
   goto NEXTINSTRUCTION;
 
 g7858:
-  if (_trace) printf("g7858:\n");
   arg5 = 0;
   arg2 = 1;
   goto illegaloperand;
 
 g7859:
-  if (_trace) printf("g7859:\n");
   /* SetTag. */
   t1 = arg2 << 32;
   t1 = arg1 | t1;
@@ -431,12 +397,10 @@ g7859:
   /* arg2 has the preloaded 8 bit operand. */
 
 dopointerdifference:
-  if (_trace) printf("dopointerdifference:\n");
 #ifdef TRACING
 #endif
 
 DoPointerDifferenceSP:
-  if (_trace) printf("DoPointerDifferenceSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -450,23 +414,19 @@ DoPointerDifferenceSP:
 #endif
 
 DoPointerDifferenceLP:
-  if (_trace) printf("DoPointerDifferenceLP:\n");
 #ifdef TRACING
   goto headdopointerdifference;
 #endif
 
 DoPointerDifferenceFP:
-  if (_trace) printf("DoPointerDifferenceFP:\n");
 
 headdopointerdifference:
-  if (_trace) printf("headdopointerdifference:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindopointerdifference:
-  if (_trace) printf("begindopointerdifference:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get the data of ARG1 */
   t1 = *(s32 *)iSP;
@@ -487,7 +447,6 @@ begindopointerdifference:
 #endif
 
 DoPointerDifferenceIM:
-  if (_trace) printf("DoPointerDifferenceIM:\n");
   t2 = arg2 << 56;
   /* Get the data of arg1 */
   t1 = *(s32 *)iSP;
@@ -511,12 +470,10 @@ DoPointerDifferenceIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dopointerincrement:
-  if (_trace) printf("dopointerincrement:\n");
 #ifdef TRACING
 #endif
 
 DoPointerIncrementSP:
-  if (_trace) printf("DoPointerIncrementSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -530,16 +487,13 @@ DoPointerIncrementSP:
 #endif
 
 DoPointerIncrementLP:
-  if (_trace) printf("DoPointerIncrementLP:\n");
 #ifdef TRACING
   goto begindopointerincrement;
 #endif
 
 DoPointerIncrementFP:
-  if (_trace) printf("DoPointerIncrementFP:\n");
 
 begindopointerincrement:
-  if (_trace) printf("begindopointerincrement:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -565,19 +519,16 @@ DoPointerIncrementIM:
   /* Halfword operand from stack instruction - DoStoreConditional */
 
 dostoreconditional:
-  if (_trace) printf("dostoreconditional:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoStoreConditionalIM:
-  if (_trace) printf("DoStoreConditionalIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7876:
-  if (_trace) printf("g7876:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -587,7 +538,6 @@ g7876:
 #endif
 
 DoStoreConditionalSP:
-  if (_trace) printf("DoStoreConditionalSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -601,23 +551,19 @@ DoStoreConditionalSP:
 #endif
 
 DoStoreConditionalLP:
-  if (_trace) printf("DoStoreConditionalLP:\n");
 #ifdef TRACING
   goto headdostoreconditional;
 #endif
 
 DoStoreConditionalFP:
-  if (_trace) printf("DoStoreConditionalFP:\n");
 
 headdostoreconditional:
-  if (_trace) printf("headdostoreconditional:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindostoreconditional:
-  if (_trace) printf("begindostoreconditional:\n");
   /* arg1 has the operand, sign extended if immediate. */
   arg2 = arg1 >> 32;
   /* old tag and data */
@@ -702,7 +648,6 @@ g7871:
   t3 = t3 & ~(0xffUL << (t1&7)*8);
 
 g7874:
-  if (_trace) printf("g7874:\n");
   t3 = t3 | t2;
   STQ_U(t1, t3);
   *(u32 *)t5 = arg1;
@@ -720,7 +665,6 @@ g7872:
   goto cachevalid;
 
 storecondnil:
-  if (_trace) printf("storecondnil:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   t6 = *(u64 *)&(processor->niladdress);
@@ -730,17 +674,14 @@ storecondnil:
   goto cachevalid;
 
 storecondiop:
-  if (_trace) printf("storecondiop:\n");
   arg5 = 0;
   arg2 = 65;
   goto illegaloperand;
 
 g7873:
-  if (_trace) printf("g7873:\n");
   t2 = *(u64 *)&(processor->stackcachebasevma);
 
 g7875:
-  if (_trace) printf("g7875:\n");
   t1 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t2 = arg6 - t2;
@@ -753,7 +694,6 @@ g7875:
   goto g7872;
 
 g7862:
-  if (_trace) printf("g7862:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -763,7 +703,6 @@ g7862:
   goto g7861;
 
 g7864:
-  if (_trace) printf("g7864:\n");
   if ((t3 & 1) == 0)
     goto g7863;
   /* Do the indirect thing */
@@ -771,7 +710,6 @@ g7864:
   goto g7860;
 
 g7863:
-  if (_trace) printf("g7863:\n");
   /* Load the memory action table for cycle */
   t1 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -785,7 +723,6 @@ g7863:
   t1 = *(s32 *)t3;
 
 g7868:
-  if (_trace) printf("g7868:\n");
   t3 = t1 & MemoryActionTransform;
   if (t3 == 0)
     goto g7867;
@@ -799,7 +736,6 @@ g7867:
 #ifdef MINIMA
 
 g7867:
-  if (_trace) printf("g7867:\n");
   t3 = t1 & MemoryActionBinding;
   t2 = *(u64 *)&(processor->dbcmask);
   if (t3 == 0)
@@ -828,7 +764,6 @@ g7867:
   goto g7860;
 
 g7870:
-  if (_trace) printf("g7870:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -845,19 +780,16 @@ g7866:
   /* Halfword operand from stack instruction - DoMemoryWrite */
 
 domemorywrite:
-  if (_trace) printf("domemorywrite:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoMemoryWriteIM:
-  if (_trace) printf("DoMemoryWriteIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7880:
-  if (_trace) printf("g7880:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -867,7 +799,6 @@ g7880:
 #endif
 
 DoMemoryWriteSP:
-  if (_trace) printf("DoMemoryWriteSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -881,23 +812,19 @@ DoMemoryWriteSP:
 #endif
 
 DoMemoryWriteLP:
-  if (_trace) printf("DoMemoryWriteLP:\n");
 #ifdef TRACING
   goto headdomemorywrite;
 #endif
 
 DoMemoryWriteFP:
-  if (_trace) printf("DoMemoryWriteFP:\n");
 
 headdomemorywrite:
-  if (_trace) printf("headdomemorywrite:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindomemorywrite:
-  if (_trace) printf("begindomemorywrite:\n");
   /* arg1 has the operand, sign extended if immediate. */
   arg4 = *(s32 *)iSP;
   arg3 = *(s32 *)(iSP + 4);
@@ -919,7 +846,6 @@ begindomemorywrite:
   t3 = t3 & ~(0xffUL << (t1&7)*8);
 
 g7878:
-  if (_trace) printf("g7878:\n");
   t3 = t3 | t2;
   STQ_U(t1, t3);
   *(u32 *)t4 = arg1;
@@ -930,11 +856,9 @@ g7878:
   goto NEXTINSTRUCTION;
 
 g7877:
-  if (_trace) printf("g7877:\n");
   t2 = *(u64 *)&(processor->stackcachebasevma);
 
 g7879:
-  if (_trace) printf("g7879:\n");
   t1 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t2 = arg4 - t2;
@@ -953,19 +877,16 @@ g7879:
   /* Halfword operand from stack instruction - DoPStoreContents */
 
 dopstorecontents:
-  if (_trace) printf("dopstorecontents:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoPStoreContentsIM:
-  if (_trace) printf("DoPStoreContentsIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7893:
-  if (_trace) printf("g7893:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -975,7 +896,6 @@ g7893:
 #endif
 
 DoPStoreContentsSP:
-  if (_trace) printf("DoPStoreContentsSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -989,23 +909,19 @@ DoPStoreContentsSP:
 #endif
 
 DoPStoreContentsLP:
-  if (_trace) printf("DoPStoreContentsLP:\n");
 #ifdef TRACING
   goto headdopstorecontents;
 #endif
 
 DoPStoreContentsFP:
-  if (_trace) printf("DoPStoreContentsFP:\n");
 
 headdopstorecontents:
-  if (_trace) printf("headdopstorecontents:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindopstorecontents:
-  if (_trace) printf("begindopstorecontents:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* address tag and data */
   arg4 = *(s32 *)iSP;
@@ -1054,7 +970,6 @@ g7889:
   t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g7891:
-  if (_trace) printf("g7891:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = arg1;
@@ -1065,11 +980,9 @@ g7891:
   goto NEXTINSTRUCTION;
 
 g7890:
-  if (_trace) printf("g7890:\n");
   t7 = *(u64 *)&(processor->stackcachebasevma);
 
 g7892:
-  if (_trace) printf("g7892:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = arg4 - t7;
@@ -1082,7 +995,6 @@ g7892:
   goto NEXTINSTRUCTION;
 
 g7883:
-  if (_trace) printf("g7883:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
@@ -1099,12 +1011,10 @@ g7883:
   /* arg2 has the preloaded 8 bit operand. */
 
 dosetcdrcode1:
-  if (_trace) printf("dosetcdrcode1:\n");
 #ifdef TRACING
 #endif
 
 DoSetCdrCode1SP:
-  if (_trace) printf("DoSetCdrCode1SP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1118,16 +1028,13 @@ DoSetCdrCode1SP:
 #endif
 
 DoSetCdrCode1LP:
-  if (_trace) printf("DoSetCdrCode1LP:\n");
 #ifdef TRACING
   goto begindosetcdrcode1;
 #endif
 
 DoSetCdrCode1FP:
-  if (_trace) printf("DoSetCdrCode1FP:\n");
 
 begindosetcdrcode1:
-  if (_trace) printf("begindosetcdrcode1:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1156,12 +1063,10 @@ DoSetCdrCode1IM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dosetcdrcode2:
-  if (_trace) printf("dosetcdrcode2:\n");
 #ifdef TRACING
 #endif
 
 DoSetCdrCode2SP:
-  if (_trace) printf("DoSetCdrCode2SP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1175,16 +1080,13 @@ DoSetCdrCode2SP:
 #endif
 
 DoSetCdrCode2LP:
-  if (_trace) printf("DoSetCdrCode2LP:\n");
 #ifdef TRACING
   goto begindosetcdrcode2;
 #endif
 
 DoSetCdrCode2FP:
-  if (_trace) printf("DoSetCdrCode2FP:\n");
 
 begindosetcdrcode2:
-  if (_trace) printf("begindosetcdrcode2:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1213,12 +1115,10 @@ DoSetCdrCode2IM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dojump:
-  if (_trace) printf("dojump:\n");
 #ifdef TRACING
 #endif
 
 DoJumpSP:
-  if (_trace) printf("DoJumpSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1232,16 +1132,13 @@ DoJumpSP:
 #endif
 
 DoJumpLP:
-  if (_trace) printf("DoJumpLP:\n");
 #ifdef TRACING
   goto begindojump;
 #endif
 
 DoJumpFP:
-  if (_trace) printf("DoJumpFP:\n");
 
 begindojump:
-  if (_trace) printf("begindojump:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1276,7 +1173,6 @@ begindojump:
   goto interpretinstructionforjump;
 
 jexc:
-  if (_trace) printf("jexc:\n");
   /* arg3 = stackp */
   arg3 = 1;
   /* arg1 = instruction arity */
@@ -1297,22 +1193,17 @@ DoJumpIM:
   /* Halfword 10 bit immediate instruction - DoCheckPreemptRequest */
 
 docheckpreemptrequest:
-  if (_trace) printf("docheckpreemptrequest:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoCheckPreemptRequestIM:
-  if (_trace) printf("DoCheckPreemptRequestIM:\n");
 
 DoCheckPreemptRequestSP:
-  if (_trace) printf("DoCheckPreemptRequestSP:\n");
 
 DoCheckPreemptRequestLP:
-  if (_trace) printf("DoCheckPreemptRequestLP:\n");
 
 DoCheckPreemptRequestFP:
-  if (_trace) printf("DoCheckPreemptRequestFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   t1 = *(s32 *)&processor->interruptreg;
@@ -1332,22 +1223,17 @@ DoCheckPreemptRequestFP:
   /* Halfword 10 bit immediate instruction - DoHalt */
 
 dohalt:
-  if (_trace) printf("dohalt:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoHaltIM:
-  if (_trace) printf("DoHaltIM:\n");
 
 DoHaltSP:
-  if (_trace) printf("DoHaltSP:\n");
 
 DoHaltLP:
-  if (_trace) printf("DoHaltLP:\n");
 
 DoHaltFP:
-  if (_trace) printf("DoHaltFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   t1 = *(s32 *)&processor->control;
@@ -1360,7 +1246,6 @@ DoHaltFP:
   goto haltmachine;
 
 haltexc:
-  if (_trace) printf("haltexc:\n");
   /* arg3 = stackp */
   arg3 = 1;
   /* arg1 = instruction arity */
@@ -1376,22 +1261,17 @@ haltexc:
   /* Halfword 10 bit immediate instruction - DoNoOp */
 
 donoop:
-  if (_trace) printf("donoop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoNoOpIM:
-  if (_trace) printf("DoNoOpIM:\n");
 
 DoNoOpSP:
-  if (_trace) printf("DoNoOpSP:\n");
 
 DoNoOpLP:
-  if (_trace) printf("DoNoOpLP:\n");
 
 DoNoOpFP:
-  if (_trace) printf("DoNoOpFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   goto NEXTINSTRUCTION;
@@ -1403,19 +1283,16 @@ DoNoOpFP:
   /* Halfword operand from stack instruction - DoAlu */
 
 doalu:
-  if (_trace) printf("doalu:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoAluIM:
-  if (_trace) printf("DoAluIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7964:
-  if (_trace) printf("g7964:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -1425,7 +1302,6 @@ g7964:
 #endif
 
 DoAluSP:
-  if (_trace) printf("DoAluSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1439,23 +1315,19 @@ DoAluSP:
 #endif
 
 DoAluLP:
-  if (_trace) printf("DoAluLP:\n");
 #ifdef TRACING
   goto headdoalu;
 #endif
 
 DoAluFP:
-  if (_trace) printf("DoAluFP:\n");
 
 headdoalu:
-  if (_trace) printf("headdoalu:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoalu:
-  if (_trace) printf("begindoalu:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* Get tag of ARG2 */
   arg2 = arg1 >> 32;
@@ -1481,7 +1353,6 @@ begindoalu:
   t1 = (arg5 == ALUFunction_Boolean) ? 1 : 0;
 
 g7954:
-  if (_trace) printf("g7954:\n");
   if (t1 == 0)
     goto g7895;
   /* Here if argument ALUFunctionBoolean */
@@ -1491,16 +1362,13 @@ g7954:
   t1 = (t10 == Boole_Clear) ? 1 : 0;
 
 g7914:
-  if (_trace) printf("g7914:\n");
   if (t1 != 0)
     goto g7896;
 
 g7897:
-  if (_trace) printf("g7897:\n");
   t1 = (t10 == Boole_And) ? 1 : 0;
 
 g7915:
-  if (_trace) printf("g7915:\n");
   if (t1 == 0)
     goto g7898;
   /* Here if argument BooleAnd */
@@ -1508,11 +1376,9 @@ g7915:
   goto g7896;
 
 g7898:
-  if (_trace) printf("g7898:\n");
   t1 = (t10 == Boole_AndC1) ? 1 : 0;
 
 g7916:
-  if (_trace) printf("g7916:\n");
   if (t1 == 0)
     goto g7899;
   /* Here if argument BooleAndC1 */
@@ -1520,11 +1386,9 @@ g7916:
   goto g7896;
 
 g7899:
-  if (_trace) printf("g7899:\n");
   t1 = (t10 == Boole_2) ? 1 : 0;
 
 g7917:
-  if (_trace) printf("g7917:\n");
   if (t1 == 0)
     goto g7900;
   /* Here if argument Boole2 */
@@ -1532,11 +1396,9 @@ g7917:
   goto g7896;
 
 g7900:
-  if (_trace) printf("g7900:\n");
   t1 = (t10 == Boole_AndC2) ? 1 : 0;
 
 g7918:
-  if (_trace) printf("g7918:\n");
   if (t1 == 0)
     goto g7901;
   /* Here if argument BooleAndC2 */
@@ -1544,11 +1406,9 @@ g7918:
   goto g7896;
 
 g7901:
-  if (_trace) printf("g7901:\n");
   t1 = (t10 == Boole_1) ? 1 : 0;
 
 g7919:
-  if (_trace) printf("g7919:\n");
   if (t1 == 0)
     goto g7902;
   /* Here if argument Boole1 */
@@ -1556,11 +1416,9 @@ g7919:
   goto g7896;
 
 g7902:
-  if (_trace) printf("g7902:\n");
   t1 = (t10 == Boole_Xor) ? 1 : 0;
 
 g7920:
-  if (_trace) printf("g7920:\n");
   if (t1 == 0)
     goto g7903;
   /* Here if argument BooleXor */
@@ -1568,11 +1426,9 @@ g7920:
   goto g7896;
 
 g7903:
-  if (_trace) printf("g7903:\n");
   t1 = (t10 == Boole_Ior) ? 1 : 0;
 
 g7921:
-  if (_trace) printf("g7921:\n");
   if (t1 == 0)
     goto g7904;
   /* Here if argument BooleIor */
@@ -1580,11 +1436,9 @@ g7921:
   goto g7896;
 
 g7904:
-  if (_trace) printf("g7904:\n");
   t1 = (t10 == Boole_Nor) ? 1 : 0;
 
 g7922:
-  if (_trace) printf("g7922:\n");
   if (t1 == 0)
     goto g7905;
   /* Here if argument BooleNor */
@@ -1593,11 +1447,9 @@ g7922:
   goto g7896;
 
 g7905:
-  if (_trace) printf("g7905:\n");
   t1 = (t10 == Boole_Equiv) ? 1 : 0;
 
 g7923:
-  if (_trace) printf("g7923:\n");
   if (t1 == 0)
     goto g7906;
   /* Here if argument BooleEquiv */
@@ -1606,11 +1458,9 @@ g7923:
   goto g7896;
 
 g7906:
-  if (_trace) printf("g7906:\n");
   t1 = (t10 == Boole_C1) ? 1 : 0;
 
 g7924:
-  if (_trace) printf("g7924:\n");
   if (t1 == 0)
     goto g7907;
   /* Here if argument BooleC1 */
@@ -1618,11 +1468,9 @@ g7924:
   goto g7896;
 
 g7907:
-  if (_trace) printf("g7907:\n");
   t1 = (t10 == Boole_OrC1) ? 1 : 0;
 
 g7925:
-  if (_trace) printf("g7925:\n");
   if (t1 == 0)
     goto g7908;
   /* Here if argument BooleOrC1 */
@@ -1630,11 +1478,9 @@ g7925:
   goto g7896;
 
 g7908:
-  if (_trace) printf("g7908:\n");
   t1 = (t10 == Boole_C2) ? 1 : 0;
 
 g7926:
-  if (_trace) printf("g7926:\n");
   if (t1 == 0)
     goto g7909;
   /* Here if argument BooleC2 */
@@ -1642,11 +1488,9 @@ g7926:
   goto g7896;
 
 g7909:
-  if (_trace) printf("g7909:\n");
   t1 = (t10 == Boole_OrC2) ? 1 : 0;
 
 g7927:
-  if (_trace) printf("g7927:\n");
   if (t1 == 0)
     goto g7910;
   /* Here if argument BooleOrC2 */
@@ -1654,11 +1498,9 @@ g7927:
   goto g7896;
 
 g7910:
-  if (_trace) printf("g7910:\n");
   t1 = (t10 == Boole_Nand) ? 1 : 0;
 
 g7928:
-  if (_trace) printf("g7928:\n");
   if (t1 == 0)
     goto g7911;
   /* Here if argument BooleNand */
@@ -1666,27 +1508,22 @@ g7928:
   goto g7896;
 
 g7911:
-  if (_trace) printf("g7911:\n");
   t1 = (t10 == Boole_Set) ? 1 : 0;
 
 g7929:
-  if (_trace) printf("g7929:\n");
   if (t1 == 0)
     goto g7896;
   /* Here if argument BooleSet */
   t10 = ~zero;
 
 g7896:
-  if (_trace) printf("g7896:\n");
   *(u32 *)iSP = t10;
   goto NEXTINSTRUCTION;
 
 g7895:
-  if (_trace) printf("g7895:\n");
   t1 = (arg5 == ALUFunction_Byte) ? 1 : 0;
 
 g7955:
-  if (_trace) printf("g7955:\n");
   if (t1 == 0)
     goto g7930;
   /* Here if argument ALUFunctionByte */
@@ -1701,14 +1538,12 @@ g7955:
   t4 = (t1 == ALUByteBackground_Op1) ? 1 : 0;
 
 g7937:
-  if (_trace) printf("g7937:\n");
   if (t4 == 0)
     goto g7933;
   /* Here if argument ALUByteBackgroundOp1 */
   t1 = arg4;
 
 g7932:
-  if (_trace) printf("g7932:\n");
   t5 = arg6 >> 12;
   /* Extractthe byte rotate latch */
   t5 = t5 & 1;
@@ -1723,7 +1558,6 @@ g7932:
   *(u64 *)&processor->rotatelatch = t10;
 
 g7931:
-  if (_trace) printf("g7931:\n");
   t5 = zero + -2;
   t5 = t5 << (t3 & 63);
   /* Compute mask */
@@ -1734,7 +1568,6 @@ g7931:
   t3 = (t4 == ALUByteFunction_Dpb) ? 1 : 0;
 
 g7942:
-  if (_trace) printf("g7942:\n");
   if (t3 == 0)
     goto g7939;
   /* Here if argument ALUByteFunctionDpb */
@@ -1742,7 +1575,6 @@ g7942:
   t5 = t5 << (t2 & 63);
 
 g7938:
-  if (_trace) printf("g7938:\n");
   /* rotated&mask */
   t10 = t10 & t5;
   /* background&~mask */
@@ -1752,11 +1584,9 @@ g7938:
   goto NEXTINSTRUCTION;
 
 g7930:
-  if (_trace) printf("g7930:\n");
   t1 = (arg5 == ALUFunction_Adder) ? 1 : 0;
 
 g7956:
-  if (_trace) printf("g7956:\n");
   if (t1 == 0)
     goto g7943;
   /* Here if argument ALUFunctionAdder */
@@ -1769,14 +1599,12 @@ g7956:
   t4 = (t3 == ALUAdderOp2_Op2) ? 1 : 0;
 
 g7951:
-  if (_trace) printf("g7951:\n");
   if (t4 == 0)
     goto g7946;
   /* Here if argument ALUAdderOp2Op2 */
   t1 = arg1;
 
 g7945:
-  if (_trace) printf("g7945:\n");
   t10 = arg4 + t1;
   t10 = t10 + t2;
   /* Sign bit */
@@ -1801,7 +1629,6 @@ g7945:
   *(u64 *)&processor->aluandrotatecontrol = arg6;
 
 g7944:
-  if (_trace) printf("g7944:\n");
   t3 = ((s64)arg4 < (s64)t1) ? 1 : 0;
   *(u64 *)&processor->aluborrow = t3;
   arg4 = (s32)arg4;
@@ -1812,11 +1639,9 @@ g7944:
   goto NEXTINSTRUCTION;
 
 g7943:
-  if (_trace) printf("g7943:\n");
   t1 = (arg5 == ALUFunction_MultiplyDivide) ? 1 : 0;
 
 g7957:
-  if (_trace) printf("g7957:\n");
   if (t1 == 0)
     goto g7894;
   /* Here if argument ALUFunctionMultiplyDivide */
@@ -1828,20 +1653,16 @@ g7957:
   goto NEXTINSTRUCTION;
 
 g7894:
-  if (_trace) printf("g7894:\n");
 
 aluexc:
-  if (_trace) printf("aluexc:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
 
 g7946:
-  if (_trace) printf("g7946:\n");
   t4 = (t3 == ALUAdderOp2_Zero) ? 1 : 0;
 
 g7958:
-  if (_trace) printf("g7958:\n");
   if (t4 == 0)
     goto g7947;
   /* Here if argument ALUAdderOp2Zero */
@@ -1849,11 +1670,9 @@ g7958:
   goto g7945;
 
 g7947:
-  if (_trace) printf("g7947:\n");
   t4 = (t3 == ALUAdderOp2_Invert) ? 1 : 0;
 
 g7959:
-  if (_trace) printf("g7959:\n");
   if (t4 == 0)
     goto g7948;
   /* Here if argument ALUAdderOp2Invert */
@@ -1863,11 +1682,9 @@ g7959:
   goto g7945;
 
 g7948:
-  if (_trace) printf("g7948:\n");
   t4 = (t3 == ALUAdderOp2_MinusOne) ? 1 : 0;
 
 g7960:
-  if (_trace) printf("g7960:\n");
   if (t4 == 0)
     goto g7945;
   /* Here if argument ALUAdderOp2MinusOne */
@@ -1876,21 +1693,17 @@ g7960:
   goto g7945;
 
 g7939:
-  if (_trace) printf("g7939:\n");
   t3 = (t4 == ALUByteFunction_Ldb) ? 1 : 0;
 
 g7961:
-  if (_trace) printf("g7961:\n");
   if (t3 != 0)
     goto g7938;
   goto g7938;
 
 g7933:
-  if (_trace) printf("g7933:\n");
   t4 = (t1 == ALUByteBackground_RotateLatch) ? 1 : 0;
 
 g7962:
-  if (_trace) printf("g7962:\n");
   if (t4 == 0)
     goto g7934;
   /* Here if argument ALUByteBackgroundRotateLatch */
@@ -1898,11 +1711,9 @@ g7962:
   goto g7932;
 
 g7934:
-  if (_trace) printf("g7934:\n");
   t4 = (t1 == ALUByteBackground_Zero) ? 1 : 0;
 
 g7963:
-  if (_trace) printf("g7963:\n");
   if (t4 == 0)
     goto g7932;
   /* Here if argument ALUByteBackgroundZero */
@@ -1916,22 +1727,17 @@ g7963:
   /* Halfword 10 bit immediate instruction - DoSpareOp */
 
 dospareop:
-  if (_trace) printf("dospareop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoSpareOpIM:
-  if (_trace) printf("DoSpareOpIM:\n");
 
 DoSpareOpSP:
-  if (_trace) printf("DoSpareOpSP:\n");
 
 DoSpareOpLP:
-  if (_trace) printf("DoSpareOpLP:\n");
 
 DoSpareOpFP:
-  if (_trace) printf("DoSpareOpFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   /* Get the instruction */
@@ -1962,7 +1768,6 @@ DoSpareOpFP:
 
 
 ReadRegisterFP:
-  if (_trace) printf("ReadRegisterFP:\n");
   /* Convert stack cache address to VMA */
   t5 = *(u64 *)&(processor->stackcachedata);
   t4 = *(u64 *)&(processor->stackcachebasevma);
@@ -1984,7 +1789,6 @@ ReadRegisterFP:
 
 
 ReadRegisterLP:
-  if (_trace) printf("ReadRegisterLP:\n");
   /* Convert stack cache address to VMA */
   t5 = *(u64 *)&(processor->stackcachedata);
   t4 = *(u64 *)&(processor->stackcachebasevma);
@@ -2006,7 +1810,6 @@ ReadRegisterLP:
 
 
 ReadRegisterSP:
-  if (_trace) printf("ReadRegisterSP:\n");
   /* Convert stack cache address to VMA */
   t5 = *(u64 *)&(processor->stackcachedata);
   t4 = *(u64 *)&(processor->stackcachebasevma);
@@ -2028,7 +1831,6 @@ ReadRegisterSP:
 
 
 ReadRegisterStackCacheLowerBound:
-  if (_trace) printf("ReadRegisterStackCacheLowerBound:\n");
   t3 = *(u64 *)&(processor->stackcachebasevma);
   t5 = Type_Locative;
   *(u32 *)(iSP + 8) = t3;
@@ -2042,7 +1844,6 @@ ReadRegisterStackCacheLowerBound:
 
 
 ReadRegisterBARx:
-  if (_trace) printf("ReadRegisterBARx:\n");
   /* BAR number into T2 */
   t2 = arg1 >> 7;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -2063,7 +1864,6 @@ ReadRegisterBARx:
 
 
 ReadRegisterContinuation:
-  if (_trace) printf("ReadRegisterContinuation:\n");
   t3 = *(u64 *)&(processor->continuation);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2076,7 +1876,6 @@ ReadRegisterContinuation:
 
 
 ReadRegisterAluAndRotateControl:
-  if (_trace) printf("ReadRegisterAluAndRotateControl:\n");
   t3 = *(u64 *)&(processor->aluandrotatecontrol);
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2090,7 +1889,6 @@ ReadRegisterAluAndRotateControl:
 
 
 ReadRegisterControlRegister:
-  if (_trace) printf("ReadRegisterControlRegister:\n");
   t3 = *(s32 *)&processor->control;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2104,7 +1902,6 @@ ReadRegisterControlRegister:
 
 
 ReadRegisterCRArgumentSize:
-  if (_trace) printf("ReadRegisterCRArgumentSize:\n");
   t3 = *(s32 *)&processor->control;
   /* Get the argument size field */
   t3 = t3 & 255;
@@ -2120,7 +1917,6 @@ ReadRegisterCRArgumentSize:
 
 
 ReadRegisterEphemeralOldspaceRegister:
-  if (_trace) printf("ReadRegisterEphemeralOldspaceRegister:\n");
   t3 = *(s32 *)&processor->ephemeraloldspace;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2134,7 +1930,6 @@ ReadRegisterEphemeralOldspaceRegister:
 
 
 ReadRegisterZoneOldspaceRegister:
-  if (_trace) printf("ReadRegisterZoneOldspaceRegister:\n");
   t3 = *(s32 *)&processor->zoneoldspace;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2148,7 +1943,6 @@ ReadRegisterZoneOldspaceRegister:
 
 
 ReadRegisterChipRevision:
-  if (_trace) printf("ReadRegisterChipRevision:\n");
   t3 = 5;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2162,7 +1956,6 @@ ReadRegisterChipRevision:
 
 
 ReadRegisterFPCoprocessorPresent:
-  if (_trace) printf("ReadRegisterFPCoprocessorPresent:\n");
   t4 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2175,7 +1968,6 @@ ReadRegisterFPCoprocessorPresent:
 
 
 ReadRegisterPreemptRegister:
-  if (_trace) printf("ReadRegisterPreemptRegister:\n");
   t3 = *(s32 *)&processor->interruptreg;
   t3 = t3 & 3;
   t5 = Type_Fixnum;
@@ -2190,7 +1982,6 @@ ReadRegisterPreemptRegister:
 
 
 ReadRegisterIcacheControl:
-  if (_trace) printf("ReadRegisterIcacheControl:\n");
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2203,7 +1994,6 @@ ReadRegisterIcacheControl:
 
 
 ReadRegisterPrefetcherControl:
-  if (_trace) printf("ReadRegisterPrefetcherControl:\n");
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2216,7 +2006,6 @@ ReadRegisterPrefetcherControl:
 
 
 ReadRegisterMapCacheControl:
-  if (_trace) printf("ReadRegisterMapCacheControl:\n");
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2229,7 +2018,6 @@ ReadRegisterMapCacheControl:
 
 
 ReadRegisterMemoryControl:
-  if (_trace) printf("ReadRegisterMemoryControl:\n");
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2242,7 +2030,6 @@ ReadRegisterMemoryControl:
 
 
 ReadRegisterStackCacheOverflowLimit:
-  if (_trace) printf("ReadRegisterStackCacheOverflowLimit:\n");
   t3 = *(s32 *)&processor->scovlimit;
   t4 = *(u64 *)&(processor->stackcachebasevma);
   t3 = t3 + t4;
@@ -2258,7 +2045,6 @@ ReadRegisterStackCacheOverflowLimit:
 
 
 ReadRegisterMicrosecondClock:
-  if (_trace) printf("ReadRegisterMicrosecondClock:\n");
   t1 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2271,7 +2057,6 @@ ReadRegisterMicrosecondClock:
 
 
 ReadRegisterTOS:
-  if (_trace) printf("ReadRegisterTOS:\n");
   t1 = *(u64 *)iSP;
   iSP = iSP + 8;
   t2 = t1 << 26;
@@ -2285,7 +2070,6 @@ ReadRegisterTOS:
 
 
 ReadRegisterEventCount:
-  if (_trace) printf("ReadRegisterEventCount:\n");
   t3 = *(u64 *)&(processor->areventcount);
   t4 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2299,7 +2083,6 @@ ReadRegisterEventCount:
 
 
 ReadRegisterBindingStackPointer:
-  if (_trace) printf("ReadRegisterBindingStackPointer:\n");
   t3 = *(u64 *)&(processor->bindingstackpointer);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2312,7 +2095,6 @@ ReadRegisterBindingStackPointer:
 
 
 ReadRegisterCatchBlockList:
-  if (_trace) printf("ReadRegisterCatchBlockList:\n");
   t3 = *(u64 *)&(processor->catchblock);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2325,7 +2107,6 @@ ReadRegisterCatchBlockList:
 
 
 ReadRegisterControlStackLimit:
-  if (_trace) printf("ReadRegisterControlStackLimit:\n");
   t3 = *(s32 *)&processor->cslimit;
   t5 = Type_Locative;
   *(u32 *)(iSP + 8) = t3;
@@ -2339,7 +2120,6 @@ ReadRegisterControlStackLimit:
 
 
 ReadRegisterControlStackExtraLimit:
-  if (_trace) printf("ReadRegisterControlStackExtraLimit:\n");
   t3 = *(s32 *)&processor->csextralimit;
   t5 = Type_Locative;
   *(u32 *)(iSP + 8) = t3;
@@ -2353,7 +2133,6 @@ ReadRegisterControlStackExtraLimit:
 
 
 ReadRegisterBindingStackLimit:
-  if (_trace) printf("ReadRegisterBindingStackLimit:\n");
   t3 = *(u64 *)&(processor->bindingstacklimit);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2366,7 +2145,6 @@ ReadRegisterBindingStackLimit:
 
 
 ReadRegisterPHTBase:
-  if (_trace) printf("ReadRegisterPHTBase:\n");
   t5 = Type_Locative;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2379,7 +2157,6 @@ ReadRegisterPHTBase:
 
 
 ReadRegisterPHTMask:
-  if (_trace) printf("ReadRegisterPHTMask:\n");
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2392,7 +2169,6 @@ ReadRegisterPHTMask:
 
 
 ReadRegisterCountMapReloads:
-  if (_trace) printf("ReadRegisterCountMapReloads:\n");
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = zero;
   /* write the stack cache */
@@ -2405,7 +2181,6 @@ ReadRegisterCountMapReloads:
 
 
 ReadRegisterListCacheArea:
-  if (_trace) printf("ReadRegisterListCacheArea:\n");
   t3 = *(u64 *)&(processor->lcarea);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2418,7 +2193,6 @@ ReadRegisterListCacheArea:
 
 
 ReadRegisterListCacheAddress:
-  if (_trace) printf("ReadRegisterListCacheAddress:\n");
   t3 = *(u64 *)&(processor->lcaddress);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2431,7 +2205,6 @@ ReadRegisterListCacheAddress:
 
 
 ReadRegisterListCacheLength:
-  if (_trace) printf("ReadRegisterListCacheLength:\n");
   t3 = *(s32 *)&processor->lclength;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2445,7 +2218,6 @@ ReadRegisterListCacheLength:
 
 
 ReadRegisterStructureCacheArea:
-  if (_trace) printf("ReadRegisterStructureCacheArea:\n");
   t3 = *(u64 *)&(processor->scarea);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2458,7 +2230,6 @@ ReadRegisterStructureCacheArea:
 
 
 ReadRegisterStructureCacheAddress:
-  if (_trace) printf("ReadRegisterStructureCacheAddress:\n");
   t3 = *(u64 *)&(processor->scaddress);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2471,7 +2242,6 @@ ReadRegisterStructureCacheAddress:
 
 
 ReadRegisterStructureCacheLength:
-  if (_trace) printf("ReadRegisterStructureCacheLength:\n");
   t3 = *(s32 *)&processor->sclength;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2485,7 +2255,6 @@ ReadRegisterStructureCacheLength:
 
 
 ReadRegisterDynamicBindingCacheBase:
-  if (_trace) printf("ReadRegisterDynamicBindingCacheBase:\n");
   t3 = *(u64 *)&(processor->dbcbase);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2498,7 +2267,6 @@ ReadRegisterDynamicBindingCacheBase:
 
 
 ReadRegisterDynamicBindingCacheMask:
-  if (_trace) printf("ReadRegisterDynamicBindingCacheMask:\n");
   t3 = *(u64 *)&(processor->dbcmask);
   iSP = iSP + 8;
   t5 = t3 << 26;
@@ -2511,7 +2279,6 @@ ReadRegisterDynamicBindingCacheMask:
 
 
 ReadRegisterChoicePointer:
-  if (_trace) printf("ReadRegisterChoicePointer:\n");
   t3 = *(s32 *)&processor->choiceptr;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2525,7 +2292,6 @@ ReadRegisterChoicePointer:
 
 
 ReadRegisterStructureStackChoicePointer:
-  if (_trace) printf("ReadRegisterStructureStackChoicePointer:\n");
   t3 = *(s32 *)&processor->sstkchoiceptr;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2539,7 +2305,6 @@ ReadRegisterStructureStackChoicePointer:
 
 
 ReadRegisterFEPModeTrapVectorAddress:
-  if (_trace) printf("ReadRegisterFEPModeTrapVectorAddress:\n");
   t3 = *(u64 *)&(processor->fepmodetrapvecaddress);
   goto NEXTINSTRUCTION;
 
@@ -2548,7 +2313,6 @@ ReadRegisterFEPModeTrapVectorAddress:
 
 
 ReadRegisterStackFrameMaximumSize:
-  if (_trace) printf("ReadRegisterStackFrameMaximumSize:\n");
   t3 = zero + 128;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2562,7 +2326,6 @@ ReadRegisterStackFrameMaximumSize:
 
 
 ReadRegisterStackCacheDumpQuantum:
-  if (_trace) printf("ReadRegisterStackCacheDumpQuantum:\n");
   t3 = zero + 896;
   t5 = Type_Fixnum;
   *(u32 *)(iSP + 8) = t3;
@@ -2576,7 +2339,6 @@ ReadRegisterStackCacheDumpQuantum:
 
 
 ReadRegisterConstantNIL:
-  if (_trace) printf("ReadRegisterConstantNIL:\n");
   t5 = *(u64 *)&(processor->taddress);
   /* push the data */
   *(u64 *)(iSP + 8) = t5;
@@ -2588,7 +2350,6 @@ ReadRegisterConstantNIL:
 
 
 ReadRegisterConstantT:
-  if (_trace) printf("ReadRegisterConstantT:\n");
   t5 = *(u64 *)&(processor->niladdress);
   /* push the data */
   *(u64 *)(iSP + 8) = t5;
@@ -2600,7 +2361,6 @@ ReadRegisterConstantT:
 
 
 ReadRegisterError:
-  if (_trace) printf("ReadRegisterError:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
@@ -2610,7 +2370,6 @@ ReadRegisterError:
 
 
 WriteRegisterFP:
-  if (_trace) printf("WriteRegisterFP:\n");
 #ifdef IVERIFY
   /* Base of the stack cache */
   t2 = *(u64 *)&(processor->stackcachebasevma);
@@ -2638,7 +2397,6 @@ WriteRegisterFP:
 
 
 WriteRegisterLP:
-  if (_trace) printf("WriteRegisterLP:\n");
 #ifdef IVERIFY
   /* Base of the stack cache */
   t2 = *(u64 *)&(processor->stackcachebasevma);
@@ -2666,7 +2424,6 @@ WriteRegisterLP:
 
 
 WriteRegisterSP:
-  if (_trace) printf("WriteRegisterSP:\n");
 #ifdef IVERIFY
   /* Base of the stack cache */
   t2 = *(u64 *)&(processor->stackcachebasevma);
@@ -2694,7 +2451,6 @@ WriteRegisterSP:
 
 
 WriteRegisterStackCacheLowerBound:
-  if (_trace) printf("WriteRegisterStackCacheLowerBound:\n");
 #ifdef IVERIFY
   *(u64 *)&processor->stackcachebasevma = arg3;
   t1 = *(u64 *)&(processor->stackcachesize);
@@ -2711,7 +2467,6 @@ WriteRegisterStackCacheLowerBound:
 
 
 WriteRegisterContinuation:
-  if (_trace) printf("WriteRegisterContinuation:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2723,7 +2478,6 @@ WriteRegisterContinuation:
 
 
 WriteRegisterAluAndRotateControl:
-  if (_trace) printf("WriteRegisterAluAndRotateControl:\n");
   t1 = arg3 >> 14;
   /* Extract the function class bits */
   t1 = t1 & 3;
@@ -2743,7 +2497,6 @@ WriteRegisterAluAndRotateControl:
 
 
 WriteRegisterControlRegister:
-  if (_trace) printf("WriteRegisterControlRegister:\n");
   *(u32 *)&processor->control = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2752,7 +2505,6 @@ WriteRegisterControlRegister:
 
 
 WriteRegisterEphemeralOldspaceRegister:
-  if (_trace) printf("WriteRegisterEphemeralOldspaceRegister:\n");
   *(u64 *)&processor->ac0array = zero;
   *(u64 *)&processor->ac1array = zero;
   *(u64 *)&processor->ac2array = zero;
@@ -2769,7 +2521,6 @@ WriteRegisterEphemeralOldspaceRegister:
 
 
 WriteRegisterZoneOldspaceRegister:
-  if (_trace) printf("WriteRegisterZoneOldspaceRegister:\n");
   *(u32 *)&processor->zoneoldspace = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2778,7 +2529,6 @@ WriteRegisterZoneOldspaceRegister:
 
 
 WriteRegisterFPCoprocessorPresent:
-  if (_trace) printf("WriteRegisterFPCoprocessorPresent:\n");
   goto NEXTINSTRUCTION;
 
 /* end WriteRegisterFPCoprocessorPresent */
@@ -2786,7 +2536,6 @@ WriteRegisterFPCoprocessorPresent:
 
 
 WriteRegisterPreemptRegister:
-  if (_trace) printf("WriteRegisterPreemptRegister:\n");
   t3 = *(s32 *)&processor->interruptreg;
   t3 = t3 & ~3L;
   arg3 = arg3 & 3;
@@ -2802,7 +2551,6 @@ WriteRegisterPreemptRegister:
 
 
 WriteRegisterStackCacheOverflowLimit:
-  if (_trace) printf("WriteRegisterStackCacheOverflowLimit:\n");
   t1 = *(u64 *)&(processor->stackcachebasevma);
   t1 = (u32)t1;
   t1 = arg3 - t1;
@@ -2814,7 +2562,6 @@ WriteRegisterStackCacheOverflowLimit:
 
 
 WriteRegisterTOS:
-  if (_trace) printf("WriteRegisterTOS:\n");
   goto NEXTINSTRUCTION;
 
 /* end WriteRegisterTOS */
@@ -2822,7 +2569,6 @@ WriteRegisterTOS:
 
 
 WriteRegisterEventCount:
-  if (_trace) printf("WriteRegisterEventCount:\n");
   *(u64 *)&processor->areventcount = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2831,7 +2577,6 @@ WriteRegisterEventCount:
 
 
 WriteRegisterBindingStackPointer:
-  if (_trace) printf("WriteRegisterBindingStackPointer:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2843,7 +2588,6 @@ WriteRegisterBindingStackPointer:
 
 
 WriteRegisterCatchBlockList:
-  if (_trace) printf("WriteRegisterCatchBlockList:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2855,7 +2599,6 @@ WriteRegisterCatchBlockList:
 
 
 WriteRegisterControlStackLimit:
-  if (_trace) printf("WriteRegisterControlStackLimit:\n");
   *(u32 *)&processor->cslimit = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2864,7 +2607,6 @@ WriteRegisterControlStackLimit:
 
 
 WriteRegisterControlStackExtraLimit:
-  if (_trace) printf("WriteRegisterControlStackExtraLimit:\n");
   *(u32 *)&processor->csextralimit = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2873,7 +2615,6 @@ WriteRegisterControlStackExtraLimit:
 
 
 WriteRegisterBindingStackLimit:
-  if (_trace) printf("WriteRegisterBindingStackLimit:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2885,7 +2626,6 @@ WriteRegisterBindingStackLimit:
 
 
 WriteRegisterListCacheArea:
-  if (_trace) printf("WriteRegisterListCacheArea:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2897,7 +2637,6 @@ WriteRegisterListCacheArea:
 
 
 WriteRegisterListCacheAddress:
-  if (_trace) printf("WriteRegisterListCacheAddress:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2909,7 +2648,6 @@ WriteRegisterListCacheAddress:
 
 
 WriteRegisterListCacheLength:
-  if (_trace) printf("WriteRegisterListCacheLength:\n");
   *(u32 *)&processor->lclength = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2918,7 +2656,6 @@ WriteRegisterListCacheLength:
 
 
 WriteRegisterStructureCacheArea:
-  if (_trace) printf("WriteRegisterStructureCacheArea:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2930,7 +2667,6 @@ WriteRegisterStructureCacheArea:
 
 
 WriteRegisterStructureCacheAddress:
-  if (_trace) printf("WriteRegisterStructureCacheAddress:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2942,7 +2678,6 @@ WriteRegisterStructureCacheAddress:
 
 
 WriteRegisterStructureCacheLength:
-  if (_trace) printf("WriteRegisterStructureCacheLength:\n");
   *(u32 *)&processor->sclength = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2951,7 +2686,6 @@ WriteRegisterStructureCacheLength:
 
 
 WriteRegisterDynamicBindingCacheBase:
-  if (_trace) printf("WriteRegisterDynamicBindingCacheBase:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2963,7 +2697,6 @@ WriteRegisterDynamicBindingCacheBase:
 
 
 WriteRegisterDynamicBindingCacheMask:
-  if (_trace) printf("WriteRegisterDynamicBindingCacheMask:\n");
   arg4 = arg2 << 32;
   /* construct the combined word */
   arg4 = arg4 | arg3;
@@ -2975,7 +2708,6 @@ WriteRegisterDynamicBindingCacheMask:
 
 
 WriteRegisterChoicePointer:
-  if (_trace) printf("WriteRegisterChoicePointer:\n");
   *(u32 *)&processor->choiceptr = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2984,7 +2716,6 @@ WriteRegisterChoicePointer:
 
 
 WriteRegisterStructureStackChoicePointer:
-  if (_trace) printf("WriteRegisterStructureStackChoicePointer:\n");
   *(u32 *)&processor->sstkchoiceptr = arg3;
   goto NEXTINSTRUCTION;
 
@@ -2993,7 +2724,6 @@ WriteRegisterStructureStackChoicePointer:
 
 
 WriteRegisterFEPModeTrapVectorAddress:
-  if (_trace) printf("WriteRegisterFEPModeTrapVectorAddress:\n");
   *(u32 *)&processor->fepmodetrapvecaddress = arg3;
   goto NEXTINSTRUCTION;
 
@@ -3002,7 +2732,6 @@ WriteRegisterFEPModeTrapVectorAddress:
 
 
 WriteRegisterMappingTableCache:
-  if (_trace) printf("WriteRegisterMappingTableCache:\n");
   goto NEXTINSTRUCTION;
 
 /* end WriteRegisterMappingTableCache */
@@ -3010,7 +2739,6 @@ WriteRegisterMappingTableCache:
 
 
 WriteRegisterError:
-  if (_trace) printf("WriteRegisterError:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
@@ -3023,22 +2751,17 @@ WriteRegisterError:
   /* Halfword 10 bit immediate instruction - DoCoprocessorRead */
 
 docoprocessorread:
-  if (_trace) printf("docoprocessorread:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoCoprocessorReadIM:
-  if (_trace) printf("DoCoprocessorReadIM:\n");
 
 DoCoprocessorReadSP:
-  if (_trace) printf("DoCoprocessorReadSP:\n");
 
 DoCoprocessorReadLP:
-  if (_trace) printf("DoCoprocessorReadLP:\n");
 
 DoCoprocessorReadFP:
-  if (_trace) printf("DoCoprocessorReadFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   r0 = *(u64 *)&(processor->coprocessorreadhook);
@@ -3084,7 +2807,6 @@ DoCoprocessorReadFP:
   goto NEXTINSTRUCTION;
 
 cpreadexc:
-  if (_trace) printf("cpreadexc:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
@@ -3096,22 +2818,17 @@ cpreadexc:
   /* Halfword 10 bit immediate instruction - DoCoprocessorWrite */
 
 docoprocessorwrite:
-  if (_trace) printf("docoprocessorwrite:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoCoprocessorWriteIM:
-  if (_trace) printf("DoCoprocessorWriteIM:\n");
 
 DoCoprocessorWriteSP:
-  if (_trace) printf("DoCoprocessorWriteSP:\n");
 
 DoCoprocessorWriteLP:
-  if (_trace) printf("DoCoprocessorWriteLP:\n");
 
 DoCoprocessorWriteFP:
-  if (_trace) printf("DoCoprocessorWriteFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   /* The value to be written */
@@ -3224,7 +2941,6 @@ DoCoprocessorWriteFP:
   goto g7965;
 
 g7966:
-  if (_trace) printf("g7966:\n");
   t2 = zero + CoprocessorRegister_FlushIDCaches;
   t2 = arg1 - t2;
   if (t2 != 0)
@@ -3268,7 +2984,6 @@ g7966:
   goto g7965;
 
 g7967:
-  if (_trace) printf("g7967:\n");
   t2 = zero + CoprocessorRegister_FlushCachesForVMA;
   t2 = arg1 - t2;
   if (t2 != 0)
@@ -3308,11 +3023,9 @@ g7967:
   *((u64 *)(&((CACHELINEP)t2)->pcdata)+CACHELINESIZE/8) = zero;
 
 dcwnotincache:
-  if (_trace) printf("dcwnotincache:\n");
   goto g7965;
 
 g7968:
-  if (_trace) printf("g7968:\n");
   t2 = zero + CoprocessorRegister_FlushHiddenArrayRegisters;
   t2 = arg1 - t2;
   if (t2 != 0)
@@ -3335,11 +3048,9 @@ g7968:
   *(u64 *)&((ARRAYCACHEP)t7)->array = zero;
 
 arraynotincache:
-  if (_trace) printf("arraynotincache:\n");
   goto g7965;
 
 g7969:
-  if (_trace) printf("g7969:\n");
   /* Here for all other cases */
   /* Standard coprocessor register processing */
   r0 = *(u64 *)&(processor->coprocessorwritehook);
@@ -3377,38 +3088,31 @@ g7969:
   goto g7965;
 
 g7970:
-  if (_trace) printf("g7970:\n");
 
 g7965:
-  if (_trace) printf("g7965:\n");
   goto NEXTINSTRUCTION;
 
 unwindillegalcontinuation:
-  if (_trace) printf("unwindillegalcontinuation:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
 
 unwindillegalcontrol:
-  if (_trace) printf("unwindillegalcontrol:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
 
 unwindillegalfp:
-  if (_trace) printf("unwindillegalfp:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
 
 unwindillegallp:
-  if (_trace) printf("unwindillegallp:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
 
 cpwriteexc:
-  if (_trace) printf("cpwriteexc:\n");
   arg5 = 0;
   arg2 = 84;
   goto illegaloperand;
@@ -3419,7 +3123,6 @@ cpwriteexc:
 
 
 getrpcc:
-  if (_trace) printf("getrpcc:\n");
   goto *(void *)ra; /* ret */
 
 /* end GetRPCC */
@@ -3427,12 +3130,10 @@ getrpcc:
 
 
 spinwheels:
-  if (_trace) printf("spinwheels:\n");
   arg1 = 1;
   arg1 = arg1 << 25;
 
 spinwheelaxis:
-  if (_trace) printf("spinwheelaxis:\n");
   arg1 = arg1 + -1;
   if ((s64)arg1 > 0)
     goto spinwheelaxis;

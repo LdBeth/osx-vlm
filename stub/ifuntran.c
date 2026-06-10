@@ -7,7 +7,6 @@
 
 
 nativeexception:
-  if (_trace) printf("nativeexception:\n");
   /* Load linkage to escape block */
   t1 = *(u64 *)&(processor->linkage);
   /* Re-load resumemulator */
@@ -22,7 +21,6 @@ nativeexception:
 
 
 padpastaref1:
-  if (_trace) printf("padpastaref1:\n");
   /* Load linkage to escape block */
   t1 = *(u64 *)&(processor->linkage);
   /* Re-load resumemulator */
@@ -44,7 +42,6 @@ padpastaref1:
 
 
 carsubroutine:
-  if (_trace) printf("carsubroutine:\n");
   sp = sp + -8;
   *(u64 *)&processor->linkage = r0;
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -66,7 +63,6 @@ return0093:
 
 
 cdrsubroutine:
-  if (_trace) printf("cdrsubroutine:\n");
   sp = sp + -8;
   *(u64 *)&processor->linkage = r0;
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -88,7 +84,6 @@ return0094:
 
 
 carcdrsubroutine:
-  if (_trace) printf("carcdrsubroutine:\n");
   sp = sp + -8;
   *(u64 *)&processor->linkage = r0;
   t11 = *(u64 *)&(processor->stackcachebasevma);

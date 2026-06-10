@@ -11,7 +11,6 @@
 #endif
 
 doistageerror:
-  if (_trace) printf("doistageerror:\n");
   arg5 = 0;
   arg2 = 38;
   goto illegaloperand;
@@ -25,7 +24,6 @@ doistageerror:
 #endif
 
 nullfw:
-  if (_trace) printf("nullfw:\n");
   arg5 = 0;
   arg2 = 47;
   goto illegaloperand;
@@ -39,7 +37,6 @@ nullfw:
 #endif
 
 monitorforwardfw:
-  if (_trace) printf("monitorforwardfw:\n");
   arg5 = 0;
   arg2 = 46;
   goto illegaloperand;
@@ -53,7 +50,6 @@ monitorforwardfw:
 #endif
 
 headerpfw:
-  if (_trace) printf("headerpfw:\n");
   arg5 = 0;
   arg2 = 44;
   goto illegaloperand;
@@ -67,7 +63,6 @@ headerpfw:
 #endif
 
 headerifw:
-  if (_trace) printf("headerifw:\n");
   arg5 = 0;
   arg2 = 43;
   goto illegaloperand;
@@ -81,7 +76,6 @@ headerifw:
 #endif
 
 oneqforwardfw:
-  if (_trace) printf("oneqforwardfw:\n");
   arg5 = 0;
   arg2 = 48;
   goto illegaloperand;
@@ -95,7 +89,6 @@ oneqforwardfw:
 #endif
 
 headerforwardfw:
-  if (_trace) printf("headerforwardfw:\n");
   arg5 = 0;
   arg2 = 42;
   goto illegaloperand;
@@ -109,7 +102,6 @@ headerforwardfw:
 #endif
 
 elementforwardfw:
-  if (_trace) printf("elementforwardfw:\n");
   arg5 = 0;
   arg2 = 40;
   goto illegaloperand;
@@ -123,7 +115,6 @@ elementforwardfw:
 #endif
 
 gcforwardfw:
-  if (_trace) printf("gcforwardfw:\n");
   arg5 = 0;
   arg2 = 41;
   goto illegaloperand;
@@ -137,7 +128,6 @@ gcforwardfw:
 #endif
 
 boundlocationfw:
-  if (_trace) printf("boundlocationfw:\n");
   arg5 = 0;
   arg2 = 39;
   goto illegaloperand;
@@ -151,7 +141,6 @@ boundlocationfw:
 #endif
 
 logicvariablefw:
-  if (_trace) printf("logicvariablefw:\n");
   arg5 = 0;
   arg2 = 45;
   goto illegaloperand;
@@ -165,7 +154,6 @@ logicvariablefw:
 #endif
 
 pushsparepointer3:
-  if (_trace) printf("pushsparepointer3:\n");
   /* Get operand */
   arg1 = *(u64 *)&(((CACHELINEP)iCP)->instruction);
   /* This instruction has not been written yet. */
@@ -182,7 +170,6 @@ pushsparepointer3:
 #endif
 
 pushsparepointer4:
-  if (_trace) printf("pushsparepointer4:\n");
   /* Get operand */
   arg1 = *(u64 *)&(((CACHELINEP)iCP)->instruction);
   /* This instruction has not been written yet. */
@@ -199,10 +186,8 @@ pushsparepointer4:
 #endif
 
 callcompiledodd:
-  if (_trace) printf("callcompiledodd:\n");
 
 callcompiledoddprefetch:
-  if (_trace) printf("callcompiledoddprefetch:\n");
   /* Get operand */
   arg6 = arg3;
   arg5 = Type_OddPC;
@@ -219,7 +204,6 @@ callcompiledoddprefetch:
 #endif
 
 nativeinstruction:
-  if (_trace) printf("nativeinstruction:\n");
   /* arg1 is instruction address*2 here */
   arg1 = iPC & ~1L;
   /* Select the DATA address */
@@ -235,7 +219,6 @@ nativeinstruction:
 
 
 resumeemulated:
-  if (_trace) printf("resumeemulated:\n");
   arg2 = *(u64 *)&(((CACHELINEP)iCP)->annotation);
   iPC = (ivory * 4) - arg1;
   iPC = zero - iPC;

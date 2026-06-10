@@ -10,12 +10,10 @@
   /* arg2 has the preloaded 8 bit operand. */
 
 doaddbignumstep:
-  if (_trace) printf("doaddbignumstep:\n");
 #ifdef TRACING
 #endif
 
 DoAddBignumStepIM:
-  if (_trace) printf("DoAddBignumStepIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -24,7 +22,6 @@ DoAddBignumStepIM:
 #endif
 
 DoAddBignumStepSP:
-  if (_trace) printf("DoAddBignumStepSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -38,23 +35,19 @@ DoAddBignumStepSP:
 #endif
 
 DoAddBignumStepLP:
-  if (_trace) printf("DoAddBignumStepLP:\n");
 #ifdef TRACING
   goto headdoaddbignumstep;
 #endif
 
 DoAddBignumStepFP:
-  if (_trace) printf("DoAddBignumStepFP:\n");
 
 headdoaddbignumstep:
-  if (_trace) printf("headdoaddbignumstep:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoaddbignumstep:
-  if (_trace) printf("begindoaddbignumstep:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get arg2 */
   arg2 = *(s32 *)iSP;
@@ -103,7 +96,6 @@ begindoaddbignumstep:
   goto cachevalid;
 
 addbignumsteplose:
-  if (_trace) printf("addbignumsteplose:\n");
   arg5 = 0;
   arg2 = 76;
   goto illegaloperand;
@@ -116,12 +108,10 @@ addbignumsteplose:
   /* arg2 has the preloaded 8 bit operand. */
 
 dosubbignumstep:
-  if (_trace) printf("dosubbignumstep:\n");
 #ifdef TRACING
 #endif
 
 DoSubBignumStepIM:
-  if (_trace) printf("DoSubBignumStepIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -130,7 +120,6 @@ DoSubBignumStepIM:
 #endif
 
 DoSubBignumStepSP:
-  if (_trace) printf("DoSubBignumStepSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -144,23 +133,19 @@ DoSubBignumStepSP:
 #endif
 
 DoSubBignumStepLP:
-  if (_trace) printf("DoSubBignumStepLP:\n");
 #ifdef TRACING
   goto headdosubbignumstep;
 #endif
 
 DoSubBignumStepFP:
-  if (_trace) printf("DoSubBignumStepFP:\n");
 
 headdosubbignumstep:
-  if (_trace) printf("headdosubbignumstep:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindosubbignumstep:
-  if (_trace) printf("begindosubbignumstep:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get arg2 */
   arg2 = *(s32 *)iSP;
@@ -217,7 +202,6 @@ begindosubbignumstep:
   goto cachevalid;
 
 subbignumsteplose:
-  if (_trace) printf("subbignumsteplose:\n");
   arg5 = 0;
   arg2 = 76;
   goto illegaloperand;
@@ -230,12 +214,10 @@ subbignumsteplose:
   /* arg2 has the preloaded 8 bit operand. */
 
 domultiplybignumstep:
-  if (_trace) printf("domultiplybignumstep:\n");
 #ifdef TRACING
 #endif
 
 DoMultiplyBignumStepIM:
-  if (_trace) printf("DoMultiplyBignumStepIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -244,7 +226,6 @@ DoMultiplyBignumStepIM:
 #endif
 
 DoMultiplyBignumStepSP:
-  if (_trace) printf("DoMultiplyBignumStepSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -258,23 +239,19 @@ DoMultiplyBignumStepSP:
 #endif
 
 DoMultiplyBignumStepLP:
-  if (_trace) printf("DoMultiplyBignumStepLP:\n");
 #ifdef TRACING
   goto headdomultiplybignumstep;
 #endif
 
 DoMultiplyBignumStepFP:
-  if (_trace) printf("DoMultiplyBignumStepFP:\n");
 
 headdomultiplybignumstep:
-  if (_trace) printf("headdomultiplybignumstep:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindomultiplybignumstep:
-  if (_trace) printf("begindomultiplybignumstep:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get arg1 */
   arg2 = *(s32 *)iSP;
@@ -311,7 +288,6 @@ begindomultiplybignumstep:
   goto cachevalid;
 
 multbignumsteplose:
-  if (_trace) printf("multbignumsteplose:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
@@ -324,12 +300,10 @@ multbignumsteplose:
   /* arg2 has the preloaded 8 bit operand. */
 
 dodividebignumstep:
-  if (_trace) printf("dodividebignumstep:\n");
 #ifdef TRACING
 #endif
 
 DoDivideBignumStepIM:
-  if (_trace) printf("DoDivideBignumStepIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -338,7 +312,6 @@ DoDivideBignumStepIM:
 #endif
 
 DoDivideBignumStepSP:
-  if (_trace) printf("DoDivideBignumStepSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -352,23 +325,19 @@ DoDivideBignumStepSP:
 #endif
 
 DoDivideBignumStepLP:
-  if (_trace) printf("DoDivideBignumStepLP:\n");
 #ifdef TRACING
   goto headdodividebignumstep;
 #endif
 
 DoDivideBignumStepFP:
-  if (_trace) printf("DoDivideBignumStepFP:\n");
 
 headdodividebignumstep:
-  if (_trace) printf("headdodividebignumstep:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindodividebignumstep:
-  if (_trace) printf("begindodividebignumstep:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get arg2 */
   arg2 = *(s32 *)iSP;
@@ -414,13 +383,11 @@ begindodividebignumstep:
   goto NEXTINSTRUCTION;
 
 divbignumsteplose1:
-  if (_trace) printf("divbignumsteplose1:\n");
   arg5 = 0;
   arg2 = 76;
   goto illegaloperand;
 
 divbignumsteplose2:
-  if (_trace) printf("divbignumsteplose2:\n");
   arg5 = 0;
   arg2 = 2;
   goto illegaloperand;
@@ -432,19 +399,16 @@ divbignumsteplose2:
   /* Halfword operand from stack instruction - DoLshcBignumStep */
 
 dolshcbignumstep:
-  if (_trace) printf("dolshcbignumstep:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoLshcBignumStepIM:
-  if (_trace) printf("DoLshcBignumStepIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g8507:
-  if (_trace) printf("g8507:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -454,7 +418,6 @@ g8507:
 #endif
 
 DoLshcBignumStepSP:
-  if (_trace) printf("DoLshcBignumStepSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -468,23 +431,19 @@ DoLshcBignumStepSP:
 #endif
 
 DoLshcBignumStepLP:
-  if (_trace) printf("DoLshcBignumStepLP:\n");
 #ifdef TRACING
   goto headdolshcbignumstep;
 #endif
 
 DoLshcBignumStepFP:
-  if (_trace) printf("DoLshcBignumStepFP:\n");
 
 headdolshcbignumstep:
-  if (_trace) printf("headdolshcbignumstep:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindolshcbignumstep:
-  if (_trace) printf("begindolshcbignumstep:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* Get arg2 */
   arg2 = *(s32 *)iSP;
@@ -530,7 +489,6 @@ begindolshcbignumstep:
   goto cachevalid;
 
 lshcbignumsteplose:
-  if (_trace) printf("lshcbignumsteplose:\n");
   arg5 = 0;
   arg2 = 76;
   goto illegaloperand;

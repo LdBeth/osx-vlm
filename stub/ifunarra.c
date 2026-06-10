@@ -8,7 +8,6 @@
 
 
 aref1regset:
-  if (_trace) printf("aref1regset:\n");
   t12 = arg4;
   /* Memory Read Internal */
 
@@ -75,7 +74,6 @@ g7463:
   goto aref1restart;
 
 g7456:
-  if (_trace) printf("g7456:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -85,7 +83,6 @@ g7456:
   goto g7455;
 
 g7458:
-  if (_trace) printf("g7458:\n");
   if ((t3 & 1) == 0)
     goto g7457;
   /* Do the indirect thing */
@@ -93,7 +90,6 @@ g7458:
   goto g7454;
 
 g7457:
-  if (_trace) printf("g7457:\n");
   /* Load the memory action table for cycle */
   t4 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -117,7 +113,6 @@ g7460:
 
 
 aref1recomputearrayregister:
-  if (_trace) printf("aref1recomputearrayregister:\n");
   t5 = *(s32 *)(arg1 + -8);
   t4 = *(s32 *)(arg1 + -4);
   t5 = (u32)t5;
@@ -176,7 +171,6 @@ g7476:
   goto fastaref1retry;
 
 g7466:
-  if (_trace) printf("g7466:\n");
   /* Just a place to save these values */
   *(u64 *)&processor->asrf5 = arg1;
   /* Just a place to save these values */
@@ -238,7 +232,6 @@ return0068:
   goto fastaref1retry;
 
 g7465:
-  if (_trace) printf("g7465:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t4;
   /* arg3 = stackp */
@@ -252,13 +245,11 @@ g7465:
   goto arrayexception;
 
 g7464:
-  if (_trace) printf("g7464:\n");
   arg5 = 0;
   arg2 = 12;
   goto illegaloperand;
 
 g7469:
-  if (_trace) printf("g7469:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t8 = (t8 * 8) + t2;
@@ -268,7 +259,6 @@ g7469:
   goto g7468;
 
 g7471:
-  if (_trace) printf("g7471:\n");
   if ((t3 & 1) == 0)
     goto g7470;
   /* Do the indirect thing */
@@ -276,7 +266,6 @@ g7471:
   goto g7467;
 
 g7470:
-  if (_trace) printf("g7470:\n");
   /* Load the memory action table for cycle */
   t1 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -300,7 +289,6 @@ g7473:
 
 
 aref1exception:
-  if (_trace) printf("aref1exception:\n");
   /* Just a place to save these values */
   *(u64 *)&processor->asrf4 = arg2;
   /* Just a place to save these values */
@@ -365,7 +353,6 @@ return0069:
   goto aref1restart;
 
 reallyaref1exc:
-  if (_trace) printf("reallyaref1exc:\n");
   arg1 = Type_Fixnum;
   /* SetTag. */
   t1 = arg1 << 32;
@@ -383,13 +370,11 @@ reallyaref1exc:
   goto arrayexception;
 
 aref1illegal:
-  if (_trace) printf("aref1illegal:\n");
   arg5 = 0;
   arg2 = 8;
   goto illegaloperand;
 
 aref1bounds:
-  if (_trace) printf("aref1bounds:\n");
   *(u64 *)&((ARRAYCACHEP)t7)->array = zero;
   arg5 = 0;
   arg2 = 74;
@@ -400,7 +385,6 @@ aref1bounds:
 
 
 aset1regset:
-  if (_trace) printf("aset1regset:\n");
   t12 = arg4;
   /* Memory Read Internal */
 
@@ -467,7 +451,6 @@ g7486:
   goto aset1restart;
 
 g7479:
-  if (_trace) printf("g7479:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -477,7 +460,6 @@ g7479:
   goto g7478;
 
 g7481:
-  if (_trace) printf("g7481:\n");
   if ((t3 & 1) == 0)
     goto g7480;
   /* Do the indirect thing */
@@ -485,7 +467,6 @@ g7481:
   goto g7477;
 
 g7480:
-  if (_trace) printf("g7480:\n");
   /* Load the memory action table for cycle */
   t4 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -509,7 +490,6 @@ g7483:
 
 
 aset1recomputearrayregister:
-  if (_trace) printf("aset1recomputearrayregister:\n");
   t5 = *(s32 *)(arg1 + -8);
   t4 = *(s32 *)(arg1 + -4);
   t5 = (u32)t5;
@@ -568,7 +548,6 @@ g7499:
   goto fastaset1retry;
 
 g7489:
-  if (_trace) printf("g7489:\n");
   /* Just a place to save these values */
   *(u64 *)&processor->asrf5 = arg1;
   /* Just a place to save these values */
@@ -630,7 +609,6 @@ return0070:
   goto fastaset1retry;
 
 g7488:
-  if (_trace) printf("g7488:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t4;
   /* arg3 = stackp */
@@ -644,13 +622,11 @@ g7488:
   goto arrayexception;
 
 g7487:
-  if (_trace) printf("g7487:\n");
   arg5 = 0;
   arg2 = 12;
   goto illegaloperand;
 
 g7492:
-  if (_trace) printf("g7492:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t8 = (t8 * 8) + t2;
@@ -660,7 +636,6 @@ g7492:
   goto g7491;
 
 g7494:
-  if (_trace) printf("g7494:\n");
   if ((t3 & 1) == 0)
     goto g7493;
   /* Do the indirect thing */
@@ -668,7 +643,6 @@ g7494:
   goto g7490;
 
 g7493:
-  if (_trace) printf("g7493:\n");
   /* Load the memory action table for cycle */
   t1 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -692,7 +666,6 @@ g7496:
 
 
 aset1exception:
-  if (_trace) printf("aset1exception:\n");
   /* Just a place to save these values */
   *(u64 *)&processor->asrf4 = arg2;
   /* Just a place to save these values */
@@ -765,7 +738,6 @@ return0071:
   goto aset1restart;
 
 reallyaset1exc:
-  if (_trace) printf("reallyaset1exc:\n");
   arg1 = Type_Fixnum;
   /* SetTag. */
   t1 = arg1 << 32;
@@ -783,13 +755,11 @@ reallyaset1exc:
   goto arrayexception;
 
 aset1illegal:
-  if (_trace) printf("aset1illegal:\n");
   arg5 = 0;
   arg2 = 9;
   goto illegaloperand;
 
 aset1bounds:
-  if (_trace) printf("aset1bounds:\n");
   *(u64 *)&((ARRAYCACHEP)t7)->array = zero;
   arg5 = 0;
   arg2 = 74;
@@ -802,12 +772,10 @@ aset1bounds:
   /* arg2 has the preloaded 8 bit operand. */
 
 doaloc1:
-  if (_trace) printf("doaloc1:\n");
 #ifdef TRACING
 #endif
 
 DoAloc1SP:
-  if (_trace) printf("DoAloc1SP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -821,23 +789,19 @@ DoAloc1SP:
 #endif
 
 DoAloc1LP:
-  if (_trace) printf("DoAloc1LP:\n");
 #ifdef TRACING
   goto headdoaloc1;
 #endif
 
 DoAloc1FP:
-  if (_trace) printf("DoAloc1FP:\n");
 
 headdoaloc1:
-  if (_trace) printf("headdoaloc1:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoaloc1:
-  if (_trace) printf("begindoaloc1:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get the array tag/data */
   arg4 = *(s32 *)iSP;
@@ -857,7 +821,6 @@ begindoaloc1:
     goto aloc1illegal;
 
 aloc1merge:
-  if (_trace) printf("aloc1merge:\n");
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
@@ -919,7 +882,6 @@ g7509:
   goto NEXTINSTRUCTION;
 
 aloc1exception:
-  if (_trace) printf("aloc1exception:\n");
   arg1 = Type_Fixnum;
   /* SetTag. */
   t1 = arg1 << 32;
@@ -937,19 +899,16 @@ aloc1exception:
   goto arrayexception;
 
 aloc1illegal:
-  if (_trace) printf("aloc1illegal:\n");
   arg5 = 0;
   arg2 = 8;
   goto illegaloperand;
 
 aloc1bounds:
-  if (_trace) printf("aloc1bounds:\n");
   arg5 = 0;
   arg2 = 74;
   goto illegaloperand;
 
 aloc1notobject:
-  if (_trace) printf("aloc1notobject:\n");
   arg5 = 0;
   arg2 = 7;
   goto illegaloperand;
@@ -958,7 +917,6 @@ aloc1notobject:
 #endif
 
 DoAloc1IM:
-  if (_trace) printf("DoAloc1IM:\n");
   /* Get the array tag/data */
   arg4 = *(s32 *)iSP;
   /* Get the array tag/data */
@@ -969,7 +927,6 @@ DoAloc1IM:
   goto aloc1merge;
 
 g7502:
-  if (_trace) printf("g7502:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -979,7 +936,6 @@ g7502:
   goto g7501;
 
 g7504:
-  if (_trace) printf("g7504:\n");
   if ((t3 & 1) == 0)
     goto g7503;
   /* Do the indirect thing */
@@ -987,7 +943,6 @@ g7504:
   goto g7500;
 
 g7503:
-  if (_trace) printf("g7503:\n");
   /* Load the memory action table for cycle */
   t4 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -1014,19 +969,16 @@ g7506:
   /* Halfword operand from stack instruction - DoSetup1DArray */
 
 dosetup1darray:
-  if (_trace) printf("dosetup1darray:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoSetup1DArrayIM:
-  if (_trace) printf("DoSetup1DArrayIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7523:
-  if (_trace) printf("g7523:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -1036,7 +988,6 @@ g7523:
 #endif
 
 DoSetup1DArraySP:
-  if (_trace) printf("DoSetup1DArraySP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1050,23 +1001,19 @@ DoSetup1DArraySP:
 #endif
 
 DoSetup1DArrayLP:
-  if (_trace) printf("DoSetup1DArrayLP:\n");
 #ifdef TRACING
   goto headdosetup1darray;
 #endif
 
 DoSetup1DArrayFP:
-  if (_trace) printf("DoSetup1DArrayFP:\n");
 
 headdosetup1darray:
-  if (_trace) printf("headdosetup1darray:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindosetup1darray:
-  if (_trace) printf("begindosetup1darray:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* Get the tag */
   arg2 = arg1 >> 32;
@@ -1151,7 +1098,6 @@ g7522:
   goto NEXTINSTRUCTION;
 
 g7511:
-  if (_trace) printf("g7511:\n");
   /* SetTag. */
   t6 = arg2 << 32;
   t6 = t9 | t6;
@@ -1168,13 +1114,11 @@ g7511:
   goto arrayexception;
 
 g7510:
-  if (_trace) printf("g7510:\n");
   arg5 = 0;
   arg2 = 71;
   goto illegaloperand;
 
 g7512:
-  if (_trace) printf("g7512:\n");
   r0 = (u64)&&return0072;
   goto setup1dlongarray;
 return0072:
@@ -1190,7 +1134,6 @@ return0072:
   goto NEXTINSTRUCTION;
 
 g7515:
-  if (_trace) printf("g7515:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -1200,7 +1143,6 @@ g7515:
   goto g7514;
 
 g7517:
-  if (_trace) printf("g7517:\n");
   if ((t7 & 1) == 0)
     goto g7516;
   /* Do the indirect thing */
@@ -1208,7 +1150,6 @@ g7517:
   goto g7513;
 
 g7516:
-  if (_trace) printf("g7516:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -1234,19 +1175,16 @@ g7519:
   /* Halfword operand from stack instruction - DoSetupForce1DArray */
 
 dosetupforce1darray:
-  if (_trace) printf("dosetupforce1darray:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoSetupForce1DArrayIM:
-  if (_trace) printf("DoSetupForce1DArrayIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7537:
-  if (_trace) printf("g7537:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -1256,7 +1194,6 @@ g7537:
 #endif
 
 DoSetupForce1DArraySP:
-  if (_trace) printf("DoSetupForce1DArraySP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1270,23 +1207,19 @@ DoSetupForce1DArraySP:
 #endif
 
 DoSetupForce1DArrayLP:
-  if (_trace) printf("DoSetupForce1DArrayLP:\n");
 #ifdef TRACING
   goto headdosetupforce1darray;
 #endif
 
 DoSetupForce1DArrayFP:
-  if (_trace) printf("DoSetupForce1DArrayFP:\n");
 
 headdosetupforce1darray:
-  if (_trace) printf("headdosetupforce1darray:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindosetupforce1darray:
-  if (_trace) printf("begindosetupforce1darray:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* Get the tag */
   arg2 = arg1 >> 32;
@@ -1371,7 +1304,6 @@ g7536:
   goto NEXTINSTRUCTION;
 
 g7525:
-  if (_trace) printf("g7525:\n");
   /* SetTag. */
   t6 = arg2 << 32;
   t6 = t9 | t6;
@@ -1388,13 +1320,11 @@ g7525:
   goto arrayexception;
 
 g7524:
-  if (_trace) printf("g7524:\n");
   arg5 = 0;
   arg2 = 71;
   goto illegaloperand;
 
 g7526:
-  if (_trace) printf("g7526:\n");
   r0 = (u64)&&return0073;
   goto setup1dlongarray;
 return0073:
@@ -1410,7 +1340,6 @@ return0073:
   goto NEXTINSTRUCTION;
 
 g7529:
-  if (_trace) printf("g7529:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -1420,7 +1349,6 @@ g7529:
   goto g7528;
 
 g7531:
-  if (_trace) printf("g7531:\n");
   if ((t7 & 1) == 0)
     goto g7530;
   /* Do the indirect thing */
@@ -1428,7 +1356,6 @@ g7531:
   goto g7527;
 
 g7530:
-  if (_trace) printf("g7530:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -1453,7 +1380,6 @@ g7533:
 
 
 setup1dlongarray:
-  if (_trace) printf("setup1dlongarray:\n");
   /* Read data from the header: alength offset indirect lengths&mults */
   /* length=array+1 */
   t1 = arg1 + 1;
@@ -1560,13 +1486,11 @@ g7582:
   t11 = (t10 == Type_Locative) ? 1 : 0;
 
 g7647:
-  if (_trace) printf("g7647:\n");
   if (t11 == 0)
     goto g7584;
   /* Here if argument TypeLocative */
 
 g7541:
-  if (_trace) printf("g7541:\n");
   /* set CDR-NEXT */
   t10 = arg2 & 63;
   *(u32 *)(iSP + 8) = t9;
@@ -1599,28 +1523,23 @@ g7541:
   goto g7546;
 
 g7584:
-  if (_trace) printf("g7584:\n");
   t11 = (t10 == Type_Fixnum) ? 1 : 0;
 
 g7648:
-  if (_trace) printf("g7648:\n");
   if (t11 == 0)
     goto g7585;
   /* Here if argument TypeFixnum */
   goto g7541;
 
 g7585:
-  if (_trace) printf("g7585:\n");
   t11 = (t10 == Type_Array) ? 1 : 0;
 
 g7649:
-  if (_trace) printf("g7649:\n");
   if (t11 == 0)
     goto g7586;
   /* Here if argument TypeArray */
 
 g7545:
-  if (_trace) printf("g7545:\n");
   t1 = t3 & 7;
   t1 = (t1 == 1) ? 1 : 0;
   /* Force true if FORCE */
@@ -1632,7 +1551,6 @@ g7545:
   t2 = arg3;
 
 g7540:
-  if (_trace) printf("g7540:\n");
   /* Memory Read Internal */
 
 g7587:
@@ -1683,7 +1601,6 @@ g7596:
   arg4 = t8;
 
 g7539:
-  if (_trace) printf("g7539:\n");
   arg4 = arg4 - t2;
   /* set CDR-NEXT */
   t10 = arg2 & 63;
@@ -1723,7 +1640,6 @@ g7539:
   t5 = t2 + t5;
 
 g7543:
-  if (_trace) printf("g7543:\n");
   t8 = Type_Locative;
   *(u32 *)(iSP + 8) = t5;
   /* write the stack cache */
@@ -1738,7 +1654,6 @@ g7543:
   goto g7546;
 
 g7542:
-  if (_trace) printf("g7542:\n");
   /* length=array+1 */
   t1 = t5 + 1;
   /* Memory Read Internal */
@@ -1856,35 +1771,29 @@ g7632:
   t10 = (t8 == Type_Locative) ? 1 : 0;
 
 g7640:
-  if (_trace) printf("g7640:\n");
   if (t10 == 0)
     goto g7634;
   /* Here if argument TypeLocative */
   goto g7539;
 
 g7634:
-  if (_trace) printf("g7634:\n");
   t10 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7641:
-  if (_trace) printf("g7641:\n");
   if (t10 == 0)
     goto g7635;
   /* Here if argument TypeFixnum */
   goto g7539;
 
 g7635:
-  if (_trace) printf("g7635:\n");
   t10 = (t8 == Type_Array) ? 1 : 0;
 
 g7642:
-  if (_trace) printf("g7642:\n");
   if (t10 == 0)
     goto g7636;
   /* Here if argument TypeArray */
 
 g7544:
-  if (_trace) printf("g7544:\n");
   t7 = zero - arg1;
   t7 = arg5 >> (t7 & 63);
   arg3 = arg5 << (arg1 & 63);
@@ -1894,55 +1803,44 @@ g7544:
   goto g7540;
 
 g7636:
-  if (_trace) printf("g7636:\n");
   t10 = (t8 == Type_String) ? 1 : 0;
 
 g7643:
-  if (_trace) printf("g7643:\n");
   if (t10 == 0)
     goto g7637;
   /* Here if argument TypeString */
   goto g7544;
 
 g7637:
-  if (_trace) printf("g7637:\n");
   /* Here for all other cases */
   goto g7538;
 
 g7633:
-  if (_trace) printf("g7633:\n");
 
 g7586:
-  if (_trace) printf("g7586:\n");
   t11 = (t10 == Type_String) ? 1 : 0;
 
 g7650:
-  if (_trace) printf("g7650:\n");
   if (t11 == 0)
     goto g7644;
   /* Here if argument TypeString */
   goto g7545;
 
 g7644:
-  if (_trace) printf("g7644:\n");
   /* Here for all other cases */
   goto g7538;
 
 g7583:
-  if (_trace) printf("g7583:\n");
 
 g7538:
-  if (_trace) printf("g7538:\n");
   t2 = ReturnValue_Exception;
   goto *(void *)r0; /* ret */
 
 g7546:
-  if (_trace) printf("g7546:\n");
   t2 = ReturnValue_Normal;
   goto *(void *)r0; /* ret */
 
 g7623:
-  if (_trace) printf("g7623:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -1952,7 +1850,6 @@ g7623:
   goto g7622;
 
 g7625:
-  if (_trace) printf("g7625:\n");
   if ((t10 & 1) == 0)
     goto g7624;
   /* Do the indirect thing */
@@ -1960,7 +1857,6 @@ g7625:
   goto g7621;
 
 g7624:
-  if (_trace) printf("g7624:\n");
   /* Load the memory action table for cycle */
   t11 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -1974,7 +1870,6 @@ g7624:
   t11 = *(s32 *)t10;
 
 g7629:
-  if (_trace) printf("g7629:\n");
   t10 = t11 & MemoryActionTransform;
   if (t10 == 0)
     goto g7628;
@@ -1988,7 +1883,6 @@ g7628:
 #ifdef MINIMA
 
 g7628:
-  if (_trace) printf("g7628:\n");
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t10 == 0)
@@ -2017,7 +1911,6 @@ g7628:
   goto g7621;
 
 g7631:
-  if (_trace) printf("g7631:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2028,7 +1921,6 @@ g7627:
   goto performmemoryaction;
 
 g7611:
-  if (_trace) printf("g7611:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -2038,7 +1930,6 @@ g7611:
   goto g7610;
 
 g7613:
-  if (_trace) printf("g7613:\n");
   if ((t10 & 1) == 0)
     goto g7612;
   /* Do the indirect thing */
@@ -2046,7 +1937,6 @@ g7613:
   goto g7609;
 
 g7612:
-  if (_trace) printf("g7612:\n");
   /* Load the memory action table for cycle */
   t11 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2060,7 +1950,6 @@ g7612:
   t11 = *(s32 *)t10;
 
 g7617:
-  if (_trace) printf("g7617:\n");
   t10 = t11 & MemoryActionTransform;
   if (t10 == 0)
     goto g7616;
@@ -2074,7 +1963,6 @@ g7616:
 #ifdef MINIMA
 
 g7616:
-  if (_trace) printf("g7616:\n");
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t10 == 0)
@@ -2103,7 +1991,6 @@ g7616:
   goto g7609;
 
 g7619:
-  if (_trace) printf("g7619:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2114,7 +2001,6 @@ g7615:
   goto performmemoryaction;
 
 g7599:
-  if (_trace) printf("g7599:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -2124,7 +2010,6 @@ g7599:
   goto g7598;
 
 g7601:
-  if (_trace) printf("g7601:\n");
   if ((t10 & 1) == 0)
     goto g7600;
   /* Do the indirect thing */
@@ -2132,7 +2017,6 @@ g7601:
   goto g7597;
 
 g7600:
-  if (_trace) printf("g7600:\n");
   /* Load the memory action table for cycle */
   t11 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2146,7 +2030,6 @@ g7600:
   t11 = *(s32 *)t10;
 
 g7605:
-  if (_trace) printf("g7605:\n");
   t10 = t11 & MemoryActionTransform;
   if (t10 == 0)
     goto g7604;
@@ -2160,7 +2043,6 @@ g7604:
 #ifdef MINIMA
 
 g7604:
-  if (_trace) printf("g7604:\n");
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t10 == 0)
@@ -2189,7 +2071,6 @@ g7604:
   goto g7597;
 
 g7607:
-  if (_trace) printf("g7607:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2200,7 +2081,6 @@ g7603:
   goto performmemoryaction;
 
 g7589:
-  if (_trace) printf("g7589:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -2210,7 +2090,6 @@ g7589:
   goto g7588;
 
 g7591:
-  if (_trace) printf("g7591:\n");
   if ((t10 & 1) == 0)
     goto g7590;
   /* Do the indirect thing */
@@ -2218,7 +2097,6 @@ g7591:
   goto g7587;
 
 g7590:
-  if (_trace) printf("g7590:\n");
   /* Load the memory action table for cycle */
   t11 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -2238,7 +2116,6 @@ g7593:
   goto performmemoryaction;
 
 g7573:
-  if (_trace) printf("g7573:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -2248,7 +2125,6 @@ g7573:
   goto g7572;
 
 g7575:
-  if (_trace) printf("g7575:\n");
   if ((t10 & 1) == 0)
     goto g7574;
   /* Do the indirect thing */
@@ -2256,7 +2132,6 @@ g7575:
   goto g7571;
 
 g7574:
-  if (_trace) printf("g7574:\n");
   /* Load the memory action table for cycle */
   t11 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2270,7 +2145,6 @@ g7574:
   t11 = *(s32 *)t10;
 
 g7579:
-  if (_trace) printf("g7579:\n");
   t10 = t11 & MemoryActionTransform;
   if (t10 == 0)
     goto g7578;
@@ -2284,7 +2158,6 @@ g7578:
 #ifdef MINIMA
 
 g7578:
-  if (_trace) printf("g7578:\n");
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t10 == 0)
@@ -2313,7 +2186,6 @@ g7578:
   goto g7571;
 
 g7581:
-  if (_trace) printf("g7581:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2324,7 +2196,6 @@ g7577:
   goto performmemoryaction;
 
 g7561:
-  if (_trace) printf("g7561:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -2334,7 +2205,6 @@ g7561:
   goto g7560;
 
 g7563:
-  if (_trace) printf("g7563:\n");
   if ((t10 & 1) == 0)
     goto g7562;
   /* Do the indirect thing */
@@ -2342,7 +2212,6 @@ g7563:
   goto g7559;
 
 g7562:
-  if (_trace) printf("g7562:\n");
   /* Load the memory action table for cycle */
   t11 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2356,7 +2225,6 @@ g7562:
   t11 = *(s32 *)t10;
 
 g7567:
-  if (_trace) printf("g7567:\n");
   t10 = t11 & MemoryActionTransform;
   if (t10 == 0)
     goto g7566;
@@ -2370,7 +2238,6 @@ g7566:
 #ifdef MINIMA
 
 g7566:
-  if (_trace) printf("g7566:\n");
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t10 == 0)
@@ -2399,7 +2266,6 @@ g7566:
   goto g7559;
 
 g7569:
-  if (_trace) printf("g7569:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2410,7 +2276,6 @@ g7565:
   goto performmemoryaction;
 
 g7549:
-  if (_trace) printf("g7549:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -2420,7 +2285,6 @@ g7549:
   goto g7548;
 
 g7551:
-  if (_trace) printf("g7551:\n");
   if ((t10 & 1) == 0)
     goto g7550;
   /* Do the indirect thing */
@@ -2428,7 +2292,6 @@ g7551:
   goto g7547;
 
 g7550:
-  if (_trace) printf("g7550:\n");
   /* Load the memory action table for cycle */
   t11 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2442,7 +2305,6 @@ g7550:
   t11 = *(s32 *)t10;
 
 g7555:
-  if (_trace) printf("g7555:\n");
   t10 = t11 & MemoryActionTransform;
   if (t10 == 0)
     goto g7554;
@@ -2456,7 +2318,6 @@ g7554:
 #ifdef MINIMA
 
 g7554:
-  if (_trace) printf("g7554:\n");
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t10 == 0)
@@ -2485,7 +2346,6 @@ g7554:
   goto g7547;
 
 g7557:
-  if (_trace) printf("g7557:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2502,12 +2362,10 @@ g7553:
   /* arg2 has the preloaded 8 bit operand. */
 
 dofastaset1:
-  if (_trace) printf("dofastaset1:\n");
 #ifdef TRACING
 #endif
 
 DoFastAset1SP:
-  if (_trace) printf("DoFastAset1SP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -2521,16 +2379,13 @@ DoFastAset1SP:
 #endif
 
 DoFastAset1LP:
-  if (_trace) printf("DoFastAset1LP:\n");
 #ifdef TRACING
   goto begindofastaset1;
 #endif
 
 DoFastAset1FP:
-  if (_trace) printf("DoFastAset1FP:\n");
 
 begindofastaset1:
-  if (_trace) printf("begindofastaset1:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -2555,7 +2410,6 @@ begindofastaset1:
     goto fastaset1iop;
 
 fastaset1retry:
-  if (_trace) printf("fastaset1retry:\n");
   arg6 = *(s32 *)arg1;
   t9 = *(s32 *)(arg1 + 8);
   t3 = *(s32 *)(arg1 + 16);
@@ -2583,7 +2437,6 @@ fastaset1retry:
   t12 = (t8 == Array_ElementTypeCharacter) ? 1 : 0;
 
 g7661:
-  if (_trace) printf("g7661:\n");
   if (t12 == 0)
     goto g7657;
   /* Here if argument ArrayElementTypeCharacter */
@@ -2595,7 +2448,6 @@ g7661:
   goto illegaloperand;
 
 g7652:
-  if (_trace) printf("g7652:\n");
   /* Certainly will fit if not packed! */
   if (t6 == 0)
     goto g7651;
@@ -2616,11 +2468,9 @@ g7652:
   goto illegaloperand;
 
 g7657:
-  if (_trace) printf("g7657:\n");
   t12 = (t8 == Array_ElementTypeFixnum) ? 1 : 0;
 
 g7662:
-  if (_trace) printf("g7662:\n");
   if (t12 == 0)
     goto g7658;
   /* Here if argument ArrayElementTypeFixnum */
@@ -2632,11 +2482,9 @@ g7662:
   goto illegaloperand;
 
 g7658:
-  if (_trace) printf("g7658:\n");
   t12 = (t8 == Array_ElementTypeBoolean) ? 1 : 0;
 
 g7663:
-  if (_trace) printf("g7663:\n");
   if (t12 == 0)
     goto g7656;
   /* Here if argument ArrayElementTypeBoolean */
@@ -2649,11 +2497,9 @@ g7663:
   goto g7651;
 
 g7656:
-  if (_trace) printf("g7656:\n");
   /* Shove it in. */
 
 g7651:
-  if (_trace) printf("g7651:\n");
   /* J. if packed */
   if (t6 != 0)
     goto g7653;
@@ -2706,7 +2552,6 @@ g7674:
   t12 = t12 & ~(0xffUL << (t4&7)*8);
 
 g7676:
-  if (_trace) printf("g7676:\n");
   t12 = t12 | t5;
   STQ_U(t4, t12);
   *(u32 *)t3 = t11;
@@ -2718,7 +2563,6 @@ g7676:
   /* Here for the slow packed version */
 
 g7653:
-  if (_trace) printf("g7653:\n");
   arg4 = t7 + arg4;
   /* Convert byte index to word index */
   t1 = arg4 >> (t6 & 63);
@@ -2803,7 +2647,6 @@ g7688:
   goto g7690;
 
 g7689:
-  if (_trace) printf("g7689:\n");
   /* Inserting the byte into the low byte */
   /* Remove the old low byte */
   t9 = t9 & t3;
@@ -2813,11 +2656,9 @@ g7689:
   t9 = t9 | t12;
 
 g7690:
-  if (_trace) printf("g7690:\n");
   t11 = t9;
 
 g7655:
-  if (_trace) printf("g7655:\n");
   t3 = *(u64 *)&(processor->stackcachebasevma);
   t2 = t1 + ivory;
   t12 = *(s32 *)&processor->scovlimit;
@@ -2831,7 +2672,6 @@ g7655:
   t4 = t4 & ~(0xffUL << (t2&7)*8);
 
 g7692:
-  if (_trace) printf("g7692:\n");
   t4 = t4 | t3;
   STQ_U(t2, t4);
   *(u32 *)t5 = t11;
@@ -2842,29 +2682,24 @@ g7692:
   goto NEXTINSTRUCTION;
 
 g7654:
-  if (_trace) printf("g7654:\n");
   arg5 = t1;
   arg2 = 25;
   goto illegaloperand;
 
 fastaset1iop:
-  if (_trace) printf("fastaset1iop:\n");
   arg5 = 0;
   arg2 = 32;
   goto illegaloperand;
 
 fastaset1bounds:
-  if (_trace) printf("fastaset1bounds:\n");
   arg5 = 0;
   arg2 = 13;
   goto illegaloperand;
 
 g7691:
-  if (_trace) printf("g7691:\n");
   t3 = *(u64 *)&(processor->stackcachebasevma);
 
 g7693:
-  if (_trace) printf("g7693:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t3 = t1 - t3;
@@ -2877,7 +2712,6 @@ g7693:
   goto NEXTINSTRUCTION;
 
 g7679:
-  if (_trace) printf("g7679:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t2 = (t2 * 8) + t3;
@@ -2887,7 +2721,6 @@ g7679:
   goto g7678;
 
 g7681:
-  if (_trace) printf("g7681:\n");
   if ((t4 & 1) == 0)
     goto g7680;
   /* Do the indirect thing */
@@ -2895,7 +2728,6 @@ g7681:
   goto g7677;
 
 g7680:
-  if (_trace) printf("g7680:\n");
   /* Load the memory action table for cycle */
   t5 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2909,7 +2741,6 @@ g7680:
   t5 = *(s32 *)t4;
 
 g7685:
-  if (_trace) printf("g7685:\n");
   t4 = t5 & MemoryActionTransform;
   if (t4 == 0)
     goto g7684;
@@ -2923,7 +2754,6 @@ g7684:
 #ifdef MINIMA
 
 g7684:
-  if (_trace) printf("g7684:\n");
   t4 = t5 & MemoryActionBinding;
   t3 = *(u64 *)&(processor->dbcmask);
   if (t4 == 0)
@@ -2952,7 +2782,6 @@ g7684:
   goto g7677;
 
 g7687:
-  if (_trace) printf("g7687:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2963,11 +2792,9 @@ g7683:
   goto performmemoryaction;
 
 g7675:
-  if (_trace) printf("g7675:\n");
   t5 = *(u64 *)&(processor->stackcachebasevma);
 
 g7694:
-  if (_trace) printf("g7694:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t5 = t1 - t5;
@@ -2980,7 +2807,6 @@ g7694:
   goto NEXTINSTRUCTION;
 
 g7666:
-  if (_trace) printf("g7666:\n");
   t5 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t4 = (t4 * 8) + t5;
@@ -2990,7 +2816,6 @@ g7666:
   goto g7665;
 
 g7668:
-  if (_trace) printf("g7668:\n");
   if ((t12 & 1) == 0)
     goto g7667;
   /* Do the indirect thing */
@@ -2998,7 +2823,6 @@ g7668:
   goto g7664;
 
 g7667:
-  if (_trace) printf("g7667:\n");
   /* Load the memory action table for cycle */
   arg3 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -3017,7 +2841,6 @@ g7671:
 #ifdef MINIMA
 
 g7671:
-  if (_trace) printf("g7671:\n");
   t12 = arg3 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
   if (t12 == 0)
@@ -3046,7 +2869,6 @@ g7671:
   goto g7664;
 
 g7673:
-  if (_trace) printf("g7673:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -3070,12 +2892,10 @@ DoFastAset1IM:
   /* arg2 has the preloaded 8 bit operand. */
 
 doarrayleader:
-  if (_trace) printf("doarrayleader:\n");
 #ifdef TRACING
 #endif
 
 DoArrayLeaderSP:
-  if (_trace) printf("DoArrayLeaderSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3089,23 +2909,19 @@ DoArrayLeaderSP:
 #endif
 
 DoArrayLeaderLP:
-  if (_trace) printf("DoArrayLeaderLP:\n");
 #ifdef TRACING
   goto headdoarrayleader;
 #endif
 
 DoArrayLeaderFP:
-  if (_trace) printf("DoArrayLeaderFP:\n");
 
 headdoarrayleader:
-  if (_trace) printf("headdoarrayleader:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoarrayleader:
-  if (_trace) printf("begindoarrayleader:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* arg3=arraytag, arg4=arraydata */
   arg4 = *(s32 *)iSP;
@@ -3125,7 +2941,6 @@ begindoarrayleader:
     goto arrayleaderiop;
 
 arrayleadermerge:
-  if (_trace) printf("arrayleadermerge:\n");
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
@@ -3203,7 +3018,6 @@ g7716:
   goto NEXTINSTRUCTION;
 
 arrayleaderexception:
-  if (_trace) printf("arrayleaderexception:\n");
   arg1 = Type_Fixnum;
   /* SetTag. */
   t1 = arg1 << 32;
@@ -3221,13 +3035,11 @@ arrayleaderexception:
   goto arrayexception;
 
 arrayleaderiop:
-  if (_trace) printf("arrayleaderiop:\n");
   arg5 = 0;
   arg2 = 10;
   goto illegaloperand;
 
 arrayleaderbounds:
-  if (_trace) printf("arrayleaderbounds:\n");
   arg5 = 0;
   arg2 = 74;
   goto illegaloperand;
@@ -3236,7 +3048,6 @@ arrayleaderbounds:
 #endif
 
 DoArrayLeaderIM:
-  if (_trace) printf("DoArrayLeaderIM:\n");
   /* arg3=arraytag, arg4=arraydata */
   arg4 = *(s32 *)iSP;
   /* arg3=arraytag, arg4=arraydata */
@@ -3247,7 +3058,6 @@ DoArrayLeaderIM:
   goto arrayleadermerge;
 
 g7707:
-  if (_trace) printf("g7707:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -3257,7 +3067,6 @@ g7707:
   goto g7706;
 
 g7709:
-  if (_trace) printf("g7709:\n");
   if ((t3 & 1) == 0)
     goto g7708;
   /* Do the indirect thing */
@@ -3265,7 +3074,6 @@ g7709:
   goto g7705;
 
 g7708:
-  if (_trace) printf("g7708:\n");
   /* Load the memory action table for cycle */
   t4 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -3279,7 +3087,6 @@ g7708:
   t4 = *(s32 *)t3;
 
 g7713:
-  if (_trace) printf("g7713:\n");
   t3 = t4 & MemoryActionTransform;
   if (t3 == 0)
     goto g7712;
@@ -3293,7 +3100,6 @@ g7712:
 #ifdef MINIMA
 
 g7712:
-  if (_trace) printf("g7712:\n");
   t3 = t4 & MemoryActionBinding;
   t2 = *(u64 *)&(processor->dbcmask);
   if (t3 == 0)
@@ -3322,7 +3128,6 @@ g7712:
   goto g7705;
 
 g7715:
-  if (_trace) printf("g7715:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -3333,7 +3138,6 @@ g7711:
   goto performmemoryaction;
 
 g7697:
-  if (_trace) printf("g7697:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -3343,7 +3147,6 @@ g7697:
   goto g7696;
 
 g7699:
-  if (_trace) printf("g7699:\n");
   if ((t3 & 1) == 0)
     goto g7698;
   /* Do the indirect thing */
@@ -3351,7 +3154,6 @@ g7699:
   goto g7695;
 
 g7698:
-  if (_trace) printf("g7698:\n");
   /* Load the memory action table for cycle */
   t4 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -3378,12 +3180,10 @@ g7701:
   /* arg2 has the preloaded 8 bit operand. */
 
 dostorearrayleader:
-  if (_trace) printf("dostorearrayleader:\n");
 #ifdef TRACING
 #endif
 
 DoStoreArrayLeaderSP:
-  if (_trace) printf("DoStoreArrayLeaderSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3397,23 +3197,19 @@ DoStoreArrayLeaderSP:
 #endif
 
 DoStoreArrayLeaderLP:
-  if (_trace) printf("DoStoreArrayLeaderLP:\n");
 #ifdef TRACING
   goto headdostorearrayleader;
 #endif
 
 DoStoreArrayLeaderFP:
-  if (_trace) printf("DoStoreArrayLeaderFP:\n");
 
 headdostorearrayleader:
-  if (_trace) printf("headdostorearrayleader:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindostorearrayleader:
-  if (_trace) printf("begindostorearrayleader:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* arg3=arraytag, arg4=arraydata */
   arg4 = *(s32 *)iSP;
@@ -3440,7 +3236,6 @@ begindostorearrayleader:
     goto storearrayleaderiop;
 
 storearrayleadermerge:
-  if (_trace) printf("storearrayleadermerge:\n");
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
@@ -3524,7 +3319,6 @@ g7737:
   t5 = t5 & ~(0xffUL << (t3&7)*8);
 
 g7739:
-  if (_trace) printf("g7739:\n");
   t5 = t5 | t4;
   STQ_U(t3, t5);
   *(u32 *)t2 = t7;
@@ -3535,7 +3329,6 @@ g7739:
   goto NEXTINSTRUCTION;
 
 storearrayleaderexception:
-  if (_trace) printf("storearrayleaderexception:\n");
   arg1 = Type_Fixnum;
   /* SetTag. */
   t1 = arg1 << 32;
@@ -3553,13 +3346,11 @@ storearrayleaderexception:
   goto arrayexception;
 
 storearrayleaderiop:
-  if (_trace) printf("storearrayleaderiop:\n");
   arg5 = 0;
   arg2 = 11;
   goto illegaloperand;
 
 storearrayleaderbounds:
-  if (_trace) printf("storearrayleaderbounds:\n");
   arg5 = 0;
   arg2 = 74;
   goto illegaloperand;
@@ -3568,7 +3359,6 @@ storearrayleaderbounds:
 #endif
 
 DoStoreArrayLeaderIM:
-  if (_trace) printf("DoStoreArrayLeaderIM:\n");
   /* arg3=arraytag, arg4=arraydata */
   arg4 = *(s32 *)iSP;
   /* arg3=arraytag, arg4=arraydata */
@@ -3586,7 +3376,6 @@ DoStoreArrayLeaderIM:
   goto storearrayleadermerge;
 
 g7738:
-  if (_trace) printf("g7738:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t4 = arg2 - t11;
@@ -3599,7 +3388,6 @@ g7738:
   goto NEXTINSTRUCTION;
 
 g7729:
-  if (_trace) printf("g7729:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
@@ -3609,7 +3397,6 @@ g7729:
   goto g7728;
 
 g7731:
-  if (_trace) printf("g7731:\n");
   if ((t5 & 1) == 0)
     goto g7730;
   /* Do the indirect thing */
@@ -3617,7 +3404,6 @@ g7731:
   goto g7727;
 
 g7730:
-  if (_trace) printf("g7730:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -3636,7 +3422,6 @@ g7734:
 #ifdef MINIMA
 
 g7734:
-  if (_trace) printf("g7734:\n");
   t5 = t8 & MemoryActionBinding;
   t4 = *(u64 *)&(processor->dbcmask);
   if (t5 == 0)
@@ -3665,7 +3450,6 @@ g7734:
   goto g7727;
 
 g7736:
-  if (_trace) printf("g7736:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -3676,7 +3460,6 @@ g7733:
   goto performmemoryaction;
 
 g7719:
-  if (_trace) printf("g7719:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -3686,7 +3469,6 @@ g7719:
   goto g7718;
 
 g7721:
-  if (_trace) printf("g7721:\n");
   if ((t3 & 1) == 0)
     goto g7720;
   /* Do the indirect thing */
@@ -3694,7 +3476,6 @@ g7721:
   goto g7717;
 
 g7720:
-  if (_trace) printf("g7720:\n");
   /* Load the memory action table for cycle */
   t4 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -3721,12 +3502,10 @@ g7723:
   /* arg2 has the preloaded 8 bit operand. */
 
 doalocleader:
-  if (_trace) printf("doalocleader:\n");
 #ifdef TRACING
 #endif
 
 DoAlocLeaderSP:
-  if (_trace) printf("DoAlocLeaderSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3740,23 +3519,19 @@ DoAlocLeaderSP:
 #endif
 
 DoAlocLeaderLP:
-  if (_trace) printf("DoAlocLeaderLP:\n");
 #ifdef TRACING
   goto headdoalocleader;
 #endif
 
 DoAlocLeaderFP:
-  if (_trace) printf("DoAlocLeaderFP:\n");
 
 headdoalocleader:
-  if (_trace) printf("headdoalocleader:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoalocleader:
-  if (_trace) printf("begindoalocleader:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* arg3=arraytag, arg4=arraydata */
   arg4 = *(s32 *)iSP;
@@ -3776,7 +3551,6 @@ begindoalocleader:
     goto alocleaderiop;
 
 alocleadermerge:
-  if (_trace) printf("alocleadermerge:\n");
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
@@ -3829,7 +3603,6 @@ g7749:
   goto NEXTINSTRUCTION;
 
 alocleaderexception:
-  if (_trace) printf("alocleaderexception:\n");
   arg1 = Type_Fixnum;
   /* SetTag. */
   t1 = arg1 << 32;
@@ -3847,13 +3620,11 @@ alocleaderexception:
   goto arrayexception;
 
 alocleaderiop:
-  if (_trace) printf("alocleaderiop:\n");
   arg5 = 0;
   arg2 = 10;
   goto illegaloperand;
 
 alocleaderbounds:
-  if (_trace) printf("alocleaderbounds:\n");
   arg5 = 0;
   arg2 = 74;
   goto illegaloperand;
@@ -3862,7 +3633,6 @@ alocleaderbounds:
 #endif
 
 DoAlocLeaderIM:
-  if (_trace) printf("DoAlocLeaderIM:\n");
   /* arg3=arraytag, arg4=arraydata */
   arg4 = *(s32 *)iSP;
   /* arg3=arraytag, arg4=arraydata */
@@ -3873,7 +3643,6 @@ DoAlocLeaderIM:
   goto alocleadermerge;
 
 g7742:
-  if (_trace) printf("g7742:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t1 = (t1 * 8) + t2;
@@ -3883,7 +3652,6 @@ g7742:
   goto g7741;
 
 g7744:
-  if (_trace) printf("g7744:\n");
   if ((t3 & 1) == 0)
     goto g7743;
   /* Do the indirect thing */
@@ -3891,7 +3659,6 @@ g7744:
   goto g7740;
 
 g7743:
-  if (_trace) printf("g7743:\n");
   /* Load the memory action table for cycle */
   t4 = *(u64 *)&(processor->header);
   /* TagType. */

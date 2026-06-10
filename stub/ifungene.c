@@ -10,12 +10,10 @@
   /* arg2 has the preloaded 8 bit operand. */
 
 domessagedispatch:
-  if (_trace) printf("domessagedispatch:\n");
 #ifdef TRACING
 #endif
 
 DoMessageDispatchSP:
-  if (_trace) printf("DoMessageDispatchSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -29,16 +27,13 @@ DoMessageDispatchSP:
 #endif
 
 DoMessageDispatchLP:
-  if (_trace) printf("DoMessageDispatchLP:\n");
 #ifdef TRACING
   goto begindomessagedispatch;
 #endif
 
 DoMessageDispatchFP:
-  if (_trace) printf("DoMessageDispatchFP:\n");
 
 begindomessagedispatch:
-  if (_trace) printf("begindomessagedispatch:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -78,14 +73,12 @@ return0035:
   goto g6741;
 
 g6740:
-  if (_trace) printf("g6740:\n");
   /* swap message/instance in the frame */
   *(u32 *)(iFP + 16) = t1;
   /* write the stack cache */
   *(u32 *)(iFP + 20) = arg1;
 
 g6741:
-  if (_trace) printf("g6741:\n");
   *(u64 *)(iFP + 24) = arg4;
   /* Convert real continuation to PC. */
   iPC = t4 & 1;
@@ -94,7 +87,6 @@ g6741:
   goto interpretinstructionforjump;
 
 g6742:
-  if (_trace) printf("g6742:\n");
   /* Convert stack cache address to VMA */
   t2 = *(u64 *)&(processor->stackcachedata);
   t3 = *(u64 *)&(processor->stackcachebasevma);

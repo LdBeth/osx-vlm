@@ -10,12 +10,10 @@
   /* arg2 has the preloaded 8 bit operand. */
 
 dologand:
-  if (_trace) printf("dologand:\n");
 #ifdef TRACING
 #endif
 
 DoLogandSP:
-  if (_trace) printf("DoLogandSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -29,23 +27,19 @@ DoLogandSP:
 #endif
 
 DoLogandLP:
-  if (_trace) printf("DoLogandLP:\n");
 #ifdef TRACING
   goto headdologand;
 #endif
 
 DoLogandFP:
-  if (_trace) printf("DoLogandFP:\n");
 
 headdologand:
-  if (_trace) printf("headdologand:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindologand:
-  if (_trace) printf("begindologand:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get tag from ARG1 */
   t3 = *(s32 *)(iSP + 4);
@@ -79,7 +73,6 @@ begindologand:
   goto cachevalid;
 
 g8088:
-  if (_trace) printf("g8088:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t3;
   /* arg3 = stackp */
@@ -91,7 +84,6 @@ g8088:
   goto numericexception;
 
 g8089:
-  if (_trace) printf("g8089:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -106,7 +98,6 @@ g8089:
 #endif
 
 DoLogandIM:
-  if (_trace) printf("DoLogandIM:\n");
   /* Get tag from ARG1 */
   t3 = *(s32 *)(iSP + 4);
   arg2 = arg2 << 56;
@@ -134,7 +125,6 @@ DoLogandIM:
   goto cachevalid;
 
 g8090:
-  if (_trace) printf("g8090:\n");
   arg1 = Type_Fixnum;
   arg2 = (u32)arg2;
   /* SetTag. */
@@ -158,12 +148,10 @@ g8090:
   /* arg2 has the preloaded 8 bit operand. */
 
 dologior:
-  if (_trace) printf("dologior:\n");
 #ifdef TRACING
 #endif
 
 DoLogiorSP:
-  if (_trace) printf("DoLogiorSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -177,23 +165,19 @@ DoLogiorSP:
 #endif
 
 DoLogiorLP:
-  if (_trace) printf("DoLogiorLP:\n");
 #ifdef TRACING
   goto headdologior;
 #endif
 
 DoLogiorFP:
-  if (_trace) printf("DoLogiorFP:\n");
 
 headdologior:
-  if (_trace) printf("headdologior:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindologior:
-  if (_trace) printf("begindologior:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get tag from ARG1 */
   t3 = *(s32 *)(iSP + 4);
@@ -227,7 +211,6 @@ begindologior:
   goto cachevalid;
 
 g8091:
-  if (_trace) printf("g8091:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t3;
   /* arg3 = stackp */
@@ -239,7 +222,6 @@ g8091:
   goto numericexception;
 
 g8092:
-  if (_trace) printf("g8092:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -254,7 +236,6 @@ g8092:
 #endif
 
 DoLogiorIM:
-  if (_trace) printf("DoLogiorIM:\n");
   /* Get tag from ARG1 */
   t3 = *(s32 *)(iSP + 4);
   arg2 = arg2 << 56;
@@ -282,7 +263,6 @@ DoLogiorIM:
   goto cachevalid;
 
 g8093:
-  if (_trace) printf("g8093:\n");
   arg1 = Type_Fixnum;
   arg2 = (u32)arg2;
   /* SetTag. */
@@ -306,12 +286,10 @@ g8093:
   /* arg2 has the preloaded 8 bit operand. */
 
 dologxor:
-  if (_trace) printf("dologxor:\n");
 #ifdef TRACING
 #endif
 
 DoLogxorSP:
-  if (_trace) printf("DoLogxorSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -325,23 +303,19 @@ DoLogxorSP:
 #endif
 
 DoLogxorLP:
-  if (_trace) printf("DoLogxorLP:\n");
 #ifdef TRACING
   goto headdologxor;
 #endif
 
 DoLogxorFP:
-  if (_trace) printf("DoLogxorFP:\n");
 
 headdologxor:
-  if (_trace) printf("headdologxor:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindologxor:
-  if (_trace) printf("begindologxor:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get tag from ARG1 */
   t3 = *(s32 *)(iSP + 4);
@@ -375,7 +349,6 @@ begindologxor:
   goto cachevalid;
 
 g8094:
-  if (_trace) printf("g8094:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t3;
   /* arg3 = stackp */
@@ -387,7 +360,6 @@ g8094:
   goto numericexception;
 
 g8095:
-  if (_trace) printf("g8095:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -402,7 +374,6 @@ g8095:
 #endif
 
 DoLogxorIM:
-  if (_trace) printf("DoLogxorIM:\n");
   /* Get tag from ARG1 */
   t3 = *(s32 *)(iSP + 4);
   arg2 = arg2 << 56;
@@ -430,7 +401,6 @@ DoLogxorIM:
   goto cachevalid;
 
 g8096:
-  if (_trace) printf("g8096:\n");
   arg1 = Type_Fixnum;
   arg2 = (u32)arg2;
   /* SetTag. */
@@ -453,19 +423,16 @@ g8096:
   /* Halfword operand from stack instruction - DoAsh */
 
 doash:
-  if (_trace) printf("doash:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoAshIM:
-  if (_trace) printf("DoAshIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g8110:
-  if (_trace) printf("g8110:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -475,7 +442,6 @@ g8110:
 #endif
 
 DoAshSP:
-  if (_trace) printf("DoAshSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -489,23 +455,19 @@ DoAshSP:
 #endif
 
 DoAshLP:
-  if (_trace) printf("DoAshLP:\n");
 #ifdef TRACING
   goto headdoash;
 #endif
 
 DoAshFP:
-  if (_trace) printf("DoAshFP:\n");
 
 headdoash:
-  if (_trace) printf("headdoash:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoash:
-  if (_trace) printf("begindoash:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* Get ARG1. */
   arg4 = *(s32 *)iSP;
@@ -522,14 +484,12 @@ begindoash:
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8109:
-  if (_trace) printf("g8109:\n");
   if (t2 == 0)
     goto g8102;
   /* Here if argument TypeFixnum */
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
 g8106:
-  if (_trace) printf("g8106:\n");
   if (t4 == 0)
     goto g8099;
   /* Here if argument TypeFixnum */
@@ -560,7 +520,6 @@ g8106:
   goto NEXTINSTRUCTION;
 
 negash:
-  if (_trace) printf("negash:\n");
   arg1 = zero - arg1;
   /* Sign extend ARG1 before shifting. */
   arg4 = (s32)arg4;
@@ -574,7 +533,6 @@ negash:
   goto NEXTINSTRUCTION;
 
 zerash:
-  if (_trace) printf("zerash:\n");
   arg5 = Type_Fixnum;
   *(u32 *)iSP = arg4;
   /* write the stack cache */
@@ -582,14 +540,11 @@ zerash:
   goto NEXTINSTRUCTION;
 
 g8103:
-  if (_trace) printf("g8103:\n");
 
 g8102:
-  if (_trace) printf("g8102:\n");
   /* Here for all other cases */
 
 g8098:
-  if (_trace) printf("g8098:\n");
   arg1 = (u32)arg1;
   /* SetTag. */
   t2 = arg2 << 32;
@@ -606,7 +561,6 @@ g8098:
   goto g8100;
 
 g8099:
-  if (_trace) printf("g8099:\n");
   arg1 = (u32)arg1;
   /* SetTag. */
   t2 = arg2 << 32;
@@ -622,13 +576,10 @@ g8099:
   goto numericexception;
 
 g8100:
-  if (_trace) printf("g8100:\n");
 
 g8101:
-  if (_trace) printf("g8101:\n");
 
 ashovexc:
-  if (_trace) printf("ashovexc:\n");
   arg1 = (u32)arg1;
   /* SetTag. */
   t1 = arg2 << 32;
@@ -651,12 +602,10 @@ ashovexc:
   /* arg2 has the preloaded 8 bit operand. */
 
 dorot:
-  if (_trace) printf("dorot:\n");
 #ifdef TRACING
 #endif
 
 DoRotSP:
-  if (_trace) printf("DoRotSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -672,22 +621,18 @@ DoRotSP:
 #endif
 
 DoRotLP:
-  if (_trace) printf("DoRotLP:\n");
 #ifdef TRACING
   goto begindorot;
 #endif
 
 DoRotFP:
-  if (_trace) printf("DoRotFP:\n");
 
 begindorot:
-  if (_trace) printf("begindorot:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
 g8112:
-  if (_trace) printf("g8112:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -709,7 +654,6 @@ g8112:
   t5 = t5 - Type_Fixnum;
 
 g8113:
-  if (_trace) printf("g8113:\n");
   if (t5 != 0)
     goto g8111;
   /* Get low 5 bits of the rotation */
@@ -722,7 +666,6 @@ g8113:
   t3 = t3 | t6;
 
 g8114:
-  if (_trace) printf("g8114:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -733,13 +676,11 @@ g8114:
 #endif
 
 DoRotIM:
-  if (_trace) printf("DoRotIM:\n");
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
   goto g8112;
 
 g8111:
-  if (_trace) printf("g8111:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
@@ -752,12 +693,10 @@ g8111:
   /* arg2 has the preloaded 8 bit operand. */
 
 dolsh:
-  if (_trace) printf("dolsh:\n");
 #ifdef TRACING
 #endif
 
 DoLshSP:
-  if (_trace) printf("DoLshSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -773,22 +712,18 @@ DoLshSP:
 #endif
 
 DoLshLP:
-  if (_trace) printf("DoLshLP:\n");
 #ifdef TRACING
   goto begindolsh;
 #endif
 
 DoLshFP:
-  if (_trace) printf("DoLshFP:\n");
 
 begindolsh:
-  if (_trace) printf("begindolsh:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
 g8116:
-  if (_trace) printf("g8116:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -809,7 +744,6 @@ g8116:
   t5 = t5 - Type_Fixnum;
 
 g8117:
-  if (_trace) printf("g8117:\n");
   if (t5 != 0)
     goto g8115;
   /* B. if negative lsh. */
@@ -823,7 +757,6 @@ g8117:
   goto lshdone;
 
 neglsh:
-  if (_trace) printf("neglsh:\n");
   t2 = zero - t2;
   t3 = t2 - 32;
   if ((s64)t3 >= 0)
@@ -833,14 +766,11 @@ neglsh:
   goto lshdone;
 
 returnzero:
-  if (_trace) printf("returnzero:\n");
   t3 = t3 & ~t3;
 
 lshdone:
-  if (_trace) printf("lshdone:\n");
 
 g8118:
-  if (_trace) printf("g8118:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -851,12 +781,10 @@ g8118:
 #endif
 
 DoLshIM:
-  if (_trace) printf("DoLshIM:\n");
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g8119:
-  if (_trace) printf("g8119:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -864,7 +792,6 @@ g8119:
   goto g8116;
 
 g8115:
-  if (_trace) printf("g8115:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
@@ -877,12 +804,10 @@ g8115:
   /* arg2 has the preloaded 8 bit operand. */
 
 do32bitplus:
-  if (_trace) printf("do32bitplus:\n");
 #ifdef TRACING
 #endif
 
 Do32BitPlusSP:
-  if (_trace) printf("Do32BitPlusSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -898,22 +823,18 @@ Do32BitPlusSP:
 #endif
 
 Do32BitPlusLP:
-  if (_trace) printf("Do32BitPlusLP:\n");
 #ifdef TRACING
   goto begindo32bitplus;
 #endif
 
 Do32BitPlusFP:
-  if (_trace) printf("Do32BitPlusFP:\n");
 
 begindo32bitplus:
-  if (_trace) printf("begindo32bitplus:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
 g8121:
-  if (_trace) printf("g8121:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -935,14 +856,12 @@ g8121:
   t5 = t5 - Type_Fixnum;
 
 g8122:
-  if (_trace) printf("g8122:\n");
   if (t5 != 0)
     goto g8120;
   /* Perform the 32 bit Add. */
   t3 = t1 + t2;
 
 g8123:
-  if (_trace) printf("g8123:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -953,13 +872,11 @@ g8123:
 #endif
 
 Do32BitPlusIM:
-  if (_trace) printf("Do32BitPlusIM:\n");
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
   goto g8121;
 
 g8120:
-  if (_trace) printf("g8120:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;
@@ -972,12 +889,10 @@ g8120:
   /* arg2 has the preloaded 8 bit operand. */
 
 do32bitdifference:
-  if (_trace) printf("do32bitdifference:\n");
 #ifdef TRACING
 #endif
 
 Do32BitDifferenceSP:
-  if (_trace) printf("Do32BitDifferenceSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -993,22 +908,18 @@ Do32BitDifferenceSP:
 #endif
 
 Do32BitDifferenceLP:
-  if (_trace) printf("Do32BitDifferenceLP:\n");
 #ifdef TRACING
   goto begindo32bitdifference;
 #endif
 
 Do32BitDifferenceFP:
-  if (_trace) printf("Do32BitDifferenceFP:\n");
 
 begindo32bitdifference:
-  if (_trace) printf("begindo32bitdifference:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
 
 g8125:
-  if (_trace) printf("g8125:\n");
   /* Arg1 on the stack */
   t4 = (u32)(arg6 >> ((4&7)*8));
   t7 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1030,14 +941,12 @@ g8125:
   t5 = t5 - Type_Fixnum;
 
 g8126:
-  if (_trace) printf("g8126:\n");
   if (t5 != 0)
     goto g8124;
   /* Perform the 32 bit Difference. */
   t3 = t1 - t2;
 
 g8127:
-  if (_trace) printf("g8127:\n");
   iPC = t7;
   /* Put the result back on the stack */
   *(u32 *)iSP = t3;
@@ -1048,13 +957,11 @@ g8127:
 #endif
 
 Do32BitDifferenceIM:
-  if (_trace) printf("Do32BitDifferenceIM:\n");
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
   goto g8125;
 
 g8124:
-  if (_trace) printf("g8124:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;

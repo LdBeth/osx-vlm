@@ -10,12 +10,10 @@
   /* arg2 has the preloaded 8 bit operand. */
 
 dounaryminus:
-  if (_trace) printf("dounaryminus:\n");
 #ifdef TRACING
 #endif
 
 DoUnaryMinusSP:
-  if (_trace) printf("DoUnaryMinusSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -29,16 +27,13 @@ DoUnaryMinusSP:
 #endif
 
 DoUnaryMinusLP:
-  if (_trace) printf("DoUnaryMinusLP:\n");
 #ifdef TRACING
   goto begindounaryminus;
 #endif
 
 DoUnaryMinusFP:
-  if (_trace) printf("DoUnaryMinusFP:\n");
 
 begindounaryminus:
-  if (_trace) printf("begindounaryminus:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -54,7 +49,6 @@ begindounaryminus:
   t4 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g7264:
-  if (_trace) printf("g7264:\n");
   if (t4 == 0)
     goto g7260;
   /* Here if argument TypeFixnum */
@@ -72,11 +66,9 @@ g7264:
   goto cachevalid;
 
 g7260:
-  if (_trace) printf("g7260:\n");
   t4 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g7265:
-  if (_trace) printf("g7265:\n");
   if (t4 == 0)
     goto g7261;
   /* Here if argument TypeSingleFloat */
@@ -94,11 +86,9 @@ g7265:
   goto cachevalid;
 
 g7261:
-  if (_trace) printf("g7261:\n");
   /* Here for all other cases */
 
 unaryminusexc:
-  if (_trace) printf("unaryminusexc:\n");
   /* arg6 = tag to dispatch on */
   arg6 = arg5;
   /* arg3 = stackp */
@@ -110,13 +100,11 @@ unaryminusexc:
   goto unarynumericexception;
 
 g7259:
-  if (_trace) printf("g7259:\n");
 #ifdef TRACING
   goto DoUnaryMinusIM;
 #endif
 
 DoUnaryMinusIM:
-  if (_trace) printf("DoUnaryMinusIM:\n");
   /* Negate the 8 bit immediate operand */
   arg2 = (s32)((u32)zero - (u32)arg2);
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -136,12 +124,10 @@ DoUnaryMinusIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 domultiply:
-  if (_trace) printf("domultiply:\n");
 #ifdef TRACING
 #endif
 
 DoMultiplySP:
-  if (_trace) printf("DoMultiplySP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -157,16 +143,13 @@ DoMultiplySP:
 #endif
 
 DoMultiplyLP:
-  if (_trace) printf("DoMultiplyLP:\n");
 #ifdef TRACING
   goto begindomultiply;
 #endif
 
 DoMultiplyFP:
-  if (_trace) printf("DoMultiplyFP:\n");
 
 begindomultiply:
-  if (_trace) printf("begindomultiply:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -188,14 +171,12 @@ begindomultiply:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7305:
-  if (_trace) printf("g7305:\n");
   if (t10 == 0)
     goto g7276;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7282:
-  if (_trace) printf("g7282:\n");
   if (t12 == 0)
     goto g7278;
   /* Here if argument TypeFixnum */
@@ -218,11 +199,9 @@ g7282:
   goto cachevalid;
 
 g7278:
-  if (_trace) printf("g7278:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7283:
-  if (_trace) printf("g7283:\n");
   if (t12 == 0)
     goto g7279;
   /* Here if argument TypeSingleFloat */
@@ -231,11 +210,9 @@ g7283:
   goto g7266;
 
 g7279:
-  if (_trace) printf("g7279:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7284:
-  if (_trace) printf("g7284:\n");
   if (t12 == 0)
     goto g7273;
   /* Here if argument TypeDoubleFloat */
@@ -244,27 +221,22 @@ g7284:
   goto g7269;
 
 g7277:
-  if (_trace) printf("g7277:\n");
 
 g7276:
-  if (_trace) printf("g7276:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7306:
-  if (_trace) printf("g7306:\n");
   if (t10 == 0)
     goto g7285;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7291:
-  if (_trace) printf("g7291:\n");
   if (t12 == 0)
     goto g7287;
   /* Here if argument TypeSingleFloat */
 
 g7266:
-  if (_trace) printf("g7266:\n");
   MULS(0, f0, 1, f1, 2, f2); /* muls */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -277,11 +249,9 @@ g7266:
   goto cachevalid;
 
 g7287:
-  if (_trace) printf("g7287:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7292:
-  if (_trace) printf("g7292:\n");
   if (t12 == 0)
     goto g7288;
   /* Here if argument TypeFixnum */
@@ -290,38 +260,31 @@ g7292:
   goto g7266;
 
 g7288:
-  if (_trace) printf("g7288:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7293:
-  if (_trace) printf("g7293:\n");
   if (t12 == 0)
     goto g7273;
   /* Here if argument TypeDoubleFloat */
 
 g7269:
-  if (_trace) printf("g7269:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
   goto g7270;
 
 g7286:
-  if (_trace) printf("g7286:\n");
 
 g7285:
-  if (_trace) printf("g7285:\n");
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
 g7307:
-  if (_trace) printf("g7307:\n");
   if (t10 == 0)
     goto g7294;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7300:
-  if (_trace) printf("g7300:\n");
   if (t12 == 0)
     goto g7296;
   /* Here if argument TypeDoubleFloat */
@@ -335,7 +298,6 @@ return0049:
   LDT(1, f1, processor->fp0);
 
 g7270:
-  if (_trace) printf("g7270:\n");
   arg2 = (u32)t4;
   r0 = (u64)&&return0050;
   goto fetchdoublefloat;
@@ -343,7 +305,6 @@ return0050:
   LDT(2, f2, processor->fp0);
 
 g7267:
-  if (_trace) printf("g7267:\n");
   MULT(0, f0, 1, f1, 2, f2);
   STT( (u64 *)&processor->fp0, 0, f0 );
   r0 = (u64)&&return0051;
@@ -358,17 +319,14 @@ return0051:
   goto cachevalid;
 
 g7296:
-  if (_trace) printf("g7296:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7301:
-  if (_trace) printf("g7301:\n");
   if (t12 == 0)
     goto g7297;
   /* Here if argument TypeSingleFloat */
 
 g7268:
-  if (_trace) printf("g7268:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
@@ -380,11 +338,9 @@ return0052:
   goto g7267;
 
 g7297:
-  if (_trace) printf("g7297:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7302:
-  if (_trace) printf("g7302:\n");
   if (t12 == 0)
     goto g7273;
   /* Here if argument TypeFixnum */
@@ -393,17 +349,13 @@ g7302:
   goto g7268;
 
 g7295:
-  if (_trace) printf("g7295:\n");
 
 g7294:
-  if (_trace) printf("g7294:\n");
   /* Here for all other cases */
 
 g7272:
-  if (_trace) printf("g7272:\n");
 
 domulovfl:
-  if (_trace) printf("domulovfl:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -416,21 +368,17 @@ domulovfl:
   goto g7274;
 
 g7273:
-  if (_trace) printf("g7273:\n");
   t1 = t3;
   goto domulovfl;
 
 g7274:
-  if (_trace) printf("g7274:\n");
 
 g7275:
-  if (_trace) printf("g7275:\n");
 #ifdef TRACING
   goto DoMultiplyIM;
 #endif
 
 DoMultiplyIM:
-  if (_trace) printf("DoMultiplyIM:\n");
   arg2 = arg2 << 56;
   t1 = (u32)(arg6 >> ((4&7)*8));
   /* get ARG1 tag/data */
@@ -441,7 +389,6 @@ DoMultiplyIM:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7312:
-  if (_trace) printf("g7312:\n");
   if (t12 == 0)
     goto g7309;
   /* Here if argument TypeFixnum */
@@ -464,7 +411,6 @@ g7312:
   goto cachevalid;
 
 g7309:
-  if (_trace) printf("g7309:\n");
   /* Here for all other cases */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
@@ -472,7 +418,6 @@ g7309:
   goto begindomultiply;
 
 g7308:
-  if (_trace) printf("g7308:\n");
 
 /* end DoMultiply */
   /* End of Halfword operand from stack instruction - DoMultiply */
@@ -480,7 +425,6 @@ g7308:
 
 
 binaryarithmeticdivisionprelude:
-  if (_trace) printf("binaryarithmeticdivisionprelude:\n");
   sp = sp + -8;
   LDS(1, f1, *(u32 *)iSP );
   /* ARG1 data */
@@ -499,14 +443,12 @@ binaryarithmeticdivisionprelude:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7350:
-  if (_trace) printf("g7350:\n");
   if (t10 == 0)
     goto g7323;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7329:
-  if (_trace) printf("g7329:\n");
   if (t12 == 0)
     goto g7325;
   /* Here if argument TypeFixnum */
@@ -516,38 +458,30 @@ g7329:
   CVTQT(2, f2, f31, 2, f2);
 
 g7324:
-  if (_trace) printf("g7324:\n");
 
 g7322:
-  if (_trace) printf("g7322:\n");
 
 g7313:
-  if (_trace) printf("g7313:\n");
   sp = sp + 8;
   goto *(void *)r0; /* ret */
 
 g7323:
-  if (_trace) printf("g7323:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7351:
-  if (_trace) printf("g7351:\n");
   if (t10 == 0)
     goto g7330;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7336:
-  if (_trace) printf("g7336:\n");
   if (t12 != 0)
     goto g7313;
 
 g7332:
-  if (_trace) printf("g7332:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7337:
-  if (_trace) printf("g7337:\n");
   if (t12 == 0)
     goto g7333;
   /* Here if argument TypeFixnum */
@@ -558,38 +492,31 @@ g7337:
   goto g7313;
 
 g7333:
-  if (_trace) printf("g7333:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7338:
-  if (_trace) printf("g7338:\n");
   if (t12 == 0)
     goto g7320;
   /* Here if argument TypeDoubleFloat */
 
 g7315:
-  if (_trace) printf("g7315:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
   goto g7316;
 
 g7331:
-  if (_trace) printf("g7331:\n");
 
 g7330:
-  if (_trace) printf("g7330:\n");
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
 g7352:
-  if (_trace) printf("g7352:\n");
   if (t10 == 0)
     goto g7339;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7345:
-  if (_trace) printf("g7345:\n");
   if (t12 == 0)
     goto g7341;
   /* Here if argument TypeDoubleFloat */
@@ -605,7 +532,6 @@ return0053:
   LDT(1, f1, processor->fp0);
 
 g7316:
-  if (_trace) printf("g7316:\n");
   arg2 = (u32)t4;
   *(u64 *)sp = r0;
   r0 = (u64)&&return0054;
@@ -616,17 +542,14 @@ return0054:
   goto g7313;
 
 g7341:
-  if (_trace) printf("g7341:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7346:
-  if (_trace) printf("g7346:\n");
   if (t12 == 0)
     goto g7342;
   /* Here if argument TypeSingleFloat */
 
 g7314:
-  if (_trace) printf("g7314:\n");
   /* contagion */
   t3 = t1;
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -642,11 +565,9 @@ return0055:
   goto g7313;
 
 g7342:
-  if (_trace) printf("g7342:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7347:
-  if (_trace) printf("g7347:\n");
   if (t12 == 0)
     goto g7320;
   /* Here if argument TypeFixnum */
@@ -655,17 +576,13 @@ g7347:
   goto g7314;
 
 g7340:
-  if (_trace) printf("g7340:\n");
 
 g7339:
-  if (_trace) printf("g7339:\n");
   /* Here for all other cases */
 
 g7319:
-  if (_trace) printf("g7319:\n");
 
 g7317:
-  if (_trace) printf("g7317:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -678,19 +595,15 @@ g7317:
   goto g7321;
 
 g7320:
-  if (_trace) printf("g7320:\n");
   t1 = t3;
   goto g7317;
 
 g7321:
-  if (_trace) printf("g7321:\n");
 
 g7325:
-  if (_trace) printf("g7325:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7353:
-  if (_trace) printf("g7353:\n");
   if (t12 == 0)
     goto g7326;
   /* Here if argument TypeSingleFloat */
@@ -699,11 +612,9 @@ g7353:
   goto g7313;
 
 g7326:
-  if (_trace) printf("g7326:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7354:
-  if (_trace) printf("g7354:\n");
   if (t12 == 0)
     goto g7320;
   /* Here if argument TypeDoubleFloat */
@@ -718,13 +629,11 @@ g7354:
   /* arg2 has the preloaded 8 bit operand. */
 
 doquotient:
-  if (_trace) printf("doquotient:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoQuotientIM:
-  if (_trace) printf("DoQuotientIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -738,7 +647,6 @@ DoQuotientIM:
 #endif
 
 DoQuotientSP:
-  if (_trace) printf("DoQuotientSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -754,16 +662,13 @@ DoQuotientSP:
 #endif
 
 DoQuotientLP:
-  if (_trace) printf("DoQuotientLP:\n");
 #ifdef TRACING
   goto begindoquotient;
 #endif
 
 DoQuotientFP:
-  if (_trace) printf("DoQuotientFP:\n");
 
 begindoquotient:
-  if (_trace) printf("begindoquotient:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -775,7 +680,6 @@ return0056:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7360:
-  if (_trace) printf("g7360:\n");
   if (t9 == 0)
     goto g7356;
   /* Here if argument TypeFixnum */
@@ -790,17 +694,14 @@ g7360:
   STS( (u32 *)iSP, 0, f0 );
 
 g7355:
-  if (_trace) printf("g7355:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
 g7356:
-  if (_trace) printf("g7356:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7361:
-  if (_trace) printf("g7361:\n");
   if (t9 == 0)
     goto g7357;
   /* Here if argument TypeSingleFloat */
@@ -814,11 +715,9 @@ g7361:
   goto g7355;
 
 g7357:
-  if (_trace) printf("g7357:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7362:
-  if (_trace) printf("g7362:\n");
   if (t9 == 0)
     goto g7355;
   /* Here if argument TypeDoubleFloat */
@@ -841,13 +740,11 @@ return0057:
   /* arg2 has the preloaded 8 bit operand. */
 
 dorationalquotient:
-  if (_trace) printf("dorationalquotient:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoRationalQuotientIM:
-  if (_trace) printf("DoRationalQuotientIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -861,7 +758,6 @@ DoRationalQuotientIM:
 #endif
 
 DoRationalQuotientSP:
-  if (_trace) printf("DoRationalQuotientSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -877,16 +773,13 @@ DoRationalQuotientSP:
 #endif
 
 DoRationalQuotientLP:
-  if (_trace) printf("DoRationalQuotientLP:\n");
 #ifdef TRACING
   goto begindorationalquotient;
 #endif
 
 DoRationalQuotientFP:
-  if (_trace) printf("DoRationalQuotientFP:\n");
 
 begindorationalquotient:
-  if (_trace) printf("begindorationalquotient:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -898,7 +791,6 @@ return0058:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7368:
-  if (_trace) printf("g7368:\n");
   if (t9 == 0)
     goto g7364;
   /* Here if argument TypeFixnum */
@@ -919,17 +811,14 @@ g7368:
   STS( (u32 *)iSP, 0, f0 );
 
 g7363:
-  if (_trace) printf("g7363:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
 g7364:
-  if (_trace) printf("g7364:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7369:
-  if (_trace) printf("g7369:\n");
   if (t9 == 0)
     goto g7365;
   /* Here if argument TypeSingleFloat */
@@ -943,11 +832,9 @@ g7369:
   goto g7363;
 
 g7365:
-  if (_trace) printf("g7365:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7370:
-  if (_trace) printf("g7370:\n");
   if (t9 == 0)
     goto g7363;
   /* Here if argument TypeDoubleFloat */
@@ -970,13 +857,11 @@ return0059:
   /* arg2 has the preloaded 8 bit operand. */
 
 dofloor:
-  if (_trace) printf("dofloor:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoFloorIM:
-  if (_trace) printf("DoFloorIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -990,7 +875,6 @@ DoFloorIM:
 #endif
 
 DoFloorSP:
-  if (_trace) printf("DoFloorSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1006,16 +890,13 @@ DoFloorSP:
 #endif
 
 DoFloorLP:
-  if (_trace) printf("DoFloorLP:\n");
 #ifdef TRACING
   goto begindofloor;
 #endif
 
 DoFloorFP:
-  if (_trace) printf("DoFloorFP:\n");
 
 begindofloor:
-  if (_trace) printf("begindofloor:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1035,7 +916,6 @@ return0060:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7376:
-  if (_trace) printf("g7376:\n");
   if (t9 == 0)
     goto g7372;
   /* Here if argument TypeFixnum */
@@ -1054,17 +934,14 @@ g7376:
   iSP = iSP + 8;
 
 g7371:
-  if (_trace) printf("g7371:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
 g7372:
-  if (_trace) printf("g7372:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7377:
-  if (_trace) printf("g7377:\n");
   if (t9 == 0)
     goto g7373;
   /* Here if argument TypeSingleFloat */
@@ -1083,11 +960,9 @@ g7377:
   goto g7371;
 
 g7373:
-  if (_trace) printf("g7373:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7378:
-  if (_trace) printf("g7378:\n");
   if (t9 == 0)
     goto g7371;
   /* Here if argument TypeDoubleFloat */
@@ -1116,13 +991,11 @@ return0061:
   /* arg2 has the preloaded 8 bit operand. */
 
 doceiling:
-  if (_trace) printf("doceiling:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoCeilingIM:
-  if (_trace) printf("DoCeilingIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -1136,7 +1009,6 @@ DoCeilingIM:
 #endif
 
 DoCeilingSP:
-  if (_trace) printf("DoCeilingSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1152,16 +1024,13 @@ DoCeilingSP:
 #endif
 
 DoCeilingLP:
-  if (_trace) printf("DoCeilingLP:\n");
 #ifdef TRACING
   goto begindoceiling;
 #endif
 
 DoCeilingFP:
-  if (_trace) printf("DoCeilingFP:\n");
 
 begindoceiling:
-  if (_trace) printf("begindoceiling:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1181,7 +1050,6 @@ return0062:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7384:
-  if (_trace) printf("g7384:\n");
   if (t9 == 0)
     goto g7380;
   /* Here if argument TypeFixnum */
@@ -1200,17 +1068,14 @@ g7384:
   iSP = iSP + 8;
 
 g7379:
-  if (_trace) printf("g7379:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
 g7380:
-  if (_trace) printf("g7380:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7385:
-  if (_trace) printf("g7385:\n");
   if (t9 == 0)
     goto g7381;
   /* Here if argument TypeSingleFloat */
@@ -1229,11 +1094,9 @@ g7385:
   goto g7379;
 
 g7381:
-  if (_trace) printf("g7381:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7386:
-  if (_trace) printf("g7386:\n");
   if (t9 == 0)
     goto g7379;
   /* Here if argument TypeDoubleFloat */
@@ -1262,13 +1125,11 @@ return0063:
   /* arg2 has the preloaded 8 bit operand. */
 
 dotruncate:
-  if (_trace) printf("dotruncate:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoTruncateIM:
-  if (_trace) printf("DoTruncateIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -1282,7 +1143,6 @@ DoTruncateIM:
 #endif
 
 DoTruncateSP:
-  if (_trace) printf("DoTruncateSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1298,16 +1158,13 @@ DoTruncateSP:
 #endif
 
 DoTruncateLP:
-  if (_trace) printf("DoTruncateLP:\n");
 #ifdef TRACING
   goto begindotruncate;
 #endif
 
 DoTruncateFP:
-  if (_trace) printf("DoTruncateFP:\n");
 
 begindotruncate:
-  if (_trace) printf("begindotruncate:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1327,7 +1184,6 @@ return0064:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7392:
-  if (_trace) printf("g7392:\n");
   if (t9 == 0)
     goto g7388;
   /* Here if argument TypeFixnum */
@@ -1346,17 +1202,14 @@ g7392:
   iSP = iSP + 8;
 
 g7387:
-  if (_trace) printf("g7387:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
 g7388:
-  if (_trace) printf("g7388:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7393:
-  if (_trace) printf("g7393:\n");
   if (t9 == 0)
     goto g7389;
   /* Here if argument TypeSingleFloat */
@@ -1375,11 +1228,9 @@ g7393:
   goto g7387;
 
 g7389:
-  if (_trace) printf("g7389:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7394:
-  if (_trace) printf("g7394:\n");
   if (t9 == 0)
     goto g7387;
   /* Here if argument TypeDoubleFloat */
@@ -1408,13 +1259,11 @@ return0065:
   /* arg2 has the preloaded 8 bit operand. */
 
 doround:
-  if (_trace) printf("doround:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoRoundIM:
-  if (_trace) printf("DoRoundIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -1428,7 +1277,6 @@ DoRoundIM:
 #endif
 
 DoRoundSP:
-  if (_trace) printf("DoRoundSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1444,16 +1292,13 @@ DoRoundSP:
 #endif
 
 DoRoundLP:
-  if (_trace) printf("DoRoundLP:\n");
 #ifdef TRACING
   goto begindoround;
 #endif
 
 DoRoundFP:
-  if (_trace) printf("DoRoundFP:\n");
 
 begindoround:
-  if (_trace) printf("begindoround:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1473,7 +1318,6 @@ return0066:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7400:
-  if (_trace) printf("g7400:\n");
   if (t9 == 0)
     goto g7396;
   /* Here if argument TypeFixnum */
@@ -1492,17 +1336,14 @@ g7400:
   iSP = iSP + 8;
 
 g7395:
-  if (_trace) printf("g7395:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   goto cachevalid;
 
 g7396:
-  if (_trace) printf("g7396:\n");
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7401:
-  if (_trace) printf("g7401:\n");
   if (t9 == 0)
     goto g7397;
   /* Here if argument TypeSingleFloat */
@@ -1521,11 +1362,9 @@ g7401:
   goto g7395;
 
 g7397:
-  if (_trace) printf("g7397:\n");
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7402:
-  if (_trace) printf("g7402:\n");
   if (t9 == 0)
     goto g7395;
   /* Here if argument TypeDoubleFloat */
@@ -1555,13 +1394,11 @@ return0067:
   /* arg2 has the preloaded 8 bit operand. */
 
 domax:
-  if (_trace) printf("domax:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoMaxIM:
-  if (_trace) printf("DoMaxIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -1575,7 +1412,6 @@ DoMaxIM:
 #endif
 
 DoMaxSP:
-  if (_trace) printf("DoMaxSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1591,16 +1427,13 @@ DoMaxSP:
 #endif
 
 DoMaxLP:
-  if (_trace) printf("DoMaxLP:\n");
 #ifdef TRACING
   goto begindomax;
 #endif
 
 DoMaxFP:
-  if (_trace) printf("DoMaxFP:\n");
 
 begindomax:
-  if (_trace) printf("begindomax:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1621,14 +1454,12 @@ begindomax:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7426:
-  if (_trace) printf("g7426:\n");
   if (t10 == 0)
     goto g7410;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7415:
-  if (_trace) printf("g7415:\n");
   if (t12 == 0)
     goto g7412;
   /* Here if argument TypeFixnum */
@@ -1644,11 +1475,9 @@ g7415:
   goto cachevalid;
 
 g7412:
-  if (_trace) printf("g7412:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7416:
-  if (_trace) printf("g7416:\n");
   if (t12 == 0)
     goto g7407;
   /* Here if argument TypeSingleFloat */
@@ -1657,27 +1486,22 @@ g7416:
   goto g7404;
 
 g7411:
-  if (_trace) printf("g7411:\n");
 
 g7410:
-  if (_trace) printf("g7410:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7427:
-  if (_trace) printf("g7427:\n");
   if (t10 == 0)
     goto g7417;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7422:
-  if (_trace) printf("g7422:\n");
   if (t12 == 0)
     goto g7419;
   /* Here if argument TypeSingleFloat */
 
 g7404:
-  if (_trace) printf("g7404:\n");
   /* NIL */
   SUBS(0, f0, 1, f1, 2, f2); /* subs */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1693,11 +1517,9 @@ g7404:
   goto cachevalid;
 
 g7419:
-  if (_trace) printf("g7419:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7423:
-  if (_trace) printf("g7423:\n");
   if (t12 == 0)
     goto g7407;
   /* Here if argument TypeFixnum */
@@ -1706,17 +1528,13 @@ g7423:
   goto g7404;
 
 g7418:
-  if (_trace) printf("g7418:\n");
 
 g7417:
-  if (_trace) printf("g7417:\n");
   /* Here for all other cases */
 
 g7406:
-  if (_trace) printf("g7406:\n");
 
 g7403:
-  if (_trace) printf("g7403:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -1729,15 +1547,12 @@ g7403:
   goto g7408;
 
 g7407:
-  if (_trace) printf("g7407:\n");
   t1 = t3;
   goto g7403;
 
 g7408:
-  if (_trace) printf("g7408:\n");
 
 g7409:
-  if (_trace) printf("g7409:\n");
 
 /* end DoMax */
   /* End of Halfword operand from stack instruction - DoMax */
@@ -1747,13 +1562,11 @@ g7409:
   /* arg2 has the preloaded 8 bit operand. */
 
 domin:
-  if (_trace) printf("domin:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoMinIM:
-  if (_trace) printf("DoMinIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg1 = arg2 << 56;
@@ -1767,7 +1580,6 @@ DoMinIM:
 #endif
 
 DoMinSP:
-  if (_trace) printf("DoMinSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1783,16 +1595,13 @@ DoMinSP:
 #endif
 
 DoMinLP:
-  if (_trace) printf("DoMinLP:\n");
 #ifdef TRACING
   goto begindomin;
 #endif
 
 DoMinFP:
-  if (_trace) printf("DoMinFP:\n");
 
 begindomin:
-  if (_trace) printf("begindomin:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1813,14 +1622,12 @@ begindomin:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7451:
-  if (_trace) printf("g7451:\n");
   if (t10 == 0)
     goto g7435;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7440:
-  if (_trace) printf("g7440:\n");
   if (t12 == 0)
     goto g7437;
   /* Here if argument TypeFixnum */
@@ -1836,11 +1643,9 @@ g7440:
   goto cachevalid;
 
 g7437:
-  if (_trace) printf("g7437:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7441:
-  if (_trace) printf("g7441:\n");
   if (t12 == 0)
     goto g7432;
   /* Here if argument TypeSingleFloat */
@@ -1849,27 +1654,22 @@ g7441:
   goto g7429;
 
 g7436:
-  if (_trace) printf("g7436:\n");
 
 g7435:
-  if (_trace) printf("g7435:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7452:
-  if (_trace) printf("g7452:\n");
   if (t10 == 0)
     goto g7442;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7447:
-  if (_trace) printf("g7447:\n");
   if (t12 == 0)
     goto g7444;
   /* Here if argument TypeSingleFloat */
 
 g7429:
-  if (_trace) printf("g7429:\n");
   /* NIL */
   SUBS(0, f0, 1, f1, 2, f2); /* subs */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1885,11 +1685,9 @@ g7429:
   goto cachevalid;
 
 g7444:
-  if (_trace) printf("g7444:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7448:
-  if (_trace) printf("g7448:\n");
   if (t12 == 0)
     goto g7432;
   /* Here if argument TypeFixnum */
@@ -1898,17 +1696,13 @@ g7448:
   goto g7429;
 
 g7443:
-  if (_trace) printf("g7443:\n");
 
 g7442:
-  if (_trace) printf("g7442:\n");
   /* Here for all other cases */
 
 g7431:
-  if (_trace) printf("g7431:\n");
 
 g7428:
-  if (_trace) printf("g7428:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -1921,15 +1715,12 @@ g7428:
   goto g7433;
 
 g7432:
-  if (_trace) printf("g7432:\n");
   t1 = t3;
   goto g7428;
 
 g7433:
-  if (_trace) printf("g7433:\n");
 
 g7434:
-  if (_trace) printf("g7434:\n");
 
 /* end DoMin */
   /* End of Halfword operand from stack instruction - DoMin */
@@ -1938,19 +1729,16 @@ g7434:
   /* Halfword operand from stack instruction - DoMultiplyDouble */
 
 domultiplydouble:
-  if (_trace) printf("domultiplydouble:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoMultiplyDoubleIM:
-  if (_trace) printf("DoMultiplyDoubleIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g7453:
-  if (_trace) printf("g7453:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -1960,7 +1748,6 @@ g7453:
 #endif
 
 DoMultiplyDoubleSP:
-  if (_trace) printf("DoMultiplyDoubleSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1974,23 +1761,19 @@ DoMultiplyDoubleSP:
 #endif
 
 DoMultiplyDoubleLP:
-  if (_trace) printf("DoMultiplyDoubleLP:\n");
 #ifdef TRACING
   goto headdomultiplydouble;
 #endif
 
 DoMultiplyDoubleFP:
-  if (_trace) printf("DoMultiplyDoubleFP:\n");
 
 headdomultiplydouble:
-  if (_trace) printf("headdomultiplydouble:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindomultiplydouble:
-  if (_trace) printf("begindomultiplydouble:\n");
   /* arg1 has the operand, sign extended if immediate. */
   /* ARG2 tag */
   t2 = arg1 >> 32;
@@ -2029,7 +1812,6 @@ begindomultiplydouble:
   goto NEXTINSTRUCTION;
 
 muldexc:
-  if (_trace) printf("muldexc:\n");
   arg5 = 0;
   arg2 = 80;
   goto illegaloperand;

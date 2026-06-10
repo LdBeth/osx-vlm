@@ -9,22 +9,17 @@
   /* Halfword 10 bit immediate instruction - DoPopInstanceVariable */
 
 dopopinstancevariable:
-  if (_trace) printf("dopopinstancevariable:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPopInstanceVariableIM:
-  if (_trace) printf("DoPopInstanceVariableIM:\n");
 
 DoPopInstanceVariableSP:
-  if (_trace) printf("DoPopInstanceVariableSP:\n");
 
 DoPopInstanceVariableLP:
-  if (_trace) printf("DoPopInstanceVariableLP:\n");
 
 DoPopInstanceVariableFP:
-  if (_trace) printf("DoPopInstanceVariableFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   arg5 = *(u64 *)&(processor->stackcachebasevma);
@@ -120,11 +115,9 @@ g7023:
     goto g7001;
 
 g7000:
-  if (_trace) printf("g7000:\n");
   arg1 = arg1 + t3;
 
 g6999:
-  if (_trace) printf("g6999:\n");
   t1 = *(s32 *)iSP;
   t2 = *(s32 *)(iSP + 4);
   /* Pop Stack. */
@@ -172,7 +165,6 @@ g7034:
   t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g7036:
-  if (_trace) printf("g7036:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t1;
@@ -183,7 +175,6 @@ g7036:
   goto NEXTINSTRUCTION;
 
 popiviex:
-  if (_trace) printf("popiviex:\n");
   t1 = zero + 8;
   /* SetTag. */
   t1 = t1 << 32;
@@ -199,7 +190,6 @@ popiviex:
   goto exception;
 
 g7035:
-  if (_trace) printf("g7035:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = arg1 - arg5;
@@ -212,7 +202,6 @@ g7035:
   goto NEXTINSTRUCTION;
 
 g7026:
-  if (_trace) printf("g7026:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
@@ -222,7 +211,6 @@ g7026:
   goto g7025;
 
 g7028:
-  if (_trace) printf("g7028:\n");
   if ((t8 & 1) == 0)
     goto g7027;
   /* Do the indirect thing */
@@ -230,7 +218,6 @@ g7028:
   goto g7024;
 
 g7027:
-  if (_trace) printf("g7027:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -249,7 +236,6 @@ g7031:
 #ifdef MINIMA
 
 g7031:
-  if (_trace) printf("g7031:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
@@ -278,7 +264,6 @@ g7031:
   goto g7024;
 
 g7033:
-  if (_trace) printf("g7033:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -289,7 +274,6 @@ g7030:
   goto performmemoryaction;
 
 g7014:
-  if (_trace) printf("g7014:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -299,7 +283,6 @@ g7014:
   goto g7013;
 
 g7016:
-  if (_trace) printf("g7016:\n");
   if ((t9 & 1) == 0)
     goto g7015;
   /* Do the indirect thing */
@@ -307,7 +290,6 @@ g7016:
   goto g7012;
 
 g7015:
-  if (_trace) printf("g7015:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -321,7 +303,6 @@ g7015:
   t10 = *(s32 *)t9;
 
 g7020:
-  if (_trace) printf("g7020:\n");
   t9 = t10 & MemoryActionTransform;
   if (t9 == 0)
     goto g7019;
@@ -335,7 +316,6 @@ g7019:
 #ifdef MINIMA
 
 g7019:
-  if (_trace) printf("g7019:\n");
   t9 = t10 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t9 == 0)
@@ -364,7 +344,6 @@ g7019:
   goto g7012;
 
 g7022:
-  if (_trace) printf("g7022:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -375,7 +354,6 @@ g7018:
   goto performmemoryaction;
 
 g7004:
-  if (_trace) printf("g7004:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -385,7 +363,6 @@ g7004:
   goto g7003;
 
 g7006:
-  if (_trace) printf("g7006:\n");
   if ((t9 & 1) == 0)
     goto g7005;
   /* Do the indirect thing */
@@ -393,7 +370,6 @@ g7006:
   goto g7002;
 
 g7005:
-  if (_trace) printf("g7005:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -413,7 +389,6 @@ g7008:
   goto performmemoryaction;
 
 g7001:
-  if (_trace) printf("g7001:\n");
   t5 = arg1;
   /* Memory Read Internal */
 
@@ -454,7 +429,6 @@ g7046:
   goto g7000;
 
 g7039:
-  if (_trace) printf("g7039:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -464,7 +438,6 @@ g7039:
   goto g7038;
 
 g7041:
-  if (_trace) printf("g7041:\n");
   if ((t9 & 1) == 0)
     goto g7040;
   /* Do the indirect thing */
@@ -472,7 +445,6 @@ g7041:
   goto g7037;
 
 g7040:
-  if (_trace) printf("g7040:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -498,22 +470,17 @@ g7043:
   /* Halfword 10 bit immediate instruction - DoMovemInstanceVariable */
 
 domoveminstancevariable:
-  if (_trace) printf("domoveminstancevariable:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoMovemInstanceVariableIM:
-  if (_trace) printf("DoMovemInstanceVariableIM:\n");
 
 DoMovemInstanceVariableSP:
-  if (_trace) printf("DoMovemInstanceVariableSP:\n");
 
 DoMovemInstanceVariableLP:
-  if (_trace) printf("DoMovemInstanceVariableLP:\n");
 
 DoMovemInstanceVariableFP:
-  if (_trace) printf("DoMovemInstanceVariableFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   arg5 = *(u64 *)&(processor->stackcachebasevma);
@@ -609,11 +576,9 @@ g7071:
     goto g7049;
 
 g7048:
-  if (_trace) printf("g7048:\n");
   arg1 = arg1 + t3;
 
 g7047:
-  if (_trace) printf("g7047:\n");
   t1 = *(s32 *)iSP;
   t2 = *(s32 *)(iSP + 4);
   t1 = (u32)t1;
@@ -659,7 +624,6 @@ g7082:
   t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g7084:
-  if (_trace) printf("g7084:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t1;
@@ -670,7 +634,6 @@ g7084:
   goto NEXTINSTRUCTION;
 
 movemiviex:
-  if (_trace) printf("movemiviex:\n");
   t1 = zero + 8;
   /* SetTag. */
   t1 = t1 << 32;
@@ -686,7 +649,6 @@ movemiviex:
   goto exception;
 
 g7083:
-  if (_trace) printf("g7083:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = arg1 - arg5;
@@ -699,7 +661,6 @@ g7083:
   goto NEXTINSTRUCTION;
 
 g7074:
-  if (_trace) printf("g7074:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
@@ -709,7 +670,6 @@ g7074:
   goto g7073;
 
 g7076:
-  if (_trace) printf("g7076:\n");
   if ((t8 & 1) == 0)
     goto g7075;
   /* Do the indirect thing */
@@ -717,7 +677,6 @@ g7076:
   goto g7072;
 
 g7075:
-  if (_trace) printf("g7075:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -736,7 +695,6 @@ g7079:
 #ifdef MINIMA
 
 g7079:
-  if (_trace) printf("g7079:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
@@ -765,7 +723,6 @@ g7079:
   goto g7072;
 
 g7081:
-  if (_trace) printf("g7081:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -776,7 +733,6 @@ g7078:
   goto performmemoryaction;
 
 g7062:
-  if (_trace) printf("g7062:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -786,7 +742,6 @@ g7062:
   goto g7061;
 
 g7064:
-  if (_trace) printf("g7064:\n");
   if ((t9 & 1) == 0)
     goto g7063;
   /* Do the indirect thing */
@@ -794,7 +749,6 @@ g7064:
   goto g7060;
 
 g7063:
-  if (_trace) printf("g7063:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -808,7 +762,6 @@ g7063:
   t10 = *(s32 *)t9;
 
 g7068:
-  if (_trace) printf("g7068:\n");
   t9 = t10 & MemoryActionTransform;
   if (t9 == 0)
     goto g7067;
@@ -822,7 +775,6 @@ g7067:
 #ifdef MINIMA
 
 g7067:
-  if (_trace) printf("g7067:\n");
   t9 = t10 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t9 == 0)
@@ -851,7 +803,6 @@ g7067:
   goto g7060;
 
 g7070:
-  if (_trace) printf("g7070:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -862,7 +813,6 @@ g7066:
   goto performmemoryaction;
 
 g7052:
-  if (_trace) printf("g7052:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -872,7 +822,6 @@ g7052:
   goto g7051;
 
 g7054:
-  if (_trace) printf("g7054:\n");
   if ((t9 & 1) == 0)
     goto g7053;
   /* Do the indirect thing */
@@ -880,7 +829,6 @@ g7054:
   goto g7050;
 
 g7053:
-  if (_trace) printf("g7053:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -900,7 +848,6 @@ g7056:
   goto performmemoryaction;
 
 g7049:
-  if (_trace) printf("g7049:\n");
   t5 = arg1;
   /* Memory Read Internal */
 
@@ -941,7 +888,6 @@ g7094:
   goto g7048;
 
 g7087:
-  if (_trace) printf("g7087:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -951,7 +897,6 @@ g7087:
   goto g7086;
 
 g7089:
-  if (_trace) printf("g7089:\n");
   if ((t9 & 1) == 0)
     goto g7088;
   /* Do the indirect thing */
@@ -959,7 +904,6 @@ g7089:
   goto g7085;
 
 g7088:
-  if (_trace) printf("g7088:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -985,22 +929,17 @@ g7091:
   /* Halfword 10 bit immediate instruction - DoPushAddressInstanceVariable */
 
 dopushaddressinstancevariable:
-  if (_trace) printf("dopushaddressinstancevariable:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPushAddressInstanceVariableIM:
-  if (_trace) printf("DoPushAddressInstanceVariableIM:\n");
 
 DoPushAddressInstanceVariableSP:
-  if (_trace) printf("DoPushAddressInstanceVariableSP:\n");
 
 DoPushAddressInstanceVariableLP:
-  if (_trace) printf("DoPushAddressInstanceVariableLP:\n");
 
 DoPushAddressInstanceVariableFP:
-  if (_trace) printf("DoPushAddressInstanceVariableFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   arg5 = *(u64 *)&(processor->stackcachebasevma);
@@ -1096,11 +1035,9 @@ g7119:
     goto g7097;
 
 g7096:
-  if (_trace) printf("g7096:\n");
   arg1 = arg1 + t3;
 
 g7095:
-  if (_trace) printf("g7095:\n");
   t7 = Type_Locative;
   *(u32 *)(iSP + 8) = arg1;
   /* write the stack cache */
@@ -1109,7 +1046,6 @@ g7095:
   goto NEXTINSTRUCTION;
 
 pushadiviex:
-  if (_trace) printf("pushadiviex:\n");
   t1 = zero + 8;
   /* SetTag. */
   t1 = t1 << 32;
@@ -1125,7 +1061,6 @@ pushadiviex:
   goto exception;
 
 g7110:
-  if (_trace) printf("g7110:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -1135,7 +1070,6 @@ g7110:
   goto g7109;
 
 g7112:
-  if (_trace) printf("g7112:\n");
   if ((t9 & 1) == 0)
     goto g7111;
   /* Do the indirect thing */
@@ -1143,7 +1077,6 @@ g7112:
   goto g7108;
 
 g7111:
-  if (_trace) printf("g7111:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -1157,7 +1090,6 @@ g7111:
   t10 = *(s32 *)t9;
 
 g7116:
-  if (_trace) printf("g7116:\n");
   t9 = t10 & MemoryActionTransform;
   if (t9 == 0)
     goto g7115;
@@ -1171,7 +1103,6 @@ g7115:
 #ifdef MINIMA
 
 g7115:
-  if (_trace) printf("g7115:\n");
   t9 = t10 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
   if (t9 == 0)
@@ -1200,7 +1131,6 @@ g7115:
   goto g7108;
 
 g7118:
-  if (_trace) printf("g7118:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1211,7 +1141,6 @@ g7114:
   goto performmemoryaction;
 
 g7100:
-  if (_trace) printf("g7100:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -1221,7 +1150,6 @@ g7100:
   goto g7099;
 
 g7102:
-  if (_trace) printf("g7102:\n");
   if ((t9 & 1) == 0)
     goto g7101;
   /* Do the indirect thing */
@@ -1229,7 +1157,6 @@ g7102:
   goto g7098;
 
 g7101:
-  if (_trace) printf("g7101:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -1249,7 +1176,6 @@ g7104:
   goto performmemoryaction;
 
 g7097:
-  if (_trace) printf("g7097:\n");
   t5 = arg1;
   /* Memory Read Internal */
 
@@ -1290,7 +1216,6 @@ g7129:
   goto g7096;
 
 g7122:
-  if (_trace) printf("g7122:\n");
   t8 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t7 = (t7 * 8) + t8;
@@ -1300,7 +1225,6 @@ g7122:
   goto g7121;
 
 g7124:
-  if (_trace) printf("g7124:\n");
   if ((t9 & 1) == 0)
     goto g7123;
   /* Do the indirect thing */
@@ -1308,7 +1232,6 @@ g7124:
   goto g7120;
 
 g7123:
-  if (_trace) printf("g7123:\n");
   /* Load the memory action table for cycle */
   t10 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -1334,22 +1257,17 @@ g7126:
   /* Halfword 10 bit immediate instruction - DoPushInstanceVariableOrdered */
 
 dopushinstancevariableordered:
-  if (_trace) printf("dopushinstancevariableordered:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPushInstanceVariableOrderedIM:
-  if (_trace) printf("DoPushInstanceVariableOrderedIM:\n");
 
 DoPushInstanceVariableOrderedSP:
-  if (_trace) printf("DoPushInstanceVariableOrderedSP:\n");
 
 DoPushInstanceVariableOrderedLP:
-  if (_trace) printf("DoPushInstanceVariableOrderedLP:\n");
 
 DoPushInstanceVariableOrderedFP:
-  if (_trace) printf("DoPushInstanceVariableOrderedFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   arg5 = *(u64 *)&(processor->stackcachebasevma);
@@ -1401,7 +1319,6 @@ g7141:
   goto cachevalid;
 
 g7132:
-  if (_trace) printf("g7132:\n");
   t5 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t4 = (t4 * 8) + t5;
@@ -1411,7 +1328,6 @@ g7132:
   goto g7131;
 
 g7134:
-  if (_trace) printf("g7134:\n");
   if ((t6 & 1) == 0)
     goto g7133;
   /* Do the indirect thing */
@@ -1419,7 +1335,6 @@ g7134:
   goto g7130;
 
 g7133:
-  if (_trace) printf("g7133:\n");
   /* Load the memory action table for cycle */
   t7 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -1433,7 +1348,6 @@ g7133:
   t7 = *(s32 *)t6;
 
 g7138:
-  if (_trace) printf("g7138:\n");
   t6 = t7 & MemoryActionTransform;
   if (t6 == 0)
     goto g7137;
@@ -1447,7 +1361,6 @@ g7137:
 #ifdef MINIMA
 
 g7137:
-  if (_trace) printf("g7137:\n");
   t6 = t7 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
   if (t6 == 0)
@@ -1476,7 +1389,6 @@ g7137:
   goto g7130;
 
 g7140:
-  if (_trace) printf("g7140:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1493,22 +1405,17 @@ g7136:
   /* Halfword 10 bit immediate instruction - DoPopInstanceVariableOrdered */
 
 dopopinstancevariableordered:
-  if (_trace) printf("dopopinstancevariableordered:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPopInstanceVariableOrderedIM:
-  if (_trace) printf("DoPopInstanceVariableOrderedIM:\n");
 
 DoPopInstanceVariableOrderedSP:
-  if (_trace) printf("DoPopInstanceVariableOrderedSP:\n");
 
 DoPopInstanceVariableOrderedLP:
-  if (_trace) printf("DoPopInstanceVariableOrderedLP:\n");
 
 DoPopInstanceVariableOrderedFP:
-  if (_trace) printf("DoPopInstanceVariableOrderedFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   arg5 = *(u64 *)&(processor->stackcachebasevma);
@@ -1569,7 +1476,6 @@ g7152:
   t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g7154:
-  if (_trace) printf("g7154:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t1;
@@ -1580,7 +1486,6 @@ g7154:
   goto NEXTINSTRUCTION;
 
 g7153:
-  if (_trace) printf("g7153:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = arg1 - arg5;
@@ -1593,7 +1498,6 @@ g7153:
   goto NEXTINSTRUCTION;
 
 g7144:
-  if (_trace) printf("g7144:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
@@ -1603,7 +1507,6 @@ g7144:
   goto g7143;
 
 g7146:
-  if (_trace) printf("g7146:\n");
   if ((t8 & 1) == 0)
     goto g7145;
   /* Do the indirect thing */
@@ -1611,7 +1514,6 @@ g7146:
   goto g7142;
 
 g7145:
-  if (_trace) printf("g7145:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -1630,7 +1532,6 @@ g7149:
 #ifdef MINIMA
 
 g7149:
-  if (_trace) printf("g7149:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
@@ -1659,7 +1560,6 @@ g7149:
   goto g7142;
 
 g7151:
-  if (_trace) printf("g7151:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1676,22 +1576,17 @@ g7148:
   /* Halfword 10 bit immediate instruction - DoMovemInstanceVariableOrdered */
 
 domoveminstancevariableordered:
-  if (_trace) printf("domoveminstancevariableordered:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoMovemInstanceVariableOrderedIM:
-  if (_trace) printf("DoMovemInstanceVariableOrderedIM:\n");
 
 DoMovemInstanceVariableOrderedSP:
-  if (_trace) printf("DoMovemInstanceVariableOrderedSP:\n");
 
 DoMovemInstanceVariableOrderedLP:
-  if (_trace) printf("DoMovemInstanceVariableOrderedLP:\n");
 
 DoMovemInstanceVariableOrderedFP:
-  if (_trace) printf("DoMovemInstanceVariableOrderedFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   arg5 = *(u64 *)&(processor->stackcachebasevma);
@@ -1750,7 +1645,6 @@ g7165:
   t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g7167:
-  if (_trace) printf("g7167:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t1;
@@ -1761,7 +1655,6 @@ g7167:
   goto NEXTINSTRUCTION;
 
 g7166:
-  if (_trace) printf("g7166:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = arg1 - arg5;
@@ -1774,7 +1667,6 @@ g7166:
   goto NEXTINSTRUCTION;
 
 g7157:
-  if (_trace) printf("g7157:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
@@ -1784,7 +1676,6 @@ g7157:
   goto g7156;
 
 g7159:
-  if (_trace) printf("g7159:\n");
   if ((t8 & 1) == 0)
     goto g7158;
   /* Do the indirect thing */
@@ -1792,7 +1683,6 @@ g7159:
   goto g7155;
 
 g7158:
-  if (_trace) printf("g7158:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -1811,7 +1701,6 @@ g7162:
 #ifdef MINIMA
 
 g7162:
-  if (_trace) printf("g7162:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
@@ -1840,7 +1729,6 @@ g7162:
   goto g7155;
 
 g7164:
-  if (_trace) printf("g7164:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1857,22 +1745,17 @@ g7161:
   /* Halfword 10 bit immediate instruction - DoPushAddressInstanceVariableOrdered */
 
 dopushaddressinstancevariableordered:
-  if (_trace) printf("dopushaddressinstancevariableordered:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPushAddressInstanceVariableOrderedIM:
-  if (_trace) printf("DoPushAddressInstanceVariableOrderedIM:\n");
 
 DoPushAddressInstanceVariableOrderedSP:
-  if (_trace) printf("DoPushAddressInstanceVariableOrderedSP:\n");
 
 DoPushAddressInstanceVariableOrderedLP:
-  if (_trace) printf("DoPushAddressInstanceVariableOrderedLP:\n");
 
 DoPushAddressInstanceVariableOrderedFP:
-  if (_trace) printf("DoPushAddressInstanceVariableOrderedFP:\n");
   arg1 = (u16)(arg3 >> ((4&7)*8));
   /* arg1 has operand preloaded. */
   /* Locate Instance Variable Unmapped */
@@ -1894,19 +1777,16 @@ DoPushAddressInstanceVariableOrderedFP:
   goto NEXTINSTRUCTION;
 
 ivbadmap:
-  if (_trace) printf("ivbadmap:\n");
   arg5 = 0;
   arg2 = 68;
   goto illegaloperand;
 
 ivbadindex:
-  if (_trace) printf("ivbadindex:\n");
   arg5 = 0;
   arg2 = 53;
   goto illegaloperand;
 
 ivbadinst:
-  if (_trace) printf("ivbadinst:\n");
   arg5 = 0;
   arg2 = 69;
   goto illegaloperand;
@@ -1919,12 +1799,10 @@ ivbadinst:
   /* arg2 has the preloaded 8 bit operand. */
 
 doinstanceref:
-  if (_trace) printf("doinstanceref:\n");
 #ifdef TRACING
 #endif
 
 DoInstanceRefIM:
-  if (_trace) printf("DoInstanceRefIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -1933,7 +1811,6 @@ DoInstanceRefIM:
 #endif
 
 DoInstanceRefSP:
-  if (_trace) printf("DoInstanceRefSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -1947,23 +1824,19 @@ DoInstanceRefSP:
 #endif
 
 DoInstanceRefLP:
-  if (_trace) printf("DoInstanceRefLP:\n");
 #ifdef TRACING
   goto headdoinstanceref;
 #endif
 
 DoInstanceRefFP:
-  if (_trace) printf("DoInstanceRefFP:\n");
 
 headdoinstanceref:
-  if (_trace) printf("headdoinstanceref:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoinstanceref:
-  if (_trace) printf("begindoinstanceref:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   arg4 = *(s32 *)iSP;
   arg3 = *(s32 *)(iSP + 4);
@@ -2084,7 +1957,6 @@ g7201:
   goto cachevalid;
 
 g7192:
-  if (_trace) printf("g7192:\n");
   t5 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t4 = (t4 * 8) + t5;
@@ -2094,7 +1966,6 @@ g7192:
   goto g7191;
 
 g7194:
-  if (_trace) printf("g7194:\n");
   if ((t6 & 1) == 0)
     goto g7193;
   /* Do the indirect thing */
@@ -2102,7 +1973,6 @@ g7194:
   goto g7190;
 
 g7193:
-  if (_trace) printf("g7193:\n");
   /* Load the memory action table for cycle */
   t7 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2116,7 +1986,6 @@ g7193:
   t7 = *(s32 *)t6;
 
 g7198:
-  if (_trace) printf("g7198:\n");
   t6 = t7 & MemoryActionTransform;
   if (t6 == 0)
     goto g7197;
@@ -2130,7 +1999,6 @@ g7197:
 #ifdef MINIMA
 
 g7197:
-  if (_trace) printf("g7197:\n");
   t6 = t7 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
   if (t6 == 0)
@@ -2159,7 +2027,6 @@ g7197:
   goto g7190;
 
 g7200:
-  if (_trace) printf("g7200:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2170,7 +2037,6 @@ g7196:
   goto performmemoryaction;
 
 g7180:
-  if (_trace) printf("g7180:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -2180,7 +2046,6 @@ g7180:
   goto g7179;
 
 g7182:
-  if (_trace) printf("g7182:\n");
   if ((t7 & 1) == 0)
     goto g7181;
   /* Do the indirect thing */
@@ -2188,7 +2053,6 @@ g7182:
   goto g7178;
 
 g7181:
-  if (_trace) printf("g7181:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2202,7 +2066,6 @@ g7181:
   t8 = *(s32 *)t7;
 
 g7186:
-  if (_trace) printf("g7186:\n");
   t7 = t8 & MemoryActionTransform;
   if (t7 == 0)
     goto g7185;
@@ -2216,7 +2079,6 @@ g7185:
 #ifdef MINIMA
 
 g7185:
-  if (_trace) printf("g7185:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -2245,7 +2107,6 @@ g7185:
   goto g7178;
 
 g7188:
-  if (_trace) printf("g7188:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2256,7 +2117,6 @@ g7184:
   goto performmemoryaction;
 
 g7170:
-  if (_trace) printf("g7170:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -2266,7 +2126,6 @@ g7170:
   goto g7169;
 
 g7172:
-  if (_trace) printf("g7172:\n");
   if ((t7 & 1) == 0)
     goto g7171;
   /* Do the indirect thing */
@@ -2274,7 +2133,6 @@ g7172:
   goto g7168;
 
 g7171:
-  if (_trace) printf("g7171:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -2301,12 +2159,10 @@ g7174:
   /* arg2 has the preloaded 8 bit operand. */
 
 doinstanceset:
-  if (_trace) printf("doinstanceset:\n");
 #ifdef TRACING
 #endif
 
 DoInstanceSetIM:
-  if (_trace) printf("DoInstanceSetIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -2315,7 +2171,6 @@ DoInstanceSetIM:
 #endif
 
 DoInstanceSetSP:
-  if (_trace) printf("DoInstanceSetSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -2329,23 +2184,19 @@ DoInstanceSetSP:
 #endif
 
 DoInstanceSetLP:
-  if (_trace) printf("DoInstanceSetLP:\n");
 #ifdef TRACING
   goto headdoinstanceset;
 #endif
 
 DoInstanceSetFP:
-  if (_trace) printf("DoInstanceSetFP:\n");
 
 headdoinstanceset:
-  if (_trace) printf("headdoinstanceset:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoinstanceset:
-  if (_trace) printf("begindoinstanceset:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   arg4 = *(s32 *)iSP;
   arg3 = *(s32 *)(iSP + 4);
@@ -2478,7 +2329,6 @@ g7234:
   t7 = t7 & ~(0xffUL << (t5&7)*8);
 
 g7236:
-  if (_trace) printf("g7236:\n");
   t7 = t7 | t6;
   STQ_U(t5, t7);
   *(u32 *)t4 = t1;
@@ -2489,13 +2339,11 @@ g7236:
   goto NEXTINSTRUCTION;
 
 ivrefbadinst3:
-  if (_trace) printf("ivrefbadinst3:\n");
   arg5 = 0;
   arg2 = 4;
   goto illegaloperand;
 
 g7235:
-  if (_trace) printf("g7235:\n");
   t5 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t6 = arg5 - t11;
@@ -2508,7 +2356,6 @@ g7235:
   goto NEXTINSTRUCTION;
 
 g7226:
-  if (_trace) printf("g7226:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -2518,7 +2365,6 @@ g7226:
   goto g7225;
 
 g7228:
-  if (_trace) printf("g7228:\n");
   if ((t7 & 1) == 0)
     goto g7227;
   /* Do the indirect thing */
@@ -2526,7 +2372,6 @@ g7228:
   goto g7224;
 
 g7227:
-  if (_trace) printf("g7227:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -2545,7 +2390,6 @@ g7231:
 #ifdef MINIMA
 
 g7231:
-  if (_trace) printf("g7231:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -2574,7 +2418,6 @@ g7231:
   goto g7224;
 
 g7233:
-  if (_trace) printf("g7233:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2585,7 +2428,6 @@ g7230:
   goto performmemoryaction;
 
 g7214:
-  if (_trace) printf("g7214:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -2595,7 +2437,6 @@ g7214:
   goto g7213;
 
 g7216:
-  if (_trace) printf("g7216:\n");
   if ((t7 & 1) == 0)
     goto g7215;
   /* Do the indirect thing */
@@ -2603,7 +2444,6 @@ g7216:
   goto g7212;
 
 g7215:
-  if (_trace) printf("g7215:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2617,7 +2457,6 @@ g7215:
   t8 = *(s32 *)t7;
 
 g7220:
-  if (_trace) printf("g7220:\n");
   t7 = t8 & MemoryActionTransform;
   if (t7 == 0)
     goto g7219;
@@ -2631,7 +2470,6 @@ g7219:
 #ifdef MINIMA
 
 g7219:
-  if (_trace) printf("g7219:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -2660,7 +2498,6 @@ g7219:
   goto g7212;
 
 g7222:
-  if (_trace) printf("g7222:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2671,7 +2508,6 @@ g7218:
   goto performmemoryaction;
 
 g7204:
-  if (_trace) printf("g7204:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -2681,7 +2517,6 @@ g7204:
   goto g7203;
 
 g7206:
-  if (_trace) printf("g7206:\n");
   if ((t7 & 1) == 0)
     goto g7205;
   /* Do the indirect thing */
@@ -2689,7 +2524,6 @@ g7206:
   goto g7202;
 
 g7205:
-  if (_trace) printf("g7205:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -2716,12 +2550,10 @@ g7208:
   /* arg2 has the preloaded 8 bit operand. */
 
 doinstanceloc:
-  if (_trace) printf("doinstanceloc:\n");
 #ifdef TRACING
 #endif
 
 DoInstanceLocIM:
-  if (_trace) printf("DoInstanceLocIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -2730,7 +2562,6 @@ DoInstanceLocIM:
 #endif
 
 DoInstanceLocSP:
-  if (_trace) printf("DoInstanceLocSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -2744,23 +2575,19 @@ DoInstanceLocSP:
 #endif
 
 DoInstanceLocLP:
-  if (_trace) printf("DoInstanceLocLP:\n");
 #ifdef TRACING
   goto headdoinstanceloc;
 #endif
 
 DoInstanceLocFP:
-  if (_trace) printf("DoInstanceLocFP:\n");
 
 headdoinstanceloc:
-  if (_trace) printf("headdoinstanceloc:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoinstanceloc:
-  if (_trace) printf("begindoinstanceloc:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   arg4 = *(s32 *)iSP;
   arg3 = *(s32 *)(iSP + 4);
@@ -2851,19 +2678,16 @@ g7258:
   goto NEXTINSTRUCTION;
 
 ivrefbadinst:
-  if (_trace) printf("ivrefbadinst:\n");
   arg5 = 0;
   arg2 = 3;
   goto illegaloperand;
 
 ivrefbadoffset:
-  if (_trace) printf("ivrefbadoffset:\n");
   arg5 = 0;
   arg2 = 49;
   goto illegaloperand;
 
 g7249:
-  if (_trace) printf("g7249:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -2873,7 +2697,6 @@ g7249:
   goto g7248;
 
 g7251:
-  if (_trace) printf("g7251:\n");
   if ((t7 & 1) == 0)
     goto g7250;
   /* Do the indirect thing */
@@ -2881,7 +2704,6 @@ g7251:
   goto g7247;
 
 g7250:
-  if (_trace) printf("g7250:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -2895,7 +2717,6 @@ g7250:
   t8 = *(s32 *)t7;
 
 g7255:
-  if (_trace) printf("g7255:\n");
   t7 = t8 & MemoryActionTransform;
   if (t7 == 0)
     goto g7254;
@@ -2909,7 +2730,6 @@ g7254:
 #ifdef MINIMA
 
 g7254:
-  if (_trace) printf("g7254:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -2938,7 +2758,6 @@ g7254:
   goto g7247;
 
 g7257:
-  if (_trace) printf("g7257:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2949,7 +2768,6 @@ g7253:
   goto performmemoryaction;
 
 g7239:
-  if (_trace) printf("g7239:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -2959,7 +2777,6 @@ g7239:
   goto g7238;
 
 g7241:
-  if (_trace) printf("g7241:\n");
   if ((t7 & 1) == 0)
     goto g7240;
   /* Do the indirect thing */
@@ -2967,7 +2784,6 @@ g7241:
   goto g7237;
 
 g7240:
-  if (_trace) printf("g7240:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->header);
   /* TagType. */

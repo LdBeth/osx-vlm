@@ -9,22 +9,17 @@
   /* Field Extraction instruction - DoCharLdb */
 
 docharldb:
-  if (_trace) printf("docharldb:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoCharLdbIM:
-  if (_trace) printf("DoCharLdbIM:\n");
 
 DoCharLdbSP:
-  if (_trace) printf("DoCharLdbSP:\n");
 
 DoCharLdbLP:
-  if (_trace) printf("DoCharLdbLP:\n");
 
 DoCharLdbFP:
-  if (_trace) printf("DoCharLdbFP:\n");
   /* Shift the 'size-1' bits into place */
   arg1 = arg3 >> 37;
   /* mask out the unwanted bits in arg2 */
@@ -67,7 +62,6 @@ DoCharLdbFP:
   goto cachevalid;
 
 charldbexc:
-  if (_trace) printf("charldbexc:\n");
   arg5 = 0;
   arg2 = 28;
   goto illegaloperand;
@@ -79,22 +73,17 @@ charldbexc:
   /* Field Extraction instruction - DoPLdb */
 
 dopldb:
-  if (_trace) printf("dopldb:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPLdbIM:
-  if (_trace) printf("DoPLdbIM:\n");
 
 DoPLdbSP:
-  if (_trace) printf("DoPLdbSP:\n");
 
 DoPLdbLP:
-  if (_trace) printf("DoPLdbLP:\n");
 
 DoPLdbFP:
-  if (_trace) printf("DoPLdbFP:\n");
   /* Shift the 'size-1' bits into place */
   arg1 = arg3 >> 37;
   /* mask out the unwanted bits in arg2 */
@@ -156,7 +145,6 @@ g7980:
   goto cachevalid;
 
 pldbillop:
-  if (_trace) printf("pldbillop:\n");
   /* Convert stack cache address to VMA */
   t2 = *(u64 *)&(processor->stackcachedata);
   t1 = *(u64 *)&(processor->stackcachebasevma);
@@ -171,7 +159,6 @@ pldbillop:
   goto illegaloperand;
 
 g7974:
-  if (_trace) printf("g7974:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
@@ -187,22 +174,17 @@ g7974:
   /* Field Extraction instruction - DoPTagLdb */
 
 doptagldb:
-  if (_trace) printf("doptagldb:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPTagLdbIM:
-  if (_trace) printf("DoPTagLdbIM:\n");
 
 DoPTagLdbSP:
-  if (_trace) printf("DoPTagLdbSP:\n");
 
 DoPTagLdbLP:
-  if (_trace) printf("DoPTagLdbLP:\n");
 
 DoPTagLdbFP:
-  if (_trace) printf("DoPTagLdbFP:\n");
   /* Shift the 'size-1' bits into place */
   arg1 = arg3 >> 37;
   /* mask out the unwanted bits in arg2 */
@@ -263,7 +245,6 @@ g7989:
   goto cachevalid;
 
 ptagldbillop:
-  if (_trace) printf("ptagldbillop:\n");
   /* Convert stack cache address to VMA */
   t2 = *(u64 *)&(processor->stackcachedata);
   t1 = *(u64 *)&(processor->stackcachebasevma);
@@ -278,7 +259,6 @@ ptagldbillop:
   goto illegaloperand;
 
 g7983:
-  if (_trace) printf("g7983:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
@@ -294,22 +274,17 @@ g7983:
   /* Field Extraction instruction - DoDpb */
 
 dodpb:
-  if (_trace) printf("dodpb:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoDpbIM:
-  if (_trace) printf("DoDpbIM:\n");
 
 DoDpbSP:
-  if (_trace) printf("DoDpbSP:\n");
 
 DoDpbLP:
-  if (_trace) printf("DoDpbLP:\n");
 
 DoDpbFP:
-  if (_trace) printf("DoDpbFP:\n");
   /* Shift the 'size-1' bits into place */
   arg1 = arg3 >> 37;
   /* mask out the unwanted bits in arg2 */
@@ -335,14 +310,12 @@ DoDpbFP:
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8002:
-  if (_trace) printf("g8002:\n");
   if (t2 == 0)
     goto g7995;
   /* Here if argument TypeFixnum */
   arg5 = (arg6 == Type_Fixnum) ? 1 : 0;
 
 g7999:
-  if (_trace) printf("g7999:\n");
   if (arg5 == 0)
     goto g7992;
   /* Here if argument TypeFixnum */
@@ -371,14 +344,11 @@ g7999:
   goto cachevalid;
 
 g7996:
-  if (_trace) printf("g7996:\n");
 
 g7995:
-  if (_trace) printf("g7995:\n");
   /* Here for all other cases */
 
 g7991:
-  if (_trace) printf("g7991:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t5;
   /* arg3 = stackp */
@@ -391,7 +361,6 @@ g7991:
   goto g7993;
 
 g7992:
-  if (_trace) printf("g7992:\n");
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
   /* arg3 = stackp */
@@ -403,10 +372,8 @@ g7992:
   goto numericexception;
 
 g7993:
-  if (_trace) printf("g7993:\n");
 
 g7994:
-  if (_trace) printf("g7994:\n");
 
 /* end DoDpb */
   /* End of Halfword operand from stack instruction - DoDpb */
@@ -415,22 +382,17 @@ g7994:
   /* Field Extraction instruction - DoCharDpb */
 
 dochardpb:
-  if (_trace) printf("dochardpb:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoCharDpbIM:
-  if (_trace) printf("DoCharDpbIM:\n");
 
 DoCharDpbSP:
-  if (_trace) printf("DoCharDpbSP:\n");
 
 DoCharDpbLP:
-  if (_trace) printf("DoCharDpbLP:\n");
 
 DoCharDpbFP:
-  if (_trace) printf("DoCharDpbFP:\n");
   /* Shift the 'size-1' bits into place */
   arg1 = arg3 >> 37;
   /* mask out the unwanted bits in arg2 */
@@ -456,14 +418,12 @@ DoCharDpbFP:
   t2 = (t1 == Type_Character) ? 1 : 0;
 
 g8015:
-  if (_trace) printf("g8015:\n");
   if (t2 == 0)
     goto g8008;
   /* Here if argument TypeCharacter */
   arg5 = (arg6 == Type_Fixnum) ? 1 : 0;
 
 g8012:
-  if (_trace) printf("g8012:\n");
   if (arg5 == 0)
     goto g8005;
   /* Here if argument TypeFixnum */
@@ -492,14 +452,11 @@ g8012:
   goto cachevalid;
 
 g8009:
-  if (_trace) printf("g8009:\n");
 
 g8008:
-  if (_trace) printf("g8008:\n");
   /* Here for all other cases */
 
 g8004:
-  if (_trace) printf("g8004:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t5;
   /* arg3 = stackp */
@@ -514,16 +471,13 @@ g8004:
   goto g8006;
 
 g8005:
-  if (_trace) printf("g8005:\n");
   arg5 = 0;
   arg2 = 27;
   goto illegaloperand;
 
 g8006:
-  if (_trace) printf("g8006:\n");
 
 g8007:
-  if (_trace) printf("g8007:\n");
 
 /* end DoCharDpb */
   /* End of Halfword operand from stack instruction - DoCharDpb */
@@ -532,22 +486,17 @@ g8007:
   /* Field Extraction instruction - DoPDpb */
 
 dopdpb:
-  if (_trace) printf("dopdpb:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPDpbIM:
-  if (_trace) printf("DoPDpbIM:\n");
 
 DoPDpbSP:
-  if (_trace) printf("DoPDpbSP:\n");
 
 DoPDpbLP:
-  if (_trace) printf("DoPDpbLP:\n");
 
 DoPDpbFP:
-  if (_trace) printf("DoPDpbFP:\n");
   /* Shift the 'size-1' bits into place */
   arg1 = arg3 >> 37;
   /* mask out the unwanted bits in arg2 */
@@ -601,7 +550,6 @@ g8024:
   t10 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8031:
-  if (_trace) printf("g8031:\n");
   if (t10 == 0)
     goto g8026;
   /* Here if argument TypeFixnum */
@@ -634,7 +582,6 @@ g8031:
   t1 = t1 & ~(0xffUL << (t3&7)*8);
 
 g8028:
-  if (_trace) printf("g8028:\n");
   t1 = t1 | t4;
   STQ_U(t3, t1);
   *(u32 *)t5 = t6;
@@ -645,17 +592,14 @@ g8028:
   goto NEXTINSTRUCTION;
 
 g8026:
-  if (_trace) printf("g8026:\n");
   /* Here for all other cases */
   arg5 = 0;
   arg2 = 6;
   goto illegaloperand;
 
 g8025:
-  if (_trace) printf("g8025:\n");
 
 pdpbillop:
-  if (_trace) printf("pdpbillop:\n");
   /* Convert stack cache address to VMA */
   t2 = *(u64 *)&(processor->stackcachedata);
   t1 = *(u64 *)&(processor->stackcachebasevma);
@@ -670,11 +614,9 @@ pdpbillop:
   goto illegaloperand;
 
 g8027:
-  if (_trace) printf("g8027:\n");
   t4 = *(u64 *)&(processor->stackcachebasevma);
 
 g8032:
-  if (_trace) printf("g8032:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t4 = t2 - t4;
@@ -687,7 +629,6 @@ g8032:
   goto NEXTINSTRUCTION;
 
 g8018:
-  if (_trace) printf("g8018:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;
@@ -703,22 +644,17 @@ g8018:
   /* Field Extraction instruction - DoPTagDpb */
 
 doptagdpb:
-  if (_trace) printf("doptagdpb:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPTagDpbIM:
-  if (_trace) printf("DoPTagDpbIM:\n");
 
 DoPTagDpbSP:
-  if (_trace) printf("DoPTagDpbSP:\n");
 
 DoPTagDpbLP:
-  if (_trace) printf("DoPTagDpbLP:\n");
 
 DoPTagDpbFP:
-  if (_trace) printf("DoPTagDpbFP:\n");
   /* Shift the 'size-1' bits into place */
   arg1 = arg3 >> 37;
   /* mask out the unwanted bits in arg2 */
@@ -770,7 +706,6 @@ g8041:
   t10 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8048:
-  if (_trace) printf("g8048:\n");
   if (t10 == 0)
     goto g8043;
   /* Here if argument TypeFixnum */
@@ -803,7 +738,6 @@ g8048:
   t1 = t1 & ~(0xffUL << (t3&7)*8);
 
 g8045:
-  if (_trace) printf("g8045:\n");
   t1 = t1 | t4;
   STQ_U(t3, t1);
   *(u32 *)t5 = t8;
@@ -814,17 +748,14 @@ g8045:
   goto NEXTINSTRUCTION;
 
 g8043:
-  if (_trace) printf("g8043:\n");
   /* Here for all other cases */
   arg5 = 0;
   arg2 = 6;
   goto illegaloperand;
 
 g8042:
-  if (_trace) printf("g8042:\n");
 
 ptagdpbillop:
-  if (_trace) printf("ptagdpbillop:\n");
   /* Convert stack cache address to VMA */
   t2 = *(u64 *)&(processor->stackcachedata);
   t1 = *(u64 *)&(processor->stackcachebasevma);
@@ -839,11 +770,9 @@ ptagdpbillop:
   goto illegaloperand;
 
 g8044:
-  if (_trace) printf("g8044:\n");
   t4 = *(u64 *)&(processor->stackcachebasevma);
 
 g8049:
-  if (_trace) printf("g8049:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t4 = t2 - t4;
@@ -856,7 +785,6 @@ g8049:
   goto NEXTINSTRUCTION;
 
 g8035:
-  if (_trace) printf("g8035:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t3 = (t3 * 8) + t4;

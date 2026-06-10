@@ -9,22 +9,17 @@
   /* Halfword 10 bit immediate instruction - DoPushInstanceVariable */
 
 dopushinstancevariable:
-  if (_trace) printf("dopushinstancevariable:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoPushInstanceVariableIM:
-  if (_trace) printf("DoPushInstanceVariableIM:\n");
 
 DoPushInstanceVariableSP:
-  if (_trace) printf("DoPushInstanceVariableSP:\n");
 
 DoPushInstanceVariableLP:
-  if (_trace) printf("DoPushInstanceVariableLP:\n");
 
 DoPushInstanceVariableFP:
-  if (_trace) printf("DoPushInstanceVariableFP:\n");
   /* arg1 has operand preloaded. */
   arg1 = arg2;
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -120,11 +115,9 @@ g6446:
     goto g6424;
 
 g6423:
-  if (_trace) printf("g6423:\n");
   arg2 = arg2 + t1;
 
 g6422:
-  if (_trace) printf("g6422:\n");
   /* Memory Read Internal */
 
 g6447:
@@ -160,7 +153,6 @@ g6458:
   goto cachevalid;
 
 g6451:
-  if (_trace) printf("g6451:\n");
   if ((t7 & 1) == 0)
     goto g6450;
   /* Do the indirect thing */
@@ -168,17 +160,14 @@ g6451:
   goto g6447;
 
 g6450:
-  if (_trace) printf("g6450:\n");
 
 g6449:
-  if (_trace) printf("g6449:\n");
   r0 = (u64)&&return0021;
   goto memoryreaddatadecode;
 return0021:
   goto g6458;
 
 g6439:
-  if (_trace) printf("g6439:\n");
   if ((t7 & 1) == 0)
     goto g6438;
   /* Do the indirect thing */
@@ -186,17 +175,14 @@ g6439:
   goto g6435;
 
 g6438:
-  if (_trace) printf("g6438:\n");
 
 g6437:
-  if (_trace) printf("g6437:\n");
   r0 = (u64)&&return0022;
   goto memoryreaddatadecode;
 return0022:
   goto g6446;
 
 g6429:
-  if (_trace) printf("g6429:\n");
   if ((t7 & 1) == 0)
     goto g6428;
   /* Do the indirect thing */
@@ -204,17 +190,14 @@ g6429:
   goto g6425;
 
 g6428:
-  if (_trace) printf("g6428:\n");
 
 g6427:
-  if (_trace) printf("g6427:\n");
   r0 = (u64)&&return0023;
   goto memoryreadheaderdecode;
 return0023:
   goto g6434;
 
 g6424:
-  if (_trace) printf("g6424:\n");
   t3 = arg2;
   /* Memory Read Internal */
 
@@ -255,7 +238,6 @@ g6468:
   goto g6423;
 
 g6463:
-  if (_trace) printf("g6463:\n");
   if ((t7 & 1) == 0)
     goto g6462;
   /* Do the indirect thing */
@@ -263,10 +245,8 @@ g6463:
   goto g6459;
 
 g6462:
-  if (_trace) printf("g6462:\n");
 
 g6461:
-  if (_trace) printf("g6461:\n");
   r0 = (u64)&&return0024;
   goto memoryreadheaderdecode;
 return0024:
@@ -280,12 +260,10 @@ return0024:
   /* arg2 has the preloaded 8 bit operand. */
 
 doadd:
-  if (_trace) printf("doadd:\n");
 #ifdef TRACING
 #endif
 
 DoAddSP:
-  if (_trace) printf("DoAddSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -301,16 +279,13 @@ DoAddSP:
 #endif
 
 DoAddLP:
-  if (_trace) printf("DoAddLP:\n");
 #ifdef TRACING
   goto begindoadd;
 #endif
 
 DoAddFP:
-  if (_trace) printf("DoAddFP:\n");
 
 begindoadd:
-  if (_trace) printf("begindoadd:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -332,14 +307,12 @@ begindoadd:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g6508:
-  if (_trace) printf("g6508:\n");
   if (t10 == 0)
     goto g6479;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6485:
-  if (_trace) printf("g6485:\n");
   if (t12 == 0)
     goto g6481;
   /* Here if argument TypeFixnum */
@@ -362,11 +335,9 @@ g6485:
   goto cachevalid;
 
 g6481:
-  if (_trace) printf("g6481:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g6486:
-  if (_trace) printf("g6486:\n");
   if (t12 == 0)
     goto g6482;
   /* Here if argument TypeSingleFloat */
@@ -375,11 +346,9 @@ g6486:
   goto g6469;
 
 g6482:
-  if (_trace) printf("g6482:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g6487:
-  if (_trace) printf("g6487:\n");
   if (t12 == 0)
     goto g6476;
   /* Here if argument TypeDoubleFloat */
@@ -388,27 +357,22 @@ g6487:
   goto g6472;
 
 g6480:
-  if (_trace) printf("g6480:\n");
 
 g6479:
-  if (_trace) printf("g6479:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g6509:
-  if (_trace) printf("g6509:\n");
   if (t10 == 0)
     goto g6488;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g6494:
-  if (_trace) printf("g6494:\n");
   if (t12 == 0)
     goto g6490;
   /* Here if argument TypeSingleFloat */
 
 g6469:
-  if (_trace) printf("g6469:\n");
   ADDS(0, f0, 1, f1, 2, f2); /* adds */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -421,11 +385,9 @@ g6469:
   goto cachevalid;
 
 g6490:
-  if (_trace) printf("g6490:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6495:
-  if (_trace) printf("g6495:\n");
   if (t12 == 0)
     goto g6491;
   /* Here if argument TypeFixnum */
@@ -434,38 +396,31 @@ g6495:
   goto g6469;
 
 g6491:
-  if (_trace) printf("g6491:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g6496:
-  if (_trace) printf("g6496:\n");
   if (t12 == 0)
     goto g6476;
   /* Here if argument TypeDoubleFloat */
 
 g6472:
-  if (_trace) printf("g6472:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
   goto g6473;
 
 g6489:
-  if (_trace) printf("g6489:\n");
 
 g6488:
-  if (_trace) printf("g6488:\n");
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
 g6510:
-  if (_trace) printf("g6510:\n");
   if (t10 == 0)
     goto g6497;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g6503:
-  if (_trace) printf("g6503:\n");
   if (t12 == 0)
     goto g6499;
   /* Here if argument TypeDoubleFloat */
@@ -479,7 +434,6 @@ return0025:
   LDT(1, f1, processor->fp0);
 
 g6473:
-  if (_trace) printf("g6473:\n");
   arg2 = (u32)t4;
   r0 = (u64)&&return0026;
   goto fetchdoublefloat;
@@ -487,7 +441,6 @@ return0026:
   LDT(2, f2, processor->fp0);
 
 g6470:
-  if (_trace) printf("g6470:\n");
   ADDT(0, f0, 1, f1, 2, f2); /* addt */
   STT( (u64 *)&processor->fp0, 0, f0 );
   r0 = (u64)&&return0027;
@@ -502,17 +455,14 @@ return0027:
   goto cachevalid;
 
 g6499:
-  if (_trace) printf("g6499:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g6504:
-  if (_trace) printf("g6504:\n");
   if (t12 == 0)
     goto g6500;
   /* Here if argument TypeSingleFloat */
 
 g6471:
-  if (_trace) printf("g6471:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
@@ -524,11 +474,9 @@ return0028:
   goto g6470;
 
 g6500:
-  if (_trace) printf("g6500:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6505:
-  if (_trace) printf("g6505:\n");
   if (t12 == 0)
     goto g6476;
   /* Here if argument TypeFixnum */
@@ -537,17 +485,13 @@ g6505:
   goto g6471;
 
 g6498:
-  if (_trace) printf("g6498:\n");
 
 g6497:
-  if (_trace) printf("g6497:\n");
   /* Here for all other cases */
 
 g6475:
-  if (_trace) printf("g6475:\n");
 
 doaddovfl:
-  if (_trace) printf("doaddovfl:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -560,21 +504,17 @@ doaddovfl:
   goto g6477;
 
 g6476:
-  if (_trace) printf("g6476:\n");
   t1 = t3;
   goto doaddovfl;
 
 g6477:
-  if (_trace) printf("g6477:\n");
 
 g6478:
-  if (_trace) printf("g6478:\n");
 #ifdef TRACING
   goto DoAddIM;
 #endif
 
 DoAddIM:
-  if (_trace) printf("DoAddIM:\n");
   t1 = (u32)(arg6 >> ((4&7)*8));
   /* get ARG1 tag/data */
   t2 = (s32)arg6;
@@ -583,7 +523,6 @@ DoAddIM:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6515:
-  if (_trace) printf("g6515:\n");
   if (t12 == 0)
     goto g6512;
   /* Here if argument TypeFixnum */
@@ -606,7 +545,6 @@ g6515:
   goto cachevalid;
 
 g6512:
-  if (_trace) printf("g6512:\n");
   /* Here for all other cases */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
@@ -614,7 +552,6 @@ g6512:
   goto begindoadd;
 
 g6511:
-  if (_trace) printf("g6511:\n");
 
 /* end DoAdd */
   /* End of Halfword operand from stack instruction - DoAdd */
@@ -623,19 +560,16 @@ g6511:
   /* Halfword operand from stack instruction - DoBlock3Write */
 
 doblock3write:
-  if (_trace) printf("doblock3write:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoBlock3WriteIM:
-  if (_trace) printf("DoBlock3WriteIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g6516:
-  if (_trace) printf("g6516:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -645,7 +579,6 @@ g6516:
 #endif
 
 DoBlock3WriteSP:
-  if (_trace) printf("DoBlock3WriteSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -659,23 +592,19 @@ DoBlock3WriteSP:
 #endif
 
 DoBlock3WriteLP:
-  if (_trace) printf("DoBlock3WriteLP:\n");
 #ifdef TRACING
   goto headdoblock3write;
 #endif
 
 DoBlock3WriteFP:
-  if (_trace) printf("DoBlock3WriteFP:\n");
 
 headdoblock3write:
-  if (_trace) printf("headdoblock3write:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoblock3write:
-  if (_trace) printf("begindoblock3write:\n");
   /* arg1 has the operand, sign extended if immediate. */
   arg3 = *(s32 *)&processor->bar3;
   arg2 = (u64)&processor->bar3;
@@ -689,12 +618,10 @@ begindoblock3write:
   /* arg2 has the preloaded 8 bit operand. */
 
 doaset1:
-  if (_trace) printf("doaset1:\n");
 #ifdef TRACING
 #endif
 
 DoAset1SP:
-  if (_trace) printf("DoAset1SP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -708,23 +635,19 @@ DoAset1SP:
 #endif
 
 DoAset1LP:
-  if (_trace) printf("DoAset1LP:\n");
 #ifdef TRACING
   goto headdoaset1;
 #endif
 
 DoAset1FP:
-  if (_trace) printf("DoAset1FP:\n");
 
 headdoaset1:
-  if (_trace) printf("headdoaset1:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindoaset1:
-  if (_trace) printf("begindoaset1:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get the array tag/data */
   arg4 = *(s32 *)iSP;
@@ -756,7 +679,6 @@ begindoaset1:
     goto aset1illegal;
 
 aset1merge:
-  if (_trace) printf("aset1merge:\n");
   if (arg4 == 0)
     goto aset1regset;
   /* Cached array object. */
@@ -797,14 +719,12 @@ aset1merge:
   arg6 = t8 & Array_RegisterElementTypeMask;
 
 aset1restart:
-  if (_trace) printf("aset1restart:\n");
   /* Element checking and foreplay. */
   /* TagType. */
   t1 = t5 & 63;
   t8 = (arg6 == Array_ElementTypeCharacter) ? 1 : 0;
 
 g6527:
-  if (_trace) printf("g6527:\n");
   if (t8 == 0)
     goto g6523;
   /* Here if argument ArrayElementTypeCharacter */
@@ -816,7 +736,6 @@ g6527:
   goto illegaloperand;
 
 g6518:
-  if (_trace) printf("g6518:\n");
   /* Certainly will fit if not packed! */
   if (arg5 == 0)
     goto g6517;
@@ -837,11 +756,9 @@ g6518:
   goto illegaloperand;
 
 g6523:
-  if (_trace) printf("g6523:\n");
   t8 = (arg6 == Array_ElementTypeFixnum) ? 1 : 0;
 
 g6528:
-  if (_trace) printf("g6528:\n");
   if (t8 == 0)
     goto g6524;
   /* Here if argument ArrayElementTypeFixnum */
@@ -853,11 +770,9 @@ g6528:
   goto illegaloperand;
 
 g6524:
-  if (_trace) printf("g6524:\n");
   t8 = (arg6 == Array_ElementTypeBoolean) ? 1 : 0;
 
 g6529:
-  if (_trace) printf("g6529:\n");
   if (t8 == 0)
     goto g6522;
   /* Here if argument ArrayElementTypeBoolean */
@@ -870,11 +785,9 @@ g6529:
   goto g6517;
 
 g6522:
-  if (_trace) printf("g6522:\n");
   /* Shove it in. */
 
 g6517:
-  if (_trace) printf("g6517:\n");
   /* J. if packed */
   if (arg5 != 0)
     goto g6519;
@@ -927,7 +840,6 @@ g6540:
   t8 = t8 & ~(0xffUL << (t4&7)*8);
 
 g6542:
-  if (_trace) printf("g6542:\n");
   t8 = t8 | t7;
   STQ_U(t4, t8);
   *(u32 *)t3 = t6;
@@ -939,7 +851,6 @@ g6542:
   /* Here for the slow packed version */
 
 g6519:
-  if (_trace) printf("g6519:\n");
   arg2 = arg4 + arg2;
   /* Convert byte index to word index */
   t1 = arg2 >> (arg5 & 63);
@@ -1024,7 +935,6 @@ g6554:
   goto g6556;
 
 g6555:
-  if (_trace) printf("g6555:\n");
   /* Inserting the byte into the low byte */
   /* Remove the old low byte */
   t9 = t9 & t3;
@@ -1034,11 +944,9 @@ g6555:
   t9 = t9 | t8;
 
 g6556:
-  if (_trace) printf("g6556:\n");
   t6 = t9;
 
 g6521:
-  if (_trace) printf("g6521:\n");
   t3 = *(u64 *)&(processor->stackcachebasevma);
   t2 = t1 + ivory;
   t8 = *(s32 *)&processor->scovlimit;
@@ -1052,7 +960,6 @@ g6521:
   t4 = t4 & ~(0xffUL << (t2&7)*8);
 
 g6558:
-  if (_trace) printf("g6558:\n");
   t4 = t4 | t3;
   STQ_U(t2, t4);
   *(u32 *)t7 = t6;
@@ -1063,7 +970,6 @@ g6558:
   goto NEXTINSTRUCTION;
 
 g6520:
-  if (_trace) printf("g6520:\n");
   arg5 = t1;
   arg2 = 25;
   goto illegaloperand;
@@ -1072,7 +978,6 @@ g6520:
 #endif
 
 DoAset1IM:
-  if (_trace) printf("DoAset1IM:\n");
   t8 = zero + AutoArrayRegMask;
   /* Get the array tag/data */
   arg4 = *(s32 *)iSP;
@@ -1095,11 +1000,9 @@ DoAset1IM:
   goto aset1merge;
 
 g6557:
-  if (_trace) printf("g6557:\n");
   t3 = *(u64 *)&(processor->stackcachebasevma);
 
 g6559:
-  if (_trace) printf("g6559:\n");
   t2 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t3 = t1 - t3;
@@ -1112,7 +1015,6 @@ g6559:
   goto NEXTINSTRUCTION;
 
 g6545:
-  if (_trace) printf("g6545:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t2 = (t2 * 8) + t3;
@@ -1122,7 +1024,6 @@ g6545:
   goto g6544;
 
 g6547:
-  if (_trace) printf("g6547:\n");
   if ((t4 & 1) == 0)
     goto g6546;
   /* Do the indirect thing */
@@ -1130,7 +1031,6 @@ g6547:
   goto g6543;
 
 g6546:
-  if (_trace) printf("g6546:\n");
   /* Load the memory action table for cycle */
   t7 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -1144,7 +1044,6 @@ g6546:
   t7 = *(s32 *)t4;
 
 g6551:
-  if (_trace) printf("g6551:\n");
   t4 = t7 & MemoryActionTransform;
   if (t4 == 0)
     goto g6550;
@@ -1158,7 +1057,6 @@ g6550:
 #ifdef MINIMA
 
 g6550:
-  if (_trace) printf("g6550:\n");
   t4 = t7 & MemoryActionBinding;
   t3 = *(u64 *)&(processor->dbcmask);
   if (t4 == 0)
@@ -1187,7 +1085,6 @@ g6550:
   goto g6543;
 
 g6553:
-  if (_trace) printf("g6553:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1198,11 +1095,9 @@ g6549:
   goto performmemoryaction;
 
 g6541:
-  if (_trace) printf("g6541:\n");
   t7 = *(u64 *)&(processor->stackcachebasevma);
 
 g6560:
-  if (_trace) printf("g6560:\n");
   t4 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = t1 - t7;
@@ -1215,7 +1110,6 @@ g6560:
   goto NEXTINSTRUCTION;
 
 g6532:
-  if (_trace) printf("g6532:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t4 = (t4 * 8) + t7;
@@ -1225,7 +1119,6 @@ g6532:
   goto g6531;
 
 g6534:
-  if (_trace) printf("g6534:\n");
   if ((t8 & 1) == 0)
     goto g6533;
   /* Do the indirect thing */
@@ -1233,7 +1126,6 @@ g6534:
   goto g6530;
 
 g6533:
-  if (_trace) printf("g6533:\n");
   /* Load the memory action table for cycle */
   arg1 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -1252,7 +1144,6 @@ g6537:
 #ifdef MINIMA
 
 g6537:
-  if (_trace) printf("g6537:\n");
   t8 = arg1 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
@@ -1281,7 +1172,6 @@ g6537:
   goto g6530;
 
 g6539:
-  if (_trace) printf("g6539:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1299,12 +1189,10 @@ g6536:
   /* arg2 has the preloaded 8 bit operand. */
 
 dofastaref1:
-  if (_trace) printf("dofastaref1:\n");
 #ifdef TRACING
 #endif
 
 DoFastAref1SP:
-  if (_trace) printf("DoFastAref1SP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1320,16 +1208,13 @@ DoFastAref1SP:
 #endif
 
 DoFastAref1LP:
-  if (_trace) printf("DoFastAref1LP:\n");
 #ifdef TRACING
   goto begindofastaref1;
 #endif
 
 DoFastAref1FP:
-  if (_trace) printf("DoFastAref1FP:\n");
 
 begindofastaref1:
-  if (_trace) printf("begindofastaref1:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -1342,7 +1227,6 @@ begindofastaref1:
     goto fastaref1iop;
 
 fastaref1retry:
-  if (_trace) printf("fastaref1retry:\n");
   arg6 = *(s32 *)arg1;
   t9 = *(s32 *)(arg1 + 8);
   t3 = *(s32 *)(arg1 + 16);
@@ -1369,7 +1253,6 @@ fastaref1retry:
   t1 = t9 + arg4;
 
 g6562:
-  if (_trace) printf("g6562:\n");
   /* Memory Read Internal */
 
 g6569:
@@ -1402,7 +1285,6 @@ g6580:
     goto g6563;
 
 g6564:
-  if (_trace) printf("g6564:\n");
   r31 = r31 | r31;
   t1 = t8 - 2;
   if ((s64)t1 <= 0)
@@ -1411,14 +1293,12 @@ g6564:
   arg5 = arg5 & 63;
 
 g6566:
-  if (_trace) printf("g6566:\n");
   *(u32 *)(iSP + 4) = arg5;
   t4 = (t6 == 0) ? 1 : 0;
   if (t4 == 0)
     goto case_others_14;
 
 case_0_8:
-  if (_trace) printf("case_0_8:\n");
   r31 = r31 | r31;
   if (t1 == 0)
     goto g6567;
@@ -1426,7 +1306,6 @@ case_0_8:
   goto NEXTINSTRUCTION;
 
 case_2_9:
-  if (_trace) printf("case_2_9:\n");
   /* AREF1-8B */
   r31 = r31 | r31;
   t4 = arg4 & 3;
@@ -1437,7 +1316,6 @@ case_2_9:
   goto NEXTINSTRUCTION;
 
 case_3_10:
-  if (_trace) printf("case_3_10:\n");
   /* AREF1-4B */
   r31 = r31 | r31;
   /* byte-index */
@@ -1454,7 +1332,6 @@ case_3_10:
   goto NEXTINSTRUCTION;
 
 case_5_11:
-  if (_trace) printf("case_5_11:\n");
   /* AREF1-1B */
   r31 = r31 | r31;
   /* byte-index */
@@ -1470,7 +1347,6 @@ case_5_11:
   goto NEXTINSTRUCTION;
 
 case_1_12:
-  if (_trace) printf("case_1_12:\n");
   /* AREF1-16B */
   t4 = arg4 & 1;
   /* Bletch, it's a byte ref */
@@ -1482,7 +1358,6 @@ case_1_12:
   goto NEXTINSTRUCTION;
 
 case_others_14:
-  if (_trace) printf("case_others_14:\n");
   r31 = r31 | r31;
   t4 = (t6 == 2) ? 1 : 0;
   t5 = (t6 == 3) ? 1 : 0;
@@ -1498,7 +1373,6 @@ case_others_14:
     goto case_1_12;
 
 case_4_13:
-  if (_trace) printf("case_4_13:\n");
   /* AREF1-2B */
   r31 = r31 | r31;
   /* byte-index */
@@ -1515,7 +1389,6 @@ case_4_13:
   goto NEXTINSTRUCTION;
 
 g6561:
-  if (_trace) printf("g6561:\n");
   arg4 = t7 + arg4;
   /* Convert byte index to word index */
   t1 = arg4 >> (t6 & 63);
@@ -1524,7 +1397,6 @@ g6561:
   goto g6562;
 
 g6563:
-  if (_trace) printf("g6563:\n");
   t1 = arg5 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
@@ -1533,7 +1405,6 @@ g6563:
   goto g6564;
 
 g6565:
-  if (_trace) printf("g6565:\n");
   arg5 = Type_Character;
   if (t8 & 1)
     goto g6566;
@@ -1545,32 +1416,27 @@ g6565:
   goto g6566;
 
 g6567:
-  if (_trace) printf("g6567:\n");
   if (t5)
     t2 = t3;
   *(u64 *)iSP = t2;
   goto NEXTINSTRUCTION;
 
 g6568:
-  if (_trace) printf("g6568:\n");
   arg5 = t1;
   arg2 = 25;
   goto illegaloperand;
 
 fastaref1iop:
-  if (_trace) printf("fastaref1iop:\n");
   arg5 = 0;
   arg2 = 32;
   goto illegaloperand;
 
 fastaref1bounds:
-  if (_trace) printf("fastaref1bounds:\n");
   arg5 = 0;
   arg2 = 13;
   goto illegaloperand;
 
 g6571:
-  if (_trace) printf("g6571:\n");
   t3 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t2 = (t2 * 8) + t3;
@@ -1580,7 +1446,6 @@ g6571:
   goto g6570;
 
 g6573:
-  if (_trace) printf("g6573:\n");
   if ((t4 & 1) == 0)
     goto g6572;
   /* Do the indirect thing */
@@ -1588,7 +1453,6 @@ g6573:
   goto g6569;
 
 g6572:
-  if (_trace) printf("g6572:\n");
   /* Load the memory action table for cycle */
   t5 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -1602,7 +1466,6 @@ g6572:
   t5 = *(s32 *)t4;
 
 g6577:
-  if (_trace) printf("g6577:\n");
   t4 = t5 & MemoryActionTransform;
   if (t4 == 0)
     goto g6576;
@@ -1616,7 +1479,6 @@ g6576:
 #ifdef MINIMA
 
 g6576:
-  if (_trace) printf("g6576:\n");
   t4 = t5 & MemoryActionBinding;
   t3 = *(u64 *)&(processor->dbcmask);
   if (t4 == 0)
@@ -1645,7 +1507,6 @@ g6576:
   goto g6569;
 
 g6579:
-  if (_trace) printf("g6579:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1667,19 +1528,16 @@ DoFastAref1IM:
   /* Halfword operand from stack instruction - DoRplaca */
 
 dorplaca:
-  if (_trace) printf("dorplaca:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoRplacaIM:
-  if (_trace) printf("DoRplacaIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g6594:
-  if (_trace) printf("g6594:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -1689,7 +1547,6 @@ g6594:
 #endif
 
 DoRplacaSP:
-  if (_trace) printf("DoRplacaSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -1706,23 +1563,19 @@ DoRplacaSP:
 #endif
 
 DoRplacaLP:
-  if (_trace) printf("DoRplacaLP:\n");
 #ifdef TRACING
   goto headdorplaca;
 #endif
 
 DoRplacaFP:
-  if (_trace) printf("DoRplacaFP:\n");
 
 headdorplaca:
-  if (_trace) printf("headdorplaca:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindorplaca:
-  if (_trace) printf("begindorplaca:\n");
   /* arg1 has the operand, sign extended if immediate. */
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
@@ -1740,7 +1593,6 @@ begindorplaca:
     goto rplacaexception;
 
 rplacstore:
-  if (_trace) printf("rplacstore:\n");
   /* Tag for t2 */
   t2 = arg1 >> 32;
   /* data for t2 */
@@ -1784,7 +1636,6 @@ g6591:
   t7 = t7 & ~(0xffUL << (t5&7)*8);
 
 g6593:
-  if (_trace) printf("g6593:\n");
   t7 = t7 | t6;
   STQ_U(t5, t7);
   *(u32 *)arg6 = arg1;
@@ -1795,7 +1646,6 @@ g6593:
   goto NEXTINSTRUCTION;
 
 g6592:
-  if (_trace) printf("g6592:\n");
   t5 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t6 = arg2 - t11;
@@ -1808,7 +1658,6 @@ g6592:
   goto NEXTINSTRUCTION;
 
 g6583:
-  if (_trace) printf("g6583:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -1818,7 +1667,6 @@ g6583:
   goto g6582;
 
 g6585:
-  if (_trace) printf("g6585:\n");
   if ((t7 & 1) == 0)
     goto g6584;
   /* Do the indirect thing */
@@ -1826,7 +1674,6 @@ g6585:
   goto g6581;
 
 g6584:
-  if (_trace) printf("g6584:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -1845,7 +1692,6 @@ g6588:
 #ifdef MINIMA
 
 g6588:
-  if (_trace) printf("g6588:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -1874,7 +1720,6 @@ g6588:
   goto g6581;
 
 g6590:
-  if (_trace) printf("g6590:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -1890,7 +1735,6 @@ g6587:
 
 
 memoryreadwrite:
-  if (_trace) printf("memoryreadwrite:\n");
   /* Memory Read Internal */
 
 g6595:
@@ -1919,12 +1763,10 @@ g6604:
   goto *(void *)r0; /* ret */
 
 memoryreadwritedecode:
-  if (_trace) printf("memoryreadwritedecode:\n");
   if (t6 == 0)
     goto g6598;
 
 g6597:
-  if (_trace) printf("g6597:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -1934,7 +1776,6 @@ g6597:
   goto g6596;
 
 g6599:
-  if (_trace) printf("g6599:\n");
   if ((t7 & 1) == 0)
     goto g6598;
   /* Do the indirect thing */
@@ -1942,7 +1783,6 @@ g6599:
   goto g6595;
 
 g6598:
-  if (_trace) printf("g6598:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -1961,7 +1801,6 @@ g6601:
 #ifdef MINIMA
 
 g6601:
-  if (_trace) printf("g6601:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -1990,7 +1829,6 @@ g6601:
   goto g6595;
 
 g6603:
-  if (_trace) printf("g6603:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -2006,19 +1844,16 @@ g6600:
   /* Halfword operand from stack instruction - DoRplacd */
 
 dorplacd:
-  if (_trace) printf("dorplacd:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoRplacdIM:
-  if (_trace) printf("DoRplacdIM:\n");
   /* This sequence only sucks a moderate amount */
   /* sign extend the byte argument. */
   arg2 = arg2 << 56;
 
 g6615:
-  if (_trace) printf("g6615:\n");
   /* Rest of sign extension */
   arg2 = (s64)arg2 >> 56;
   *(u32 *)&processor->immediate_arg = arg2;
@@ -2028,7 +1863,6 @@ g6615:
 #endif
 
 DoRplacdSP:
-  if (_trace) printf("DoRplacdSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -2045,23 +1879,19 @@ DoRplacdSP:
 #endif
 
 DoRplacdLP:
-  if (_trace) printf("DoRplacdLP:\n");
 #ifdef TRACING
   goto headdorplacd;
 #endif
 
 DoRplacdFP:
-  if (_trace) printf("DoRplacdFP:\n");
 
 headdorplacd:
-  if (_trace) printf("headdorplacd:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindorplacd:
-  if (_trace) printf("begindorplacd:\n");
   /* arg1 has the operand, sign extended if immediate. */
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
@@ -2114,7 +1944,6 @@ g6614:
   goto rplacstore;
 
 g6609:
-  if (_trace) printf("g6609:\n");
   if ((t7 & 1) == 0)
     goto g6608;
   /* Do the indirect thing */
@@ -2122,10 +1951,8 @@ g6609:
   goto g6605;
 
 g6608:
-  if (_trace) printf("g6608:\n");
 
 g6607:
-  if (_trace) printf("g6607:\n");
   r0 = (u64)&&return0029;
   goto memoryreadcdrdecode;
 return0029:
@@ -2138,22 +1965,17 @@ return0029:
   /* Halfword 10 bit immediate instruction - DoBranchTrueAndExtraPop */
 
 dobranchtrueandextrapop:
-  if (_trace) printf("dobranchtrueandextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchTrueAndExtraPopIM:
-  if (_trace) printf("DoBranchTrueAndExtraPopIM:\n");
 
 DoBranchTrueAndExtraPopSP:
-  if (_trace) printf("DoBranchTrueAndExtraPopSP:\n");
 
 DoBranchTrueAndExtraPopLP:
-  if (_trace) printf("DoBranchTrueAndExtraPopLP:\n");
 
 DoBranchTrueAndExtraPopFP:
-  if (_trace) printf("DoBranchTrueAndExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -2176,7 +1998,6 @@ DoBranchTrueAndExtraPopFP:
   goto cachevalid;
 
 dobrpopextrapop:
-  if (_trace) printf("dobrpopextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -2196,22 +2017,17 @@ dobrpopextrapop:
   /* Halfword 10 bit immediate instruction - DoBranchFalseAndExtraPop */
 
 dobranchfalseandextrapop:
-  if (_trace) printf("dobranchfalseandextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchFalseAndExtraPopIM:
-  if (_trace) printf("DoBranchFalseAndExtraPopIM:\n");
 
 DoBranchFalseAndExtraPopSP:
-  if (_trace) printf("DoBranchFalseAndExtraPopSP:\n");
 
 DoBranchFalseAndExtraPopLP:
-  if (_trace) printf("DoBranchFalseAndExtraPopLP:\n");
 
 DoBranchFalseAndExtraPopFP:
-  if (_trace) printf("DoBranchFalseAndExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -2234,7 +2050,6 @@ DoBranchFalseAndExtraPopFP:
   goto cachevalid;
 
 dobrnpopextrapop:
-  if (_trace) printf("dobrnpopextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -2254,22 +2069,17 @@ dobrnpopextrapop:
   /* Halfword 10 bit immediate instruction - DoBranchTrueAndNoPop */
 
 dobranchtrueandnopop:
-  if (_trace) printf("dobranchtrueandnopop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchTrueAndNoPopIM:
-  if (_trace) printf("DoBranchTrueAndNoPopIM:\n");
 
 DoBranchTrueAndNoPopSP:
-  if (_trace) printf("DoBranchTrueAndNoPopSP:\n");
 
 DoBranchTrueAndNoPopLP:
-  if (_trace) printf("DoBranchTrueAndNoPopLP:\n");
 
 DoBranchTrueAndNoPopFP:
-  if (_trace) printf("DoBranchTrueAndNoPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -2292,7 +2102,6 @@ DoBranchTrueAndNoPopFP:
   goto cachevalid;
 
 dobrelsepop:
-  if (_trace) printf("dobrelsepop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -2311,22 +2120,17 @@ dobrelsepop:
   /* Halfword 10 bit immediate instruction - DoBranchFalseAndNoPop */
 
 dobranchfalseandnopop:
-  if (_trace) printf("dobranchfalseandnopop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchFalseAndNoPopIM:
-  if (_trace) printf("DoBranchFalseAndNoPopIM:\n");
 
 DoBranchFalseAndNoPopSP:
-  if (_trace) printf("DoBranchFalseAndNoPopSP:\n");
 
 DoBranchFalseAndNoPopLP:
-  if (_trace) printf("DoBranchFalseAndNoPopLP:\n");
 
 DoBranchFalseAndNoPopFP:
-  if (_trace) printf("DoBranchFalseAndNoPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -2349,7 +2153,6 @@ DoBranchFalseAndNoPopFP:
   goto cachevalid;
 
 dobrnelsepop:
-  if (_trace) printf("dobrnelsepop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -2368,22 +2171,17 @@ dobrnelsepop:
   /* Halfword 10 bit immediate instruction - DoBranchFalseElseNoPop */
 
 dobranchfalseelsenopop:
-  if (_trace) printf("dobranchfalseelsenopop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchFalseElseNoPopIM:
-  if (_trace) printf("DoBranchFalseElseNoPopIM:\n");
 
 DoBranchFalseElseNoPopSP:
-  if (_trace) printf("DoBranchFalseElseNoPopSP:\n");
 
 DoBranchFalseElseNoPopLP:
-  if (_trace) printf("DoBranchFalseElseNoPopLP:\n");
 
 DoBranchFalseElseNoPopFP:
-  if (_trace) printf("DoBranchFalseElseNoPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -2419,12 +2217,10 @@ DoBranchFalseElseNoPopFP:
   /* arg2 has the preloaded 8 bit operand. */
 
 doequalnumber:
-  if (_trace) printf("doequalnumber:\n");
 #ifdef TRACING
 #endif
 
 DoEqualNumberSP:
-  if (_trace) printf("DoEqualNumberSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -2440,16 +2236,13 @@ DoEqualNumberSP:
 #endif
 
 DoEqualNumberLP:
-  if (_trace) printf("DoEqualNumberLP:\n");
 #ifdef TRACING
   goto begindoequalnumber;
 #endif
 
 DoEqualNumberFP:
-  if (_trace) printf("DoEqualNumberFP:\n");
 
 begindoequalnumber:
-  if (_trace) printf("begindoequalnumber:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -2472,14 +2265,12 @@ begindoequalnumber:
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g6633:
-  if (_trace) printf("g6633:\n");
   if (t6 == 0)
     goto g6621;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g6625:
-  if (_trace) printf("g6625:\n");
   if (t3 == 0)
     goto g6616;
   /* Here if argument TypeFixnum */
@@ -2495,27 +2286,22 @@ g6625:
   goto cachevalid;
 
 g6622:
-  if (_trace) printf("g6622:\n");
 
 g6621:
-  if (_trace) printf("g6621:\n");
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g6634:
-  if (_trace) printf("g6634:\n");
   if (t6 == 0)
     goto g6626;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g6630:
-  if (_trace) printf("g6630:\n");
   if (t3 == 0)
     goto g6616;
   /* Here if argument TypeSingleFloat */
 
 equalnumbermmexcfltflt:
-  if (_trace) printf("equalnumbermmexcfltflt:\n");
   SETFLTT(3,f3, FLTU64(1,f1) == FLTU64(2,f2) ? 2.0:0);
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -2530,24 +2316,19 @@ equalnumbermmexcfltflt:
   goto cachevalid;
 
 g6627:
-  if (_trace) printf("g6627:\n");
 
 g6626:
-  if (_trace) printf("g6626:\n");
   /* Here for all other cases */
 
 g6616:
-  if (_trace) printf("g6616:\n");
   goto equalnumbermmexc;
 
 g6620:
-  if (_trace) printf("g6620:\n");
 #ifdef TRACING
   goto DoEqualNumberIM;
 #endif
 
 DoEqualNumberIM:
-  if (_trace) printf("DoEqualNumberIM:\n");
   t11 = *(u64 *)&(processor->niladdress);
   /* First half of sign extension */
   arg2 = arg2 << 56;
@@ -2563,7 +2344,6 @@ DoEqualNumberIM:
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
 g6639:
-  if (_trace) printf("g6639:\n");
   if (t4 == 0)
     goto g6636;
   /* Here if argument TypeFixnum */
@@ -2578,7 +2358,6 @@ g6639:
   goto cachevalid;
 
 g6636:
-  if (_trace) printf("g6636:\n");
   /* Here for all other cases */
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
@@ -2591,7 +2370,6 @@ g6636:
   goto numericexception;
 
 g6635:
-  if (_trace) printf("g6635:\n");
 
 /* end DoEqualNumber */
   /* End of Halfword operand from stack instruction - DoEqualNumber */
@@ -2601,12 +2379,10 @@ g6635:
   /* arg2 has the preloaded 8 bit operand. */
 
 dosettocdrpushcar:
-  if (_trace) printf("dosettocdrpushcar:\n");
 #ifdef TRACING
 #endif
 
 DoSetToCdrPushCarSP:
-  if (_trace) printf("DoSetToCdrPushCarSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -2620,16 +2396,13 @@ DoSetToCdrPushCarSP:
 #endif
 
 DoSetToCdrPushCarLP:
-  if (_trace) printf("DoSetToCdrPushCarLP:\n");
 #ifdef TRACING
   goto begindosettocdrpushcar;
 #endif
 
 DoSetToCdrPushCarFP:
-  if (_trace) printf("DoSetToCdrPushCarFP:\n");
 
 begindosettocdrpushcar:
-  if (_trace) printf("begindosettocdrpushcar:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -2678,12 +2451,10 @@ DoSetToCdrPushCarIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dosub:
-  if (_trace) printf("dosub:\n");
 #ifdef TRACING
 #endif
 
 DoSubSP:
-  if (_trace) printf("DoSubSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -2699,16 +2470,13 @@ DoSubSP:
 #endif
 
 DoSubLP:
-  if (_trace) printf("DoSubLP:\n");
 #ifdef TRACING
   goto begindosub;
 #endif
 
 DoSubFP:
-  if (_trace) printf("DoSubFP:\n");
 
 begindosub:
-  if (_trace) printf("begindosub:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -2730,14 +2498,12 @@ begindosub:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g6679:
-  if (_trace) printf("g6679:\n");
   if (t10 == 0)
     goto g6650;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6656:
-  if (_trace) printf("g6656:\n");
   if (t12 == 0)
     goto g6652;
   /* Here if argument TypeFixnum */
@@ -2760,11 +2526,9 @@ g6656:
   goto cachevalid;
 
 g6652:
-  if (_trace) printf("g6652:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g6657:
-  if (_trace) printf("g6657:\n");
   if (t12 == 0)
     goto g6653;
   /* Here if argument TypeSingleFloat */
@@ -2773,11 +2537,9 @@ g6657:
   goto g6640;
 
 g6653:
-  if (_trace) printf("g6653:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g6658:
-  if (_trace) printf("g6658:\n");
   if (t12 == 0)
     goto g6647;
   /* Here if argument TypeDoubleFloat */
@@ -2786,27 +2548,22 @@ g6658:
   goto g6643;
 
 g6651:
-  if (_trace) printf("g6651:\n");
 
 g6650:
-  if (_trace) printf("g6650:\n");
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g6680:
-  if (_trace) printf("g6680:\n");
   if (t10 == 0)
     goto g6659;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g6665:
-  if (_trace) printf("g6665:\n");
   if (t12 == 0)
     goto g6661;
   /* Here if argument TypeSingleFloat */
 
 g6640:
-  if (_trace) printf("g6640:\n");
   SUBS(0, f0, 1, f1, 2, f2); /* subs */
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -2819,11 +2576,9 @@ g6640:
   goto cachevalid;
 
 g6661:
-  if (_trace) printf("g6661:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6666:
-  if (_trace) printf("g6666:\n");
   if (t12 == 0)
     goto g6662;
   /* Here if argument TypeFixnum */
@@ -2832,38 +2587,31 @@ g6666:
   goto g6640;
 
 g6662:
-  if (_trace) printf("g6662:\n");
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g6667:
-  if (_trace) printf("g6667:\n");
   if (t12 == 0)
     goto g6647;
   /* Here if argument TypeDoubleFloat */
 
 g6643:
-  if (_trace) printf("g6643:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
   goto g6644;
 
 g6660:
-  if (_trace) printf("g6660:\n");
 
 g6659:
-  if (_trace) printf("g6659:\n");
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
 g6681:
-  if (_trace) printf("g6681:\n");
   if (t10 == 0)
     goto g6668;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g6674:
-  if (_trace) printf("g6674:\n");
   if (t12 == 0)
     goto g6670;
   /* Here if argument TypeDoubleFloat */
@@ -2877,7 +2625,6 @@ return0031:
   LDT(1, f1, processor->fp0);
 
 g6644:
-  if (_trace) printf("g6644:\n");
   arg2 = (u32)t4;
   r0 = (u64)&&return0032;
   goto fetchdoublefloat;
@@ -2885,7 +2632,6 @@ return0032:
   LDT(2, f2, processor->fp0);
 
 g6641:
-  if (_trace) printf("g6641:\n");
   SUBT(0, f0, 1, f1, 2, f2);
   STT( (u64 *)&processor->fp0, 0, f0 );
   r0 = (u64)&&return0033;
@@ -2900,17 +2646,14 @@ return0033:
   goto cachevalid;
 
 g6670:
-  if (_trace) printf("g6670:\n");
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g6675:
-  if (_trace) printf("g6675:\n");
   if (t12 == 0)
     goto g6671;
   /* Here if argument TypeSingleFloat */
 
 g6642:
-  if (_trace) printf("g6642:\n");
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
   t12 = *(s32 *)&processor->scovlimit;
@@ -2922,11 +2665,9 @@ return0034:
   goto g6641;
 
 g6671:
-  if (_trace) printf("g6671:\n");
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6676:
-  if (_trace) printf("g6676:\n");
   if (t12 == 0)
     goto g6647;
   /* Here if argument TypeFixnum */
@@ -2935,17 +2676,13 @@ g6676:
   goto g6642;
 
 g6669:
-  if (_trace) printf("g6669:\n");
 
 g6668:
-  if (_trace) printf("g6668:\n");
   /* Here for all other cases */
 
 g6646:
-  if (_trace) printf("g6646:\n");
 
 dosubovfl:
-  if (_trace) printf("dosubovfl:\n");
   /* arg6 = tag to dispatch on */
   arg6 = t1;
   /* arg3 = stackp */
@@ -2958,21 +2695,17 @@ dosubovfl:
   goto g6648;
 
 g6647:
-  if (_trace) printf("g6647:\n");
   t1 = t3;
   goto dosubovfl;
 
 g6648:
-  if (_trace) printf("g6648:\n");
 
 g6649:
-  if (_trace) printf("g6649:\n");
 #ifdef TRACING
   goto DoSubIM;
 #endif
 
 DoSubIM:
-  if (_trace) printf("DoSubIM:\n");
   t1 = (u32)(arg6 >> ((4&7)*8));
   /* get ARG1 tag/data */
   t2 = (s32)arg6;
@@ -2981,7 +2714,6 @@ DoSubIM:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g6686:
-  if (_trace) printf("g6686:\n");
   if (t12 == 0)
     goto g6683;
   /* Here if argument TypeFixnum */
@@ -3004,7 +2736,6 @@ g6686:
   goto cachevalid;
 
 g6683:
-  if (_trace) printf("g6683:\n");
   /* Here for all other cases */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
@@ -3012,7 +2743,6 @@ g6683:
   goto begindosub;
 
 g6682:
-  if (_trace) printf("g6682:\n");
 
 /* end DoSub */
   /* End of Halfword operand from stack instruction - DoSub */
@@ -3022,13 +2752,11 @@ g6682:
   /* arg2 has the preloaded 8 bit operand. */
 
 dotag:
-  if (_trace) printf("dotag:\n");
   /* arg2 has the preloaded 8 bit operand. */
 #ifdef TRACING
 #endif
 
 DoTagIM:
-  if (_trace) printf("DoTagIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = (u64)&processor->immediate_arg;
@@ -3038,7 +2766,6 @@ DoTagIM:
 #endif
 
 DoTagSP:
-  if (_trace) printf("DoTagSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3052,16 +2779,13 @@ DoTagSP:
 #endif
 
 DoTagLP:
-  if (_trace) printf("DoTagLP:\n");
 #ifdef TRACING
   goto begindotag;
 #endif
 
 DoTagFP:
-  if (_trace) printf("DoTagFP:\n");
 
 begindotag:
-  if (_trace) printf("begindotag:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3084,12 +2808,10 @@ begindotag:
   /* arg2 has the preloaded 8 bit operand. */
 
 doendp:
-  if (_trace) printf("doendp:\n");
 #ifdef TRACING
 #endif
 
 DoEndpSP:
-  if (_trace) printf("DoEndpSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3103,16 +2825,13 @@ DoEndpSP:
 #endif
 
 DoEndpLP:
-  if (_trace) printf("DoEndpLP:\n");
 #ifdef TRACING
   goto begindoendp;
 #endif
 
 DoEndpFP:
-  if (_trace) printf("DoEndpFP:\n");
 
 begindoendp:
-  if (_trace) printf("begindoendp:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3133,7 +2852,6 @@ begindoendp:
   goto cachevalid;
 
 endpnil:
-  if (_trace) printf("endpnil:\n");
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   *(u64 *)(iSP + 8) = t1;
@@ -3141,7 +2859,6 @@ endpnil:
   goto cachevalid;
 
 endpnotnil:
-  if (_trace) printf("endpnotnil:\n");
   /* Now check for list */
   t6 = t6 - 1;
   if (t6 == 0)
@@ -3154,7 +2871,6 @@ endpnotnil:
 #endif
 
 DoEndpIM:
-  if (_trace) printf("DoEndpIM:\n");
   arg5 = 0;
   arg2 = 64;
   goto illegaloperand;
@@ -3167,12 +2883,10 @@ DoEndpIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dominusp:
-  if (_trace) printf("dominusp:\n");
 #ifdef TRACING
 #endif
 
 DoMinuspSP:
-  if (_trace) printf("DoMinuspSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3186,16 +2900,13 @@ DoMinuspSP:
 #endif
 
 DoMinuspLP:
-  if (_trace) printf("DoMinuspLP:\n");
 #ifdef TRACING
   goto begindominusp;
 #endif
 
 DoMinuspFP:
-  if (_trace) printf("DoMinuspFP:\n");
 
 begindominusp:
-  if (_trace) printf("begindominusp:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3210,7 +2921,6 @@ begindominusp:
   t5 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g6692:
-  if (_trace) printf("g6692:\n");
   if (t5 == 0)
     goto g6688;
   /* Here if argument TypeFixnum */
@@ -3224,11 +2934,9 @@ g6692:
   goto cachevalid;
 
 g6688:
-  if (_trace) printf("g6688:\n");
   t5 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g6693:
-  if (_trace) printf("g6693:\n");
   if (t5 == 0)
     goto g6689;
   /* Here if argument TypeSingleFloat */
@@ -3243,7 +2951,6 @@ g6693:
   goto cachevalid;
 
 g6689:
-  if (_trace) printf("g6689:\n");
   /* Here for all other cases */
   /* arg6 = tag to dispatch on */
   arg6 = t1;
@@ -3256,13 +2963,11 @@ g6689:
   goto unarynumericexception;
 
 g6687:
-  if (_trace) printf("g6687:\n");
 #ifdef TRACING
   goto DoMinuspIM;
 #endif
 
 DoMinuspIM:
-  if (_trace) printf("DoMinuspIM:\n");
   t1 = *(u64 *)&(processor->niladdress);
   /* Turned into a signed number */
   arg2 = arg2 << 56;
@@ -3285,12 +2990,10 @@ DoMinuspIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 doplusp:
-  if (_trace) printf("doplusp:\n");
 #ifdef TRACING
 #endif
 
 DoPluspSP:
-  if (_trace) printf("DoPluspSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3304,16 +3007,13 @@ DoPluspSP:
 #endif
 
 DoPluspLP:
-  if (_trace) printf("DoPluspLP:\n");
 #ifdef TRACING
   goto begindoplusp;
 #endif
 
 DoPluspFP:
-  if (_trace) printf("DoPluspFP:\n");
 
 begindoplusp:
-  if (_trace) printf("begindoplusp:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3328,7 +3028,6 @@ begindoplusp:
   t5 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g6699:
-  if (_trace) printf("g6699:\n");
   if (t5 == 0)
     goto g6695;
   /* Here if argument TypeFixnum */
@@ -3342,11 +3041,9 @@ g6699:
   goto cachevalid;
 
 g6695:
-  if (_trace) printf("g6695:\n");
   t5 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g6700:
-  if (_trace) printf("g6700:\n");
   if (t5 == 0)
     goto g6696;
   /* Here if argument TypeSingleFloat */
@@ -3361,7 +3058,6 @@ g6700:
   goto cachevalid;
 
 g6696:
-  if (_trace) printf("g6696:\n");
   /* Here for all other cases */
   /* arg6 = tag to dispatch on */
   arg6 = t1;
@@ -3374,13 +3070,11 @@ g6696:
   goto unarynumericexception;
 
 g6694:
-  if (_trace) printf("g6694:\n");
 #ifdef TRACING
   goto DoPluspIM;
 #endif
 
 DoPluspIM:
-  if (_trace) printf("DoPluspIM:\n");
   t1 = *(u64 *)&(processor->niladdress);
   /* Turned into a signed number */
   arg2 = arg2 << 56;
@@ -3403,12 +3097,10 @@ DoPluspIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dolessp:
-  if (_trace) printf("dolessp:\n");
 #ifdef TRACING
 #endif
 
 DoLesspSP:
-  if (_trace) printf("DoLesspSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -3424,16 +3116,13 @@ DoLesspSP:
 #endif
 
 DoLesspLP:
-  if (_trace) printf("DoLesspLP:\n");
 #ifdef TRACING
   goto begindolessp;
 #endif
 
 DoLesspFP:
-  if (_trace) printf("DoLesspFP:\n");
 
 begindolessp:
-  if (_trace) printf("begindolessp:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3456,14 +3145,12 @@ begindolessp:
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g6718:
-  if (_trace) printf("g6718:\n");
   if (t6 == 0)
     goto g6706;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g6710:
-  if (_trace) printf("g6710:\n");
   if (t3 == 0)
     goto g6701;
   /* Here if argument TypeFixnum */
@@ -3479,27 +3166,22 @@ g6710:
   goto cachevalid;
 
 g6707:
-  if (_trace) printf("g6707:\n");
 
 g6706:
-  if (_trace) printf("g6706:\n");
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g6719:
-  if (_trace) printf("g6719:\n");
   if (t6 == 0)
     goto g6711;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g6715:
-  if (_trace) printf("g6715:\n");
   if (t3 == 0)
     goto g6701;
   /* Here if argument TypeSingleFloat */
 
 lesspmmexcfltflt:
-  if (_trace) printf("lesspmmexcfltflt:\n");
   SETFLTT(3,f3, FLTU64(1,f1) < FLTU64(2,f2) ? 2.0:0);
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -3514,24 +3196,19 @@ lesspmmexcfltflt:
   goto cachevalid;
 
 g6712:
-  if (_trace) printf("g6712:\n");
 
 g6711:
-  if (_trace) printf("g6711:\n");
   /* Here for all other cases */
 
 g6701:
-  if (_trace) printf("g6701:\n");
   goto lesspmmexc;
 
 g6705:
-  if (_trace) printf("g6705:\n");
 #ifdef TRACING
   goto DoLesspIM;
 #endif
 
 DoLesspIM:
-  if (_trace) printf("DoLesspIM:\n");
   t11 = *(u64 *)&(processor->niladdress);
   /* First half of sign extension */
   arg2 = arg2 << 56;
@@ -3547,7 +3224,6 @@ DoLesspIM:
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
 g6724:
-  if (_trace) printf("g6724:\n");
   if (t4 == 0)
     goto g6721;
   /* Here if argument TypeFixnum */
@@ -3562,7 +3238,6 @@ g6724:
   goto cachevalid;
 
 g6721:
-  if (_trace) printf("g6721:\n");
   /* Here for all other cases */
   /* arg6 = tag to dispatch on */
   arg6 = arg3;
@@ -3575,7 +3250,6 @@ g6721:
   goto numericexception;
 
 g6720:
-  if (_trace) printf("g6720:\n");
 
 /* end DoLessp */
   /* End of Halfword operand from stack instruction - DoLessp */
@@ -3585,12 +3259,10 @@ g6720:
   /* arg2 has the preloaded 8 bit operand. */
 
 dodecrement:
-  if (_trace) printf("dodecrement:\n");
 #ifdef TRACING
 #endif
 
 DoDecrementSP:
-  if (_trace) printf("DoDecrementSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3604,16 +3276,13 @@ DoDecrementSP:
 #endif
 
 DoDecrementLP:
-  if (_trace) printf("DoDecrementLP:\n");
 #ifdef TRACING
   goto begindodecrement;
 #endif
 
 DoDecrementFP:
-  if (_trace) printf("DoDecrementFP:\n");
 
 begindodecrement:
-  if (_trace) printf("begindodecrement:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3626,7 +3295,6 @@ begindodecrement:
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g6730:
-  if (_trace) printf("g6730:\n");
   if (t2 == 0)
     goto g6726;
   /* Here if argument TypeFixnum */
@@ -3643,11 +3311,9 @@ g6730:
   goto cachevalid;
 
 g6726:
-  if (_trace) printf("g6726:\n");
   t2 = (t1 == Type_SingleFloat) ? 1 : 0;
 
 g6731:
-  if (_trace) printf("g6731:\n");
   if (t2 == 0)
     goto g6727;
   /* Here if argument TypeSingleFloat */
@@ -3666,12 +3332,10 @@ g6731:
   goto cachevalid;
 
 g6727:
-  if (_trace) printf("g6727:\n");
   /* Here for all other cases */
   goto decrementexception;
 
 g6725:
-  if (_trace) printf("g6725:\n");
 #ifdef TRACING
 #endif
 
@@ -3686,12 +3350,10 @@ DoDecrementIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 domergecdrnopop:
-  if (_trace) printf("domergecdrnopop:\n");
 #ifdef TRACING
 #endif
 
 DoMergeCdrNoPopSP:
-  if (_trace) printf("DoMergeCdrNoPopSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -3707,16 +3369,13 @@ DoMergeCdrNoPopSP:
 #endif
 
 DoMergeCdrNoPopLP:
-  if (_trace) printf("DoMergeCdrNoPopLP:\n");
 #ifdef TRACING
   goto begindomergecdrnopop;
 #endif
 
 DoMergeCdrNoPopFP:
-  if (_trace) printf("DoMergeCdrNoPopFP:\n");
 
 begindomergecdrnopop:
-  if (_trace) printf("begindomergecdrnopop:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3728,7 +3387,6 @@ begindomergecdrnopop:
   t2 = (u32)(arg6 >> ((4&7)*8));
 
 g6732:
-  if (_trace) printf("g6732:\n");
   /* Get Just the CDR code in position */
   t2 = t2 & 192;
   /* Get the TAG of arg1 */
@@ -3750,13 +3408,11 @@ DoMergeCdrNoPopIM:
 
 
 doeqimmediatehandler:
-  if (_trace) printf("doeqimmediatehandler:\n");
 #ifdef TRACING
   goto DoEqIM;
 #endif
 
 DoEqIM:
-  if (_trace) printf("DoEqIM:\n");
   arg2 = arg2 << 56;
   /* t4=tag t3=data */
   t4 = *(s32 *)(iSP + 4);
@@ -3790,12 +3446,10 @@ DoEqIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 doincrement:
-  if (_trace) printf("doincrement:\n");
 #ifdef TRACING
 #endif
 
 DoIncrementSP:
-  if (_trace) printf("DoIncrementSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -3809,16 +3463,13 @@ DoIncrementSP:
 #endif
 
 DoIncrementLP:
-  if (_trace) printf("DoIncrementLP:\n");
 #ifdef TRACING
   goto begindoincrement;
 #endif
 
 DoIncrementFP:
-  if (_trace) printf("DoIncrementFP:\n");
 
 begindoincrement:
-  if (_trace) printf("begindoincrement:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -3831,7 +3482,6 @@ begindoincrement:
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g6738:
-  if (_trace) printf("g6738:\n");
   if (t2 == 0)
     goto g6734;
   /* Here if argument TypeFixnum */
@@ -3848,11 +3498,9 @@ g6738:
   goto cachevalid;
 
 g6734:
-  if (_trace) printf("g6734:\n");
   t2 = (t1 == Type_SingleFloat) ? 1 : 0;
 
 g6739:
-  if (_trace) printf("g6739:\n");
   if (t2 == 0)
     goto g6735;
   /* Here if argument TypeSingleFloat */
@@ -3871,12 +3519,10 @@ g6739:
   goto cachevalid;
 
 g6735:
-  if (_trace) printf("g6735:\n");
   /* Here for all other cases */
   goto incrementexception;
 
 g6733:
-  if (_trace) printf("g6733:\n");
 #ifdef TRACING
 #endif
 

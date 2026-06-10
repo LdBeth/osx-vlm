@@ -10,12 +10,10 @@
   /* arg2 has the preloaded 8 bit operand. */
 
 dopushlexicalvarn:
-  if (_trace) printf("dopushlexicalvarn:\n");
 #ifdef TRACING
 #endif
 
 DoPushLexicalVarNSP:
-  if (_trace) printf("DoPushLexicalVarNSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -29,16 +27,13 @@ DoPushLexicalVarNSP:
 #endif
 
 DoPushLexicalVarNLP:
-  if (_trace) printf("DoPushLexicalVarNLP:\n");
 #ifdef TRACING
   goto begindopushlexicalvarn;
 #endif
 
 DoPushLexicalVarNFP:
-  if (_trace) printf("DoPushLexicalVarNFP:\n");
 
 begindopushlexicalvarn:
-  if (_trace) printf("begindopushlexicalvarn:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -95,13 +90,11 @@ g8061:
   goto cachevalid;
 
 pushlexvariop:
-  if (_trace) printf("pushlexvariop:\n");
   arg5 = 0;
   arg2 = 82;
   goto illegaloperand;
 
 g8052:
-  if (_trace) printf("g8052:\n");
   t5 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t4 = (t4 * 8) + t5;
@@ -111,7 +104,6 @@ g8052:
   goto g8051;
 
 g8054:
-  if (_trace) printf("g8054:\n");
   if ((t6 & 1) == 0)
     goto g8053;
   /* Do the indirect thing */
@@ -119,7 +111,6 @@ g8054:
   goto g8050;
 
 g8053:
-  if (_trace) printf("g8053:\n");
   /* Load the memory action table for cycle */
   t7 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -133,7 +124,6 @@ g8053:
   t7 = *(s32 *)t6;
 
 g8058:
-  if (_trace) printf("g8058:\n");
   t6 = t7 & MemoryActionTransform;
   if (t6 == 0)
     goto g8057;
@@ -147,7 +137,6 @@ g8057:
 #ifdef MINIMA
 
 g8057:
-  if (_trace) printf("g8057:\n");
   t6 = t7 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
   if (t6 == 0)
@@ -176,7 +165,6 @@ g8057:
   goto g8050;
 
 g8060:
-  if (_trace) printf("g8060:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -199,12 +187,10 @@ DoPushLexicalVarNIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dopoplexicalvarn:
-  if (_trace) printf("dopoplexicalvarn:\n");
 #ifdef TRACING
 #endif
 
 DoPopLexicalVarNSP:
-  if (_trace) printf("DoPopLexicalVarNSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -218,16 +204,13 @@ DoPopLexicalVarNSP:
 #endif
 
 DoPopLexicalVarNLP:
-  if (_trace) printf("DoPopLexicalVarNLP:\n");
 #ifdef TRACING
   goto begindopoplexicalvarn;
 #endif
 
 DoPopLexicalVarNFP:
-  if (_trace) printf("DoPopLexicalVarNFP:\n");
 
 begindopoplexicalvarn:
-  if (_trace) printf("begindopoplexicalvarn:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -293,7 +276,6 @@ g8072:
   t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g8074:
-  if (_trace) printf("g8074:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t3;
@@ -304,13 +286,11 @@ g8074:
   goto NEXTINSTRUCTION;
 
 poplexvariop:
-  if (_trace) printf("poplexvariop:\n");
   arg5 = 0;
   arg2 = 17;
   goto illegaloperand;
 
 g8073:
-  if (_trace) printf("g8073:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = t1 - arg5;
@@ -323,7 +303,6 @@ g8073:
   goto NEXTINSTRUCTION;
 
 g8064:
-  if (_trace) printf("g8064:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
@@ -333,7 +312,6 @@ g8064:
   goto g8063;
 
 g8066:
-  if (_trace) printf("g8066:\n");
   if ((t8 & 1) == 0)
     goto g8065;
   /* Do the indirect thing */
@@ -341,7 +319,6 @@ g8066:
   goto g8062;
 
 g8065:
-  if (_trace) printf("g8065:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -360,7 +337,6 @@ g8069:
 #ifdef MINIMA
 
 g8069:
-  if (_trace) printf("g8069:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
@@ -389,7 +365,6 @@ g8069:
   goto g8062;
 
 g8071:
-  if (_trace) printf("g8071:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -412,12 +387,10 @@ DoPopLexicalVarNIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 domovemlexicalvarn:
-  if (_trace) printf("domovemlexicalvarn:\n");
 #ifdef TRACING
 #endif
 
 DoMovemLexicalVarNSP:
-  if (_trace) printf("DoMovemLexicalVarNSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -431,16 +404,13 @@ DoMovemLexicalVarNSP:
 #endif
 
 DoMovemLexicalVarNLP:
-  if (_trace) printf("DoMovemLexicalVarNLP:\n");
 #ifdef TRACING
   goto begindomovemlexicalvarn;
 #endif
 
 DoMovemLexicalVarNFP:
-  if (_trace) printf("DoMovemLexicalVarNFP:\n");
 
 begindomovemlexicalvarn:
-  if (_trace) printf("begindomovemlexicalvarn:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -504,7 +474,6 @@ g8085:
   t8 = t8 & ~(0xffUL << (t6&7)*8);
 
 g8087:
-  if (_trace) printf("g8087:\n");
   t8 = t8 | t7;
   STQ_U(t6, t8);
   *(u32 *)t5 = t3;
@@ -515,13 +484,11 @@ g8087:
   goto NEXTINSTRUCTION;
 
 movemlexvariop:
-  if (_trace) printf("movemlexvariop:\n");
   arg5 = 0;
   arg2 = 17;
   goto illegaloperand;
 
 g8086:
-  if (_trace) printf("g8086:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* Stack cache offset */
   t7 = t1 - arg5;
@@ -534,7 +501,6 @@ g8086:
   goto NEXTINSTRUCTION;
 
 g8077:
-  if (_trace) printf("g8077:\n");
   t7 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t6 = (t6 * 8) + t7;
@@ -544,7 +510,6 @@ g8077:
   goto g8076;
 
 g8079:
-  if (_trace) printf("g8079:\n");
   if ((t8 & 1) == 0)
     goto g8078;
   /* Do the indirect thing */
@@ -552,7 +517,6 @@ g8079:
   goto g8075;
 
 g8078:
-  if (_trace) printf("g8078:\n");
   /* Load the memory action table for cycle */
   t9 = *(u64 *)&(processor->datawrite);
   /* TagType. */
@@ -571,7 +535,6 @@ g8082:
 #ifdef MINIMA
 
 g8082:
-  if (_trace) printf("g8082:\n");
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
   if (t8 == 0)
@@ -600,7 +563,6 @@ g8082:
   goto g8075;
 
 g8084:
-  if (_trace) printf("g8084:\n");
   goto dbcachemisstrap;
 #endif
 

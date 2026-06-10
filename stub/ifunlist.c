@@ -10,12 +10,10 @@
   /* arg2 has the preloaded 8 bit operand. */
 
 dosettocar:
-  if (_trace) printf("dosettocar:\n");
 #ifdef TRACING
 #endif
 
 DoSetToCarSP:
-  if (_trace) printf("DoSetToCarSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -29,16 +27,13 @@ DoSetToCarSP:
 #endif
 
 DoSetToCarLP:
-  if (_trace) printf("DoSetToCarLP:\n");
 #ifdef TRACING
   goto begindosettocar;
 #endif
 
 DoSetToCarFP:
-  if (_trace) printf("DoSetToCarFP:\n");
 
 begindosettocar:
-  if (_trace) printf("begindosettocar:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -75,12 +70,10 @@ DoSetToCarIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dosettocdr:
-  if (_trace) printf("dosettocdr:\n");
 #ifdef TRACING
 #endif
 
 DoSetToCdrSP:
-  if (_trace) printf("DoSetToCdrSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -94,16 +87,13 @@ DoSetToCdrSP:
 #endif
 
 DoSetToCdrLP:
-  if (_trace) printf("DoSetToCdrLP:\n");
 #ifdef TRACING
   goto begindosettocdr;
 #endif
 
 DoSetToCdrFP:
-  if (_trace) printf("DoSetToCdrFP:\n");
 
 begindosettocdr:
-  if (_trace) printf("begindosettocdr:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -138,10 +128,8 @@ DoSetToCdrIM:
 
 
 SetToCdrPushCarLocative:
-  if (_trace) printf("SetToCdrPushCarLocative:\n");
 
 settocdrpushcarlocative:
-  if (_trace) printf("settocdrpushcarlocative:\n");
   arg2 = t2;
   /* Memory Read Internal */
 
@@ -181,7 +169,6 @@ g6970:
   goto NEXTINSTRUCTION;
 
 g6963:
-  if (_trace) printf("g6963:\n");
   if ((t7 & 1) == 0)
     goto g6962;
   /* Do the indirect thing */
@@ -189,10 +176,8 @@ g6963:
   goto g6959;
 
 g6962:
-  if (_trace) printf("g6962:\n");
 
 g6961:
-  if (_trace) printf("g6961:\n");
   r0 = (u64)&&return0042;
   goto memoryreaddatadecode;
 return0042:
@@ -205,12 +190,10 @@ return0042:
   /* arg2 has the preloaded 8 bit operand. */
 
 doassoc:
-  if (_trace) printf("doassoc:\n");
 #ifdef TRACING
 #endif
 
 DoAssocSP:
-  if (_trace) printf("DoAssocSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -226,16 +209,13 @@ DoAssocSP:
 #endif
 
 DoAssocLP:
-  if (_trace) printf("DoAssocLP:\n");
 #ifdef TRACING
   goto begindoassoc;
 #endif
 
 DoAssocFP:
-  if (_trace) printf("DoAssocFP:\n");
 
 begindoassoc:
-  if (_trace) printf("begindoassoc:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -264,7 +244,6 @@ begindoassoc:
   goto g6972;
 
 assoccdr:
-  if (_trace) printf("assoccdr:\n");
   /* Have we been asked to stop or trap? */
   t6 = *(u64 *)&(processor->stop_interpreter);
   /* Move cdr to car for next carcdr-internal */
@@ -273,7 +252,6 @@ assoccdr:
   t2 = arg6;
 
 g6972:
-  if (_trace) printf("g6972:\n");
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
   if (t6 != 0)
@@ -288,7 +266,6 @@ return0043:
   t8 = (t7 == Type_List) ? 1 : 0;
 
 g6991:
-  if (_trace) printf("g6991:\n");
   if (t8 == 0)
     goto g6975;
   /* Here if argument TypeList */
@@ -342,18 +319,15 @@ g6987:
   goto NEXTINSTRUCTION;
 
 g6975:
-  if (_trace) printf("g6975:\n");
   t8 = (t7 == Type_NIL) ? 1 : 0;
 
 g6992:
-  if (_trace) printf("g6992:\n");
   if (t8 == 0)
     goto g6988;
   /* Here if argument TypeNIL */
   goto assoccdr;
 
 g6988:
-  if (_trace) printf("g6988:\n");
   /* Here for all other cases */
   /* SetTag. */
   t1 = arg4 << 32;
@@ -363,10 +337,8 @@ g6988:
   goto illegaloperand;
 
 g6974:
-  if (_trace) printf("g6974:\n");
 
 g6973:
-  if (_trace) printf("g6973:\n");
   /* Return NIL */
   t1 = *(u64 *)&(processor->niladdress);
   /* push the data */
@@ -374,7 +346,6 @@ g6973:
   goto NEXTINSTRUCTION;
 
 assocexc:
-  if (_trace) printf("assocexc:\n");
   /* arg3 = stackp */
   arg3 = 0;
   /* arg1 = instruction arity */
@@ -384,7 +355,6 @@ assocexc:
   goto exception;
 
 g6980:
-  if (_trace) printf("g6980:\n");
   if ((t7 & 1) == 0)
     goto g6979;
   /* Do the indirect thing */
@@ -392,17 +362,14 @@ g6980:
   goto g6976;
 
 g6979:
-  if (_trace) printf("g6979:\n");
 
 g6978:
-  if (_trace) printf("g6978:\n");
   r0 = (u64)&&return0044;
   goto memoryreaddatadecode;
 return0044:
   goto g6987;
 
 g6971:
-  if (_trace) printf("g6971:\n");
   iSP = *(u64 *)&(processor->restartsp);
   goto INTERPRETINSTRUCTION;
 #ifdef TRACING
@@ -419,12 +386,10 @@ DoAssocIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 domember:
-  if (_trace) printf("domember:\n");
 #ifdef TRACING
 #endif
 
 DoMemberSP:
-  if (_trace) printf("DoMemberSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -440,16 +405,13 @@ DoMemberSP:
 #endif
 
 DoMemberLP:
-  if (_trace) printf("DoMemberLP:\n");
 #ifdef TRACING
   goto begindomember;
 #endif
 
 DoMemberFP:
-  if (_trace) printf("DoMemberFP:\n");
 
 begindomember:
-  if (_trace) printf("begindomember:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -478,7 +440,6 @@ begindomember:
   goto g6994;
 
 membercdr:
-  if (_trace) printf("membercdr:\n");
   /* Have we been asked to stop or trap? */
   t6 = *(u64 *)&(processor->stop_interpreter);
   /* Move cdr to car for next carcdr-internal */
@@ -487,7 +448,6 @@ membercdr:
   t2 = arg6;
 
 g6994:
-  if (_trace) printf("g6994:\n");
   /* TagType. */
   t3 = t1 & 63;
   arg1 = t2;
@@ -519,7 +479,6 @@ return0045:
   goto NEXTINSTRUCTION;
 
 g6995:
-  if (_trace) printf("g6995:\n");
   /* Return NIL */
   t1 = *(u64 *)&(processor->niladdress);
   /* push the data */
@@ -527,7 +486,6 @@ g6995:
   goto NEXTINSTRUCTION;
 
 memberexc:
-  if (_trace) printf("memberexc:\n");
   /* arg3 = stackp */
   arg3 = 0;
   /* arg1 = instruction arity */
@@ -537,7 +495,6 @@ memberexc:
   goto exception;
 
 g6993:
-  if (_trace) printf("g6993:\n");
   iSP = *(u64 *)&(processor->restartsp);
   goto INTERPRETINSTRUCTION;
 #ifdef TRACING
@@ -554,12 +511,10 @@ DoMemberIM:
   /* arg2 has the preloaded 8 bit operand. */
 
 dorgetf:
-  if (_trace) printf("dorgetf:\n");
 #ifdef TRACING
 #endif
 
 DoRgetfSP:
-  if (_trace) printf("DoRgetfSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   if (arg2 != 0)
@@ -575,16 +530,13 @@ DoRgetfSP:
 #endif
 
 DoRgetfLP:
-  if (_trace) printf("DoRgetfLP:\n");
 #ifdef TRACING
   goto begindorgetf;
 #endif
 
 DoRgetfFP:
-  if (_trace) printf("DoRgetfFP:\n");
 
 begindorgetf:
-  if (_trace) printf("begindorgetf:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -613,7 +565,6 @@ begindorgetf:
   goto g6997;
 
 rgetfcdr:
-  if (_trace) printf("rgetfcdr:\n");
   r0 = (u64)&&return0046;
   goto cdrinternal;
 return0046:
@@ -625,7 +576,6 @@ return0046:
   t2 = arg6;
 
 g6997:
-  if (_trace) printf("g6997:\n");
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
   if (t6 != 0)
@@ -676,7 +626,6 @@ return0048:
   goto NEXTINSTRUCTION;
 
 g6998:
-  if (_trace) printf("g6998:\n");
   /* Return NIL */
   arg2 = *(u64 *)&(processor->niladdress);
   *(u64 *)iSP = arg2;
@@ -686,7 +635,6 @@ g6998:
   goto NEXTINSTRUCTION;
 
 rgetfexc:
-  if (_trace) printf("rgetfexc:\n");
   /* arg3 = stackp */
   arg3 = 0;
   /* arg1 = instruction arity */
@@ -696,7 +644,6 @@ rgetfexc:
   goto exception;
 
 g6996:
-  if (_trace) printf("g6996:\n");
   iSP = *(u64 *)&(processor->restartsp);
   goto INTERPRETINSTRUCTION;
 #ifdef TRACING

@@ -9,22 +9,17 @@
   /* Halfword 10 bit immediate instruction - DoBranchTrueElseNoPop */
 
 dobranchtrueelsenopop:
-  if (_trace) printf("dobranchtrueelsenopop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchTrueElseNoPopIM:
-  if (_trace) printf("DoBranchTrueElseNoPopIM:\n");
 
 DoBranchTrueElseNoPopSP:
-  if (_trace) printf("DoBranchTrueElseNoPopSP:\n");
 
 DoBranchTrueElseNoPopLP:
-  if (_trace) printf("DoBranchTrueElseNoPopLP:\n");
 
 DoBranchTrueElseNoPopFP:
-  if (_trace) printf("DoBranchTrueElseNoPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -59,22 +54,17 @@ DoBranchTrueElseNoPopFP:
   /* Halfword 10 bit immediate instruction - DoBranchTrueElseExtraPop */
 
 dobranchtrueelseextrapop:
-  if (_trace) printf("dobranchtrueelseextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchTrueElseExtraPopIM:
-  if (_trace) printf("DoBranchTrueElseExtraPopIM:\n");
 
 DoBranchTrueElseExtraPopSP:
-  if (_trace) printf("DoBranchTrueElseExtraPopSP:\n");
 
 DoBranchTrueElseExtraPopLP:
-  if (_trace) printf("DoBranchTrueElseExtraPopLP:\n");
 
 DoBranchTrueElseExtraPopFP:
-  if (_trace) printf("DoBranchTrueElseExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -97,7 +87,6 @@ DoBranchTrueElseExtraPopFP:
   goto cachevalid;
 
 dobrelsepopextrapop:
-  if (_trace) printf("dobrelsepopextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -117,22 +106,17 @@ dobrelsepopextrapop:
   /* Halfword 10 bit immediate instruction - DoBranchFalseElseExtraPop */
 
 dobranchfalseelseextrapop:
-  if (_trace) printf("dobranchfalseelseextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchFalseElseExtraPopIM:
-  if (_trace) printf("DoBranchFalseElseExtraPopIM:\n");
 
 DoBranchFalseElseExtraPopSP:
-  if (_trace) printf("DoBranchFalseElseExtraPopSP:\n");
 
 DoBranchFalseElseExtraPopLP:
-  if (_trace) printf("DoBranchFalseElseExtraPopLP:\n");
 
 DoBranchFalseElseExtraPopFP:
-  if (_trace) printf("DoBranchFalseElseExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -155,7 +139,6 @@ DoBranchFalseElseExtraPopFP:
   goto cachevalid;
 
 dobrnelsepopextrapop:
-  if (_trace) printf("dobrnelsepopextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -175,22 +158,17 @@ dobrnelsepopextrapop:
   /* Halfword 10 bit immediate instruction - DoBranchFalseExtraPop */
 
 dobranchfalseextrapop:
-  if (_trace) printf("dobranchfalseextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchFalseExtraPopIM:
-  if (_trace) printf("DoBranchFalseExtraPopIM:\n");
 
 DoBranchFalseExtraPopSP:
-  if (_trace) printf("DoBranchFalseExtraPopSP:\n");
 
 DoBranchFalseExtraPopLP:
-  if (_trace) printf("DoBranchFalseExtraPopLP:\n");
 
 DoBranchFalseExtraPopFP:
-  if (_trace) printf("DoBranchFalseExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -213,7 +191,6 @@ DoBranchFalseExtraPopFP:
   goto cachevalid;
 
 dobrnpopelsepopextrapop:
-  if (_trace) printf("dobrnpopelsepopextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -233,22 +210,17 @@ dobrnpopelsepopextrapop:
   /* Halfword 10 bit immediate instruction - DoLoopDecrementTos */
 
 doloopdecrementtos:
-  if (_trace) printf("doloopdecrementtos:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoLoopDecrementTosIM:
-  if (_trace) printf("DoLoopDecrementTosIM:\n");
 
 DoLoopDecrementTosSP:
-  if (_trace) printf("DoLoopDecrementTosSP:\n");
 
 DoLoopDecrementTosLP:
-  if (_trace) printf("DoLoopDecrementTosLP:\n");
 
 DoLoopDecrementTosFP:
-  if (_trace) printf("DoLoopDecrementTosFP:\n");
   arg1 = (s64)arg3 >> 48;
   /* arg1 has signed operand preloaded. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -281,7 +253,6 @@ DoLoopDecrementTosFP:
   goto interpretinstructionforbranch;
 
 g6951:
-  if (_trace) printf("g6951:\n");
   t3 = t1 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t3 = t3 & 56;
@@ -289,7 +260,6 @@ g6951:
     goto g6952;
 
 g6953:
-  if (_trace) printf("g6953:\n");
   /* Compute next-pc */
   arg5 = iPC + arg1;
   /* arg3 = stackp */
@@ -301,7 +271,6 @@ g6953:
   goto loopexception;
 
 g6952:
-  if (_trace) printf("g6952:\n");
   arg5 = 0;
   arg2 = 81;
   goto illegaloperand;
@@ -313,22 +282,17 @@ g6952:
   /* Halfword 10 bit immediate instruction - DoLoopIncrementTosLessThan */
 
 doloopincrementtoslessthan:
-  if (_trace) printf("doloopincrementtoslessthan:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoLoopIncrementTosLessThanIM:
-  if (_trace) printf("DoLoopIncrementTosLessThanIM:\n");
 
 DoLoopIncrementTosLessThanSP:
-  if (_trace) printf("DoLoopIncrementTosLessThanSP:\n");
 
 DoLoopIncrementTosLessThanLP:
-  if (_trace) printf("DoLoopIncrementTosLessThanLP:\n");
 
 DoLoopIncrementTosLessThanFP:
-  if (_trace) printf("DoLoopIncrementTosLessThanFP:\n");
   arg1 = (s64)arg3 >> 48;
   /* arg1 has signed operand preloaded. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -364,7 +328,6 @@ DoLoopIncrementTosLessThanFP:
   /* Here if branch taken. */
 
 g6958:
-  if (_trace) printf("g6958:\n");
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
@@ -374,7 +337,6 @@ g6958:
   goto interpretinstructionforbranch;
 
 g6954:
-  if (_trace) printf("g6954:\n");
   t5 = t1 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t5 = t5 & 56;
@@ -382,7 +344,6 @@ g6954:
     goto g6957;
 
 g6955:
-  if (_trace) printf("g6955:\n");
   t5 = t3 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t5 = t5 & 56;
@@ -390,7 +351,6 @@ g6955:
     goto g6957;
 
 g6956:
-  if (_trace) printf("g6956:\n");
   /* Compute next-pc */
   arg5 = iPC + arg1;
   /* arg3 = stackp */
@@ -402,7 +362,6 @@ g6956:
   goto loopexception;
 
 g6957:
-  if (_trace) printf("g6957:\n");
   arg5 = 0;
   arg2 = 16;
   goto illegaloperand;
@@ -414,22 +373,17 @@ g6957:
   /* Halfword 10 bit immediate instruction - DoBranchTrueExtraPop */
 
 dobranchtrueextrapop:
-  if (_trace) printf("dobranchtrueextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchTrueExtraPopIM:
-  if (_trace) printf("DoBranchTrueExtraPopIM:\n");
 
 DoBranchTrueExtraPopSP:
-  if (_trace) printf("DoBranchTrueExtraPopSP:\n");
 
 DoBranchTrueExtraPopLP:
-  if (_trace) printf("DoBranchTrueExtraPopLP:\n");
 
 DoBranchTrueExtraPopFP:
-  if (_trace) printf("DoBranchTrueExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -452,7 +406,6 @@ DoBranchTrueExtraPopFP:
   goto cachevalid;
 
 dobrpopelsepopextrapop:
-  if (_trace) printf("dobrpopelsepopextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -472,22 +425,17 @@ dobrpopelsepopextrapop:
   /* Halfword 10 bit immediate instruction - DoBranchTrueAndNoPopElseNoPopExtraPop */
 
 dobranchtrueandnopopelsenopopextrapop:
-  if (_trace) printf("dobranchtrueandnopopelsenopopextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchTrueAndNoPopElseNoPopExtraPopIM:
-  if (_trace) printf("DoBranchTrueAndNoPopElseNoPopExtraPopIM:\n");
 
 DoBranchTrueAndNoPopElseNoPopExtraPopSP:
-  if (_trace) printf("DoBranchTrueAndNoPopElseNoPopExtraPopSP:\n");
 
 DoBranchTrueAndNoPopElseNoPopExtraPopLP:
-  if (_trace) printf("DoBranchTrueAndNoPopElseNoPopExtraPopLP:\n");
 
 DoBranchTrueAndNoPopElseNoPopExtraPopFP:
-  if (_trace) printf("DoBranchTrueAndNoPopElseNoPopExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -510,7 +458,6 @@ DoBranchTrueAndNoPopElseNoPopExtraPopFP:
   goto cachevalid;
 
 dobrextrapop:
-  if (_trace) printf("dobrextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -530,22 +477,17 @@ dobrextrapop:
   /* Halfword 10 bit immediate instruction - DoBranchFalseAndNoPopElseNoPopExtraPop */
 
 dobranchfalseandnopopelsenopopextrapop:
-  if (_trace) printf("dobranchfalseandnopopelsenopopextrapop:\n");
   /* Actually only one entry point, but simulate others for dispatch */
 #ifdef TRACING
 #endif
 
 DoBranchFalseAndNoPopElseNoPopExtraPopIM:
-  if (_trace) printf("DoBranchFalseAndNoPopElseNoPopExtraPopIM:\n");
 
 DoBranchFalseAndNoPopElseNoPopExtraPopSP:
-  if (_trace) printf("DoBranchFalseAndNoPopElseNoPopExtraPopSP:\n");
 
 DoBranchFalseAndNoPopElseNoPopExtraPopLP:
-  if (_trace) printf("DoBranchFalseAndNoPopElseNoPopExtraPopLP:\n");
 
 DoBranchFalseAndNoPopElseNoPopExtraPopFP:
-  if (_trace) printf("DoBranchFalseAndNoPopElseNoPopExtraPopFP:\n");
   /* arg1 has signed operand preloaded. */
   /* Check tag of word in TOS. */
   t1 = (u32)(arg6 >> ((4&7)*8));
@@ -568,7 +510,6 @@ DoBranchFalseAndNoPopElseNoPopExtraPopFP:
   goto cachevalid;
 
 dobrnextrapop:
-  if (_trace) printf("dobrnextrapop:\n");
   /* Can't branch to ourself */
   if (arg1 == 0)
     goto branchexception;
@@ -587,7 +528,6 @@ dobrnextrapop:
 
 
 branchexception:
-  if (_trace) printf("branchexception:\n");
   arg5 = 0;
   arg2 = 24;
   goto illegaloperand;

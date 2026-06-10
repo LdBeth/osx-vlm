@@ -10,12 +10,10 @@
   /* arg2 has the preloaded 8 bit operand. */
 
 dopushnnils:
-  if (_trace) printf("dopushnnils:\n");
 #ifdef TRACING
 #endif
 
 DoPushNNilsSP:
-  if (_trace) printf("DoPushNNilsSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -29,23 +27,19 @@ DoPushNNilsSP:
 #endif
 
 DoPushNNilsLP:
-  if (_trace) printf("DoPushNNilsLP:\n");
 #ifdef TRACING
   goto headdopushnnils;
 #endif
 
 DoPushNNilsFP:
-  if (_trace) printf("DoPushNNilsFP:\n");
 
 headdopushnnils:
-  if (_trace) printf("headdopushnnils:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindopushnnils:
-  if (_trace) printf("begindopushnnils:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Get the data */
   arg2 = (u32)arg1;
@@ -61,7 +55,6 @@ begindopushnnils:
 #endif
 
 DoPushNNilsIM:
-  if (_trace) printf("DoPushNNilsIM:\n");
   /* Current stack cache limit (words) */
   t4 = *(s32 *)&processor->scovlimit;
   t1 = zero + 128;
@@ -81,7 +74,6 @@ DoPushNNilsIM:
   goto pushnnilsl2;
 
 pushnnilsl1:
-  if (_trace) printf("pushnnilsl1:\n");
   /* Push NIL */
   *(u64 *)(iSP + 8) = arg6;
   iSP = iSP + 8;
@@ -93,7 +85,6 @@ pushnnilsl2:
   goto NEXTINSTRUCTION;
 
 pushnnbadop:
-  if (_trace) printf("pushnnbadop:\n");
   arg5 = 0;
   arg2 = 63;
   goto illegaloperand;
@@ -106,12 +97,10 @@ pushnnbadop:
   /* arg2 has the preloaded 8 bit operand. */
 
 dopushaddresssprelative:
-  if (_trace) printf("dopushaddresssprelative:\n");
 #ifdef TRACING
 #endif
 
 DoPushAddressSpRelativeIM:
-  if (_trace) printf("DoPushAddressSpRelativeIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -120,7 +109,6 @@ DoPushAddressSpRelativeIM:
 #endif
 
 DoPushAddressSpRelativeSP:
-  if (_trace) printf("DoPushAddressSpRelativeSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -134,23 +122,19 @@ DoPushAddressSpRelativeSP:
 #endif
 
 DoPushAddressSpRelativeLP:
-  if (_trace) printf("DoPushAddressSpRelativeLP:\n");
 #ifdef TRACING
   goto headdopushaddresssprelative;
 #endif
 
 DoPushAddressSpRelativeFP:
-  if (_trace) printf("DoPushAddressSpRelativeFP:\n");
 
 headdopushaddresssprelative:
-  if (_trace) printf("headdopushaddresssprelative:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindopushaddresssprelative:
-  if (_trace) printf("begindopushaddresssprelative:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* SP before any popping */
   t4 = *(u64 *)&(processor->restartsp);
@@ -165,7 +149,6 @@ begindopushaddresssprelative:
   t3 = (t2 == Type_Fixnum) ? 1 : 0;
 
 g7755:
-  if (_trace) printf("g7755:\n");
   if (t3 == 0)
     goto g7752;
   /* Here if argument TypeFixnum */
@@ -188,14 +171,12 @@ g7755:
   goto cachevalid;
 
 g7752:
-  if (_trace) printf("g7752:\n");
   /* Here for all other cases */
   arg5 = 0;
   arg2 = 63;
   goto illegaloperand;
 
 g7751:
-  if (_trace) printf("g7751:\n");
 
 /* end DoPushAddressSpRelative */
   /* End of Halfword operand from stack instruction - DoPushAddressSpRelative */
@@ -205,12 +186,10 @@ g7751:
   /* arg2 has the preloaded 8 bit operand. */
 
 dostackblt:
-  if (_trace) printf("dostackblt:\n");
 #ifdef TRACING
 #endif
 
 DoStackBltIM:
-  if (_trace) printf("DoStackBltIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -219,7 +198,6 @@ DoStackBltIM:
 #endif
 
 DoStackBltSP:
-  if (_trace) printf("DoStackBltSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -233,23 +211,19 @@ DoStackBltSP:
 #endif
 
 DoStackBltLP:
-  if (_trace) printf("DoStackBltLP:\n");
 #ifdef TRACING
   goto headdostackblt;
 #endif
 
 DoStackBltFP:
-  if (_trace) printf("DoStackBltFP:\n");
 
 headdostackblt:
-  if (_trace) printf("headdostackblt:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindostackblt:
-  if (_trace) printf("begindostackblt:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* Destination locative */
   t3 = *(s32 *)iSP;
@@ -287,7 +261,6 @@ begindostackblt:
   goto stkbltloopend;
 
 stkbltloop:
-  if (_trace) printf("stkbltloop:\n");
   /* Advance Source */
   arg1 = arg1 + 8;
   /* Advance destination */
@@ -307,7 +280,6 @@ stkbltloopend:
   goto NEXTINSTRUCTION;
 
 stkbltexc:
-  if (_trace) printf("stkbltexc:\n");
   arg5 = 0;
   arg2 = 73;
   goto illegaloperand;
@@ -320,12 +292,10 @@ stkbltexc:
   /* arg2 has the preloaded 8 bit operand. */
 
 dostackbltaddress:
-  if (_trace) printf("dostackbltaddress:\n");
 #ifdef TRACING
 #endif
 
 DoStackBltAddressSP:
-  if (_trace) printf("DoStackBltAddressSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -339,16 +309,13 @@ DoStackBltAddressSP:
 #endif
 
 DoStackBltAddressLP:
-  if (_trace) printf("DoStackBltAddressLP:\n");
 #ifdef TRACING
   goto begindostackbltaddress;
 #endif
 
 DoStackBltAddressFP:
-  if (_trace) printf("DoStackBltAddressFP:\n");
 
 begindostackbltaddress:
-  if (_trace) printf("begindostackbltaddress:\n");
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
@@ -380,7 +347,6 @@ begindostackbltaddress:
   goto stkbltaddloopend;
 
 stkbltaddloop:
-  if (_trace) printf("stkbltaddloop:\n");
   /* Advance Source */
   arg1 = arg1 + 8;
   /* Advance destination */
@@ -400,7 +366,6 @@ stkbltaddloopend:
   goto NEXTINSTRUCTION;
 
 stkbltadrexc:
-  if (_trace) printf("stkbltadrexc:\n");
   arg5 = 0;
   arg2 = 73;
   goto illegaloperand;

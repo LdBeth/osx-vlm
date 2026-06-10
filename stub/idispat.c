@@ -8,7 +8,6 @@
 
 
 dummydonothingsubroutine:
-  if (_trace) printf("dummydonothingsubroutine:\n");
   goto continuecurrentinstruction;
 
 /* end DummyDoNothingSubroutine */
@@ -16,7 +15,6 @@ dummydonothingsubroutine:
 
 
 memoryreaddata:
-  if (_trace) printf("memoryreaddata:\n");
   /* Memory Read Internal */
 
 g6022:
@@ -45,12 +43,10 @@ g6032:
   goto *(void *)r0; /* ret */
 
 memoryreaddatadecode:
-  if (_trace) printf("memoryreaddatadecode:\n");
   if (t6 == 0)
     goto g6025;
 
 g6024:
-  if (_trace) printf("g6024:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -60,7 +56,6 @@ g6024:
   goto g6023;
 
 g6026:
-  if (_trace) printf("g6026:\n");
   if ((t7 & 1) == 0)
     goto g6025;
   /* Do the indirect thing */
@@ -68,7 +63,6 @@ g6026:
   goto g6022;
 
 g6025:
-  if (_trace) printf("g6025:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->dataread);
   /* TagType. */
@@ -82,7 +76,6 @@ g6025:
   t8 = *(s32 *)t7;
 
 g6029:
-  if (_trace) printf("g6029:\n");
   t7 = t8 & MemoryActionTransform;
   if (t7 == 0)
     goto g6028;
@@ -96,7 +89,6 @@ g6028:
 #ifdef MINIMA
 
 g6028:
-  if (_trace) printf("g6028:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -125,7 +117,6 @@ g6028:
   goto g6022;
 
 g6031:
-  if (_trace) printf("g6031:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -140,7 +131,6 @@ g6027:
 
 
 memoryreadgeneral:
-  if (_trace) printf("memoryreadgeneral:\n");
   /* Memory Read Internal */
 
 g6033:
@@ -170,12 +160,10 @@ g6043:
   goto *(void *)r0; /* ret */
 
 memoryreadgeneraldecode:
-  if (_trace) printf("memoryreadgeneraldecode:\n");
   if (t6 == 0)
     goto g6036;
 
 g6035:
-  if (_trace) printf("g6035:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -185,10 +173,8 @@ g6035:
   goto g6034;
 
 g6037:
-  if (_trace) printf("g6037:\n");
 
 g6036:
-  if (_trace) printf("g6036:\n");
   /* Cycle-number -> table offset */
   t8 = (arg3 * 4);
   t8 = (t8 * 4) + ivory;
@@ -204,7 +190,6 @@ g6036:
   t8 = *(s32 *)t7;
 
 g6041:
-  if (_trace) printf("g6041:\n");
   t6 = t8 & MemoryActionIndirect;
   if (t6 == 0)
     goto g6040;
@@ -213,7 +198,6 @@ g6041:
   goto g6033;
 
 g6040:
-  if (_trace) printf("g6040:\n");
   t7 = t8 & MemoryActionTransform;
   if (t7 == 0)
     goto g6039;
@@ -227,7 +211,6 @@ g6039:
 #ifdef MINIMA
 
 g6039:
-  if (_trace) printf("g6039:\n");
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
   if (t7 == 0)
@@ -256,7 +239,6 @@ g6039:
   goto g6033;
 
 g6042:
-  if (_trace) printf("g6042:\n");
   goto dbcachemisstrap;
 #endif
 
@@ -271,7 +253,6 @@ g6038:
 
 
 memoryreadheader:
-  if (_trace) printf("memoryreadheader:\n");
   /* Memory Read Internal */
 
 g6044:
@@ -300,12 +281,10 @@ g6052:
   goto *(void *)r0; /* ret */
 
 memoryreadheaderdecode:
-  if (_trace) printf("memoryreadheaderdecode:\n");
   if (t6 == 0)
     goto g6047;
 
 g6046:
-  if (_trace) printf("g6046:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -315,7 +294,6 @@ g6046:
   goto g6045;
 
 g6048:
-  if (_trace) printf("g6048:\n");
   if ((t7 & 1) == 0)
     goto g6047;
   /* Do the indirect thing */
@@ -323,7 +301,6 @@ g6048:
   goto g6044;
 
 g6047:
-  if (_trace) printf("g6047:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->header);
   /* TagType. */
@@ -347,7 +324,6 @@ g6049:
 
 
 memoryreadcdr:
-  if (_trace) printf("memoryreadcdr:\n");
   /* Memory Read Internal */
 
 g6053:
@@ -376,12 +352,10 @@ g6061:
   goto *(void *)r0; /* ret */
 
 memoryreadcdrdecode:
-  if (_trace) printf("memoryreadcdrdecode:\n");
   if (t6 == 0)
     goto g6056;
 
 g6055:
-  if (_trace) printf("g6055:\n");
   t6 = *(u64 *)&(processor->stackcachedata);
   /* reconstruct SCA */
   t5 = (t5 * 8) + t6;
@@ -391,7 +365,6 @@ g6055:
   goto g6054;
 
 g6057:
-  if (_trace) printf("g6057:\n");
   if ((t7 & 1) == 0)
     goto g6056;
   /* Do the indirect thing */
@@ -399,7 +372,6 @@ g6057:
   goto g6053;
 
 g6056:
-  if (_trace) printf("g6056:\n");
   /* Load the memory action table for cycle */
   t8 = *(u64 *)&(processor->cdr);
   /* TagType. */
@@ -423,10 +395,8 @@ g6058:
 
 
 doicachefill:
-  if (_trace) printf("doicachefill:\n");
 
 ICACHEMISS:
-  if (_trace) printf("ICACHEMISS:\n");
   /* Here when instruction cache miss detected.  Fill the cache from */
   /* PC and then resume interpreter loop */
   /* First round the PC down to an even halfword address */
@@ -472,7 +442,6 @@ ICACHEMISS:
   goto fillicacheprefetched;
 
 pcbackone:
-  if (_trace) printf("pcbackone:\n");
   /* Wire in continuation for even half */
   *(u64 *)&((CACHELINEP)ocp)->nextpcdata = epc;
   /* Backup in cache too */
@@ -489,7 +458,6 @@ pcbackone:
   goto maybeunpack;
 
 pcadvone:
-  if (_trace) printf("pcadvone:\n");
   /* Simple advance of PC one halfword. */
   *(u64 *)&((CACHELINEP)ecp)->nextpcdata = opc;
   arg1 = opc + 1;
@@ -504,7 +472,6 @@ pcadvone:
   /* This is the cache fill loop. */
 
 fillicache:
-  if (_trace) printf("fillicache:\n");
   t11 = instn + ivory;
   iword = (t11 * 4);
   arg4 = LDQ_U(t11);
@@ -512,7 +479,6 @@ fillicache:
   arg4 = (u8)(arg4 >> ((t11&7)*8));
 
 fillicacheprefetched:
-  if (_trace) printf("fillicacheprefetched:\n");
 #ifdef CACHEMETERING
   /* Increment the fill count for both cache entries */
   t10 = *(s32 *)&((CACHELINEP)ecp)->annotation;
@@ -537,7 +503,6 @@ fillicacheprefetched:
   iword = (u32)iword;
 
 g6062:
-  if (_trace) printf("g6062:\n");
   /* ready to remerge */
   arg2 = arg4 << 32;
   /* Zerotag means advance one HW */
@@ -553,7 +518,6 @@ g6062:
     goto pcendcf;
 
 pcadvtwo:
-  if (_trace) printf("pcadvtwo:\n");
   /* Tag=3 means advance over one full word */
   /* Wire in continuation for even half */
   /* Next word */
@@ -578,7 +542,6 @@ pcadvtwo:
   goto maybeunpack;
 
 decodepackedword:
-  if (_trace) printf("decodepackedword:\n");
   /* Here to decode a packed word */
 #ifdef CACHEMETERING
   arg1 = *(s32 *)&processor->metervalue;
@@ -611,7 +574,6 @@ decodepackedword:
   arg4 = *(s32 *)&processor->meterfreq;
 
 g6063:
-  if (_trace) printf("g6063:\n");
   *(u32 *)&processor->metercount = arg4;
 #endif
   /* arg4 contains the odd packedword */
@@ -666,7 +628,6 @@ g6063:
   goto enddecode;
 
 maybeunpack:
-  if (_trace) printf("maybeunpack:\n");
   /* reassemble tag and word. */
   iword = arg2 | iword;
   /* save the even instruction */
@@ -707,7 +668,6 @@ maybeunpack:
   t12 = *(s32 *)&processor->meterfreq;
 
 g6064:
-  if (_trace) printf("g6064:\n");
   *(u32 *)&processor->metercount = t12;
 #endif
   /* B. if a packed instruction */
@@ -727,7 +687,6 @@ g6064:
   *(u64 *)&((CACHELINEP)ecp)->code = t11;
 
 enddecode:
-  if (_trace) printf("enddecode:\n");
   /* Here we decide if to stop filling the cache and return to the */
   /* instruction interpretation stream, or whether to fill further */
   instn = instn + 1;
@@ -749,7 +708,6 @@ enddecode:
   goto cachevalid;
 
 pcendcf:
-  if (_trace) printf("pcendcf:\n");
   t11 = *(u64 *)&(processor->i_stage_error_hook);
   /* We reached the end of the fcn. */
   count = r31 | r31;
@@ -768,7 +726,6 @@ pcendcf:
 
 
 iinterpret:
-  if (_trace) printf("iinterpret:\n");
   *(u64 *)&processor->asrr9 = r9;
   *(u64 *)&processor->asrr10 = r10;
   *(u64 *)&processor->asrr11 = r11;
@@ -794,7 +751,6 @@ iinterpret:
   goto ICACHEMISS;
 
 interpretinstructionpredicted:
-  if (_trace) printf("interpretinstructionpredicted:\n");
   /* Get the PC to check cache hit. */
   t2 = *(u64 *)&(((CACHELINEP)arg2)->pcdata);
   /* Assume FP mode */
@@ -815,10 +771,8 @@ interpretinstructionpredicted:
   goto continuecurrentinstruction;
 
 interpretinstructionforjump:
-  if (_trace) printf("interpretinstructionforjump:\n");
 
 interpretinstructionforbranch:
-  if (_trace) printf("interpretinstructionforbranch:\n");
   /* get the base of the icache */
   t5 = *(u64 *)&(processor->icachebase);
   t4 = zero + -1;
@@ -836,7 +790,6 @@ interpretinstructionforbranch:
   t5 = t5 + t4;
 
 g6065:
-  if (_trace) printf("g6065:\n");
   /* cpos=base+cpos*48 */
   arg2 = t5 + arg2;
 #ifndef CACHEMETERING
@@ -845,7 +798,6 @@ g6065:
   iCP = arg2;
 
 INTERPRETINSTRUCTION:
-  if (_trace) printf("INTERPRETINSTRUCTION:\n");
   r30 = *(u64 *)&(processor->asrr30);
   /* Have we been asked to stop? */
   r0 = *(u64 *)&(processor->stop_interpreter);

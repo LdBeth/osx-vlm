@@ -8,7 +8,6 @@
 
 
 fetchdoublefloat:
-  if (_trace) printf("fetchdoublefloat:\n");
   sp = sp + -8;
   /* Memory Read Internal */
 
@@ -75,7 +74,6 @@ g8669:
   goto *(void *)r0; /* ret */
 
 g8662:
-  if (_trace) printf("g8662:\n");
   if ((t7 & 1) == 0)
     goto g8661;
   /* Do the indirect thing */
@@ -83,10 +81,8 @@ g8662:
   goto g8658;
 
 g8661:
-  if (_trace) printf("g8661:\n");
 
 g8660:
-  if (_trace) printf("g8660:\n");
   *(u64 *)sp = r0;
   r0 = (u64)&&return0091;
   goto memoryreaddatadecode;
@@ -95,7 +91,6 @@ return0091:
   goto g8669;
 
 g8650:
-  if (_trace) printf("g8650:\n");
   if ((t7 & 1) == 0)
     goto g8649;
   /* Do the indirect thing */
@@ -103,10 +98,8 @@ g8650:
   goto g8646;
 
 g8649:
-  if (_trace) printf("g8649:\n");
 
 g8648:
-  if (_trace) printf("g8648:\n");
   *(u64 *)sp = r0;
   r0 = (u64)&&return0092;
   goto memoryreaddatadecode;
@@ -115,7 +108,6 @@ return0092:
   goto g8657;
 
 g8645:
-  if (_trace) printf("g8645:\n");
   /* arg6 = tag to dispatch on */
   arg6 = Type_DoubleFloat;
   /* arg3 = stackp */
@@ -131,7 +123,6 @@ g8645:
 
 
 consdoublefloat:
-  if (_trace) printf("consdoublefloat:\n");
   sp = sp + -8;
   arg6 = *(s32 *)&processor->fp0;
   arg5 = *((s32 *)(&processor->fp0)+1);
@@ -168,7 +159,6 @@ consdoublefloat:
   t7 = t7 & ~(0xffUL << (t5&7)*8);
 
 g8671:
-  if (_trace) printf("g8671:\n");
   t7 = t7 | t6;
   STQ_U(t5, t7);
   *(u32 *)t8 = arg5;
@@ -182,7 +172,6 @@ g8671:
   t7 = t7 & ~(0xffUL << (t5&7)*8);
 
 g8672:
-  if (_trace) printf("g8672:\n");
   t7 = t7 | t6;
   STQ_U(t5, t7);
   *(u32 *)t8 = arg6;
@@ -190,7 +179,6 @@ g8672:
   goto *(void *)r0; /* ret */
 
 g8670:
-  if (_trace) printf("g8670:\n");
   /* arg6 = tag to dispatch on */
   arg6 = Type_DoubleFloat;
   /* arg3 = stackp */
@@ -208,12 +196,10 @@ g8670:
   /* arg2 has the preloaded 8 bit operand. */
 
 dodoublefloatop:
-  if (_trace) printf("dodoublefloatop:\n");
 #ifdef TRACING
 #endif
 
 DoDoubleFloatOpIM:
-  if (_trace) printf("DoDoubleFloatOpIM:\n");
   /* This sequence is lukewarm */
   *(u32 *)&processor->immediate_arg = arg2;
   arg1 = *(u64 *)&(processor->immediate_arg);
@@ -222,7 +208,6 @@ DoDoubleFloatOpIM:
 #endif
 
 DoDoubleFloatOpSP:
-  if (_trace) printf("DoDoubleFloatOpSP:\n");
   /* Assume SP mode */
   arg1 = arg5;
   /* SP-pop mode */
@@ -236,23 +221,19 @@ DoDoubleFloatOpSP:
 #endif
 
 DoDoubleFloatOpLP:
-  if (_trace) printf("DoDoubleFloatOpLP:\n");
 #ifdef TRACING
   goto headdodoublefloatop;
 #endif
 
 DoDoubleFloatOpFP:
-  if (_trace) printf("DoDoubleFloatOpFP:\n");
 
 headdodoublefloatop:
-  if (_trace) printf("headdodoublefloatop:\n");
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
   /* Get the operand */
   arg1 = *(u64 *)arg1;
 
 begindodoublefloatop:
-  if (_trace) printf("begindodoublefloatop:\n");
   /* arg1 has the operand, not sign extended if immediate. */
   /* X high */
   arg3 = *(s32 *)(iSP + -24);
@@ -295,7 +276,6 @@ begindodoublefloatop:
   goto g8673;
 
 g8674:
-  if (_trace) printf("g8674:\n");
   t3 = zero + DoubleFloatOp_Sub;
   t3 = t1 - t3;
   if (t3 != 0)
@@ -305,7 +285,6 @@ g8674:
   goto g8673;
 
 g8675:
-  if (_trace) printf("g8675:\n");
   t3 = zero + DoubleFloatOp_Multiply;
   t3 = t1 - t3;
   if (t3 != 0)
@@ -315,7 +294,6 @@ g8675:
   goto g8673;
 
 g8676:
-  if (_trace) printf("g8676:\n");
   t3 = zero + DoubleFloatOp_Divide;
   t3 = t1 - t3;
   if (t3 != 0)
@@ -325,10 +303,8 @@ g8676:
   goto g8673;
 
 g8677:
-  if (_trace) printf("g8677:\n");
 
 g8673:
-  if (_trace) printf("g8673:\n");
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
   /* There was no FP exception */
@@ -360,13 +336,11 @@ doublefloatmerge:
   goto NEXTINSTRUCTION;
 
 doublefloatexc:
-  if (_trace) printf("doublefloatexc:\n");
   /* Indicate an FP exception occurred */
   t3 = *(u64 *)&(processor->taddress);
   goto doublefloatmerge;
 
 doublefloatiop:
-  if (_trace) printf("doublefloatiop:\n");
   arg5 = 0;
   arg2 = 85;
   goto illegaloperand;
