@@ -27,8 +27,8 @@ void VirtualMemoryWriteBlockConstant (Integer vma, LispObj object, int count, in
 void VirtualMemoryWriteBlockConstantUncached (Integer vma, LispObj object, int count,
 					      int increment);
 
-#define ldb(ss,pp,source) ((int) (((source) >> (pp)) & ((1 << (ss)) - 1)))
-#define dpb(field,ss,pp,background) ((((field) & ((1 << (ss)) - 1)) << (pp)) | ((background) & (~(((1 << (ss)) - 1) << (pp)))))
+#define ldb(ss,pp,source) ((int) (((source) >> (pp)) & ((1UL << (ss)) - 1)))
+#define dpb(field,ss,pp,background) ((((field) & ((1UL << (ss)) - 1)) << (pp)) | ((background) & (~(((1UL << (ss)) - 1) << (pp)))))
 
 
 /* VLM virtual-memory "coprocessor" interface */

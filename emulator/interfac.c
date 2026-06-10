@@ -167,6 +167,12 @@ int InstructionSequencer (void)
     if (-1 == sigaction(SIGSEGV, &action, NULL))
       vpunt (NULL, "Unable to establish memory fault handler.");
 
+    /* On arm64 macOS, write-to-read-only-memory permission faults
+       are delivered as SIGBUS, not SIGSEGV.  Use the same handler
+       (segv_handler already knows how to deal with write faults). */
+    if (-1 == sigaction(SIGBUS, &action, NULL))
+      vpunt (NULL, "Unable to establish memory fault handler (SIGBUS).");
+
 #ifdef OS_OSF
     action.sa_handler = (sa_handler_t)fpe_handler;
     action.sa_flags = 0;
