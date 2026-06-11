@@ -477,8 +477,8 @@ g8715:
 
 g8718:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = t1;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g8717;

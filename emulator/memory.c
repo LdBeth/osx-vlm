@@ -16,18 +16,19 @@
 #undef PROT_EXEC
 #define PROT_EXEC 0
 
-/* macOS arm64 uses 16384-byte hardware pages, but the VLM internally tracks
-   8192-byte Ivory pages (MemoryPage_Size).  Two VLM pages fit in one OS page.
-   Every mprotect/mmap address and size must be OS-page-aligned or the kernel
-   returns EINVAL. */
-#define OS_PAGE_SHIFT 14
-#define OS_PAGE_SIZE  (1 << OS_PAGE_SHIFT)
-#define OS_PAGE_MASK  (OS_PAGE_SIZE - 1)
-
-/* Round an address down to the OS page boundary. */
-static inline caddr_t os_page_align_down(caddr_t addr) {
-  return (caddr_t)((uintptr_t)addr & ~(uintptr_t)OS_PAGE_MASK);
-}
+/* macOS arm64 uses 16384-byte hardware pages.  An 8KB Ivory page is only half
+   an OS page of TAGS (1 byte/word) -- protecting TagSpace would weld sibling
+   pages together and defeat the GC's per-page barriers -- but it is exactly
+   TWO WHOLE OS pages of DATA (4 bytes/word, 32KB, 16KB-aligned since vma is a
+   multiple of MemoryPage_Size).  So on Darwin the page-protection machinery
+   guards DataSpace, with Linux-exact per-page semantics; TagSpace stays
+   permanently mapped read/write.  The generated interpreter (the stub C
+   files) is emitted data-store-first on aarch64 so a trapped write reaches the fault
+   handler with the word fully intact (see *data-store-first* in
+   stub/process.lisp); every typed read loads the data word, so read barriers
+   (transport/access) trap exactly as they do under tag protection.  Tag-only
+   reads (cdr codes, type tests) never need the trap: scavenging only rewrites
+   the data word that the data-load fault now guards. */
 #endif  /* OS_DARWIN */
 
 #include "aistat.h"
@@ -37,6 +38,7 @@ static inline caddr_t os_page_align_down(caddr_t addr) {
 #include "utilities.h"
 #include <stdio.h>
 #include <execinfo.h>
+#include <pthread.h>
 
 /* Forward references */
 void AdjustProtection(Integer vma, VMAttribute attr);
@@ -104,30 +106,11 @@ static Boolean ResidentPagesWrap = FALSE;
 VMAttribute VMAttributeTable[1<<(32-MemoryPage_AddressShift)];
 
 #if defined(OS_DARWIN)
-/* Return the VMA of the sibling VLM page that shares the same OS page
-   (16KB) as the given VLM page (8KB). */
-static inline Integer os_sibling_vma(Integer vma_page_base, caddr_t address) {
-  uintptr_t offset_in_os_page = (uintptr_t)address & (uintptr_t)OS_PAGE_MASK;
-  if (offset_in_os_page == 0)
-    return vma_page_base + MemoryPage_Size;
-  else
-    return vma_page_base - MemoryPage_Size;
-}
+/* The byte range of DataSpace covered by one Ivory page: 32KB, naturally
+   16KB-aligned, so per-page mprotect is exact on 16KB hardware pages. */
+#define DataPageAddress(vma) ((caddr_t)&DataSpace[(vma) - MemoryPageOffset(vma)])
+#define DataPageSize (sizeof(Integer[MemoryPage_Size]))
 #endif  /* OS_DARWIN */
-
-/* Round a temporary mprotect request up to OS-page granularity.
-   On macOS arm64 (16KB pages) the request covers the full enclosing
-   OS page; on other platforms it passes through to mprotect directly. */
-static inline int os_mprotect_simple(caddr_t vlm_addr, size_t vlm_size, int prot) {
-#if defined(OS_DARWIN)
-  caddr_t os_addr = os_page_align_down(vlm_addr);
-  size_t os_size = (vlm_size + ((uintptr_t)vlm_addr - (uintptr_t)os_addr)
-                     + OS_PAGE_SIZE - 1) & ~(uintptr_t)OS_PAGE_MASK;
-  return mprotect(os_addr, os_size, prot);
-#else
-  return mprotect(vlm_addr, vlm_size, prot);
-#endif
-}
 
 #define Created(vma) VMExists(VMAttributeTable[MemoryPageNumber(vma)])
 #define fault_mask (VMAttribute_TransportFault | VMAttribute_WriteFault | VMAttribute_AccessFault)
@@ -197,8 +180,22 @@ Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
     }
     /* Avoid spurious ephemeral traps by pointing null pointer into boundary zone */
     (void)memset((unsigned char *)data, (unsigned char) -1, sizeof(Integer[MemoryWad_Size]));
+#if defined(OS_DARWIN)
+    /* Protection lives on DataSpace: apply it after initializing the wad;
+       tags stay permanently read/write. */
+    if (prot != (PROT_READ|PROT_WRITE|PROT_EXEC)
+	&& mprotect(data, sizeof(Integer[MemoryWad_Size]), prot))
+    {
+      verror (NULL, "Couldn't protect data wad at %lx for VMA %x", data, vma);
+      munmap(data, sizeof(Integer[MemoryWad_Size]));
+      return(0);
+    }
+    if (tag != mmap(tag, sizeof(Tag[MemoryWad_Size]), PROT_READ|PROT_WRITE,
+		    MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED,-1,0))
+#else
     if (tag != mmap(tag, sizeof(Tag[MemoryWad_Size]), prot,
 		    MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED,-1,0))
+#endif
     {
       verror (NULL, "Couldn't create tag wad at %lx for VMA %x", tag, vma);
       munmap(data, sizeof(Integer[MemoryWad_Size]));
@@ -277,13 +274,13 @@ static int swap_map_entries = 0;
 #if defined(OS_DARWIN)
 /* On macOS arm64, mmap file offsets must be 16KB-aligned but world-file
    blocks are 8KB, so odd-block offsets can't use MAP_FILE.  This helper
-   maps anonymous pages at the target address and reads the data into
-   place via a single pread() syscall. */
+   maps anonymous pages at the target address, reads the data into place
+   via a single pread() syscall, then applies the requested protection. */
 static void map_and_read_world(caddr_t ptr, size_t count, int prot,
                                off_t offset, int fd,
                                const char *name, Integer vma)
 {
-    if (ptr != mmap(ptr, count, prot,
+    if (ptr != mmap(ptr, count, PROT_READ|PROT_WRITE,
                     MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0))
         vpunt(NULL, "Couldn't map %d world %s pages at %lx for VMA %x",
               MemoryPageNumber(count), name, ptr, vma);
@@ -293,6 +290,10 @@ static void map_and_read_world(caddr_t ptr, size_t count, int prot,
             vpunt(NULL, "Unable to read world %s (%zd of %zu) at offset %lld",
                   name, nr, count, (long long)offset);
     }
+    if (prot != (PROT_READ|PROT_WRITE|PROT_EXEC) && prot != (PROT_READ|PROT_WRITE)
+        && mprotect(ptr, count, prot))
+        vpunt(NULL, "Couldn't protect world %s pages at %lx for VMA %x",
+              name, ptr, vma);
 }
 #endif
 
@@ -370,11 +371,12 @@ Integer MapWorldLoad(Integer vma, int length, int worldfile, off_t dataoffset, o
 	 odd block numbers fail mmap(MAP_FILE).  Work around by
 	 mapping anonymously then reading the data into place. */
       {
+	/* Protection lives on DataSpace; tags stay read/write */
 	dataCount = sizeof(Integer)*words;
-	map_and_read_world(data, dataCount, PROT_READ|PROT_WRITE|PROT_EXEC,
+	map_and_read_world(data, dataCount, prot,
 			   dataoffset, worldfile, "data", vma);
 	tagCount = sizeof(Tag)*words;
-	map_and_read_world(tag, tagCount, prot,
+	map_and_read_world(tag, tagCount, PROT_READ|PROT_WRITE,
 			   tagoffset, worldfile, "tag", vma);
       }
 #else
@@ -415,31 +417,30 @@ LispObj VirtualMemoryReadUncached (Integer vma)
 {
   VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
   Integer aligned_vma = vma - MemoryPageOffset(vma);
+#if defined(OS_DARWIN)
+  /* Protection lives on DataSpace */
+  int pagesize = DataPageSize;
+  caddr_t address = (caddr_t) &DataSpace[aligned_vma];
+#else
   int pagesize = sizeof(Tag)*MemoryPage_Size;
   caddr_t address = (caddr_t) &TagSpace[aligned_vma];
+#endif
   int protected = mvalid(address, pagesize, PROT_READ);
   LispObj contents;
 
   if (protected)
-     if (os_mprotect_simple(address, pagesize, PROT_READ) == -1)
+     if (mprotect(address, pagesize, PROT_READ) == -1)
         vpunt ("VirtualMemoryReadUncached", NULL);
-   
+
   /* check exists done by spy */
   contents = MakeLispObj(TagSpace[vma], DataSpace[vma]);
 
   if (protected)
   {
-#if defined(OS_DARWIN)
-    /* Restore through AdjustProtection so the sibling-merged OS-page
-       protection (and any barrier compensation) is re-applied, rather than
-       clobbering the shared 16KB page with this page's own protection. */
-    AdjustProtection(vma, attr);
-#else
     int prot = ComputeProtection(attr);
 
-    if (os_mprotect_simple(address, pagesize, prot) == -1)
+    if (mprotect(address, pagesize, prot) == -1)
       vpunt ("VirtualMemoryReadUncached", NULL);
-#endif
   }
 
   return (contents);
@@ -460,41 +461,77 @@ void VirtualMemoryWriteUncached (Integer vma, LispObj object)
 {
   VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
   Integer aligned_vma = vma - MemoryPageOffset(vma);
+#if defined(OS_DARWIN)
+  /* Protection lives on DataSpace */
+  int pagesize = DataPageSize;
+  caddr_t address = (caddr_t) &DataSpace[aligned_vma];
+#else
   int pagesize = sizeof(Tag)*MemoryPage_Size;
   caddr_t address = (caddr_t) &TagSpace[aligned_vma];
+#endif
   int protected = mvalid(address, pagesize, PROT_WRITE);
 
   if (protected)
-     if (os_mprotect_simple(address, pagesize, PROT_WRITE) == -1)
+     if (mprotect(address, pagesize, PROT_WRITE) == -1)
         vpunt ("VirtualMemoryWriteUncached", NULL);
-   
+
   /* check exists done by spy*/
   DataSpace[vma] = LispObjData(object);
   TagSpace[vma] = LispObjTag(object);
 
   if (protected)
   {
-#if defined(OS_DARWIN)
-    /* See VirtualMemoryReadUncached: restore the merged OS-page protection. */
-    AdjustProtection(vma, attr);
-#else
     int prot = ComputeProtection(attr);
 
-    if (os_mprotect_simple(address, pagesize, prot) == -1)
+    if (mprotect(address, pagesize, prot) == -1)
       vpunt ("VirtualMemoryReadUncached", NULL);
-#endif
   }
 }
 
 
 void VirtualMemoryWrite (unsigned int address, LispObj object)
-{ 
+{
   if (VMAinStackCacheP (address))
     /* We have a stack cache hit, put the bits in the stack cache */
     ((LispObj *)processor->stackcachedata)[address-processor->stackcachebasevma]=object;
   else
     /* Put the bits in the real memory */
     VirtualMemoryWriteUncached (address, object);
+}
+
+
+/* Host syscalls (read(2)/write(2) on the console channel, readv(2)/writev(2)
+   on disk channels) transfer directly into/out of DataSpace.  A protected
+   data page makes such a syscall fail with EFAULT -- the kernel does not
+   raise the SIGSEGV/SIGBUS a normal access would, so segv_handler never gets
+   a chance to resolve the fault.  Call this on the buffer's vma range before
+   issuing such a syscall: it performs the same bookkeeping the write fault
+   would have (mark the page Ephemeral|Modified); a transport-armed page
+   additionally gets TransportDisable so it becomes accessible while STAYING
+   in the GC's scan set via its TransportFault bit.  (Under tag protection
+   host accesses to the data side never trapped at all -- even on armed
+   pages -- so this reproduces the Linux port's semantics.)  Non-existent and
+   access-faulted pages are left alone: EFAULT is then a genuine error.
+   A no-op on platforms that protect TagSpace, where DataSpace is always
+   mapped read/write. */
+void EnsureVirtualMemoryAccessible (Integer vma, int count)
+{
+#if defined(OS_DARWIN)
+  uint64_t evma = (uint64_t)vma + (count > 0 ? count : 0);
+
+  for (vma -= MemoryPageOffset(vma); (uint64_t)vma < evma; vma += MemoryPage_Size)
+  {
+    VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
+    VMAttribute new_attr = attr | (VMAttribute_Ephemeral|VMAttribute_Modified);
+
+    if (!VMExists(attr) || VMAccessFault(attr))
+      continue;
+    if (VMTransportFault(new_attr))
+      SetVMTransportDisable(new_attr);
+    if (new_attr != attr)
+      AdjustProtection(vma, new_attr);
+  }
+#endif
 }
 
 
@@ -889,9 +926,16 @@ Boolean SlowScanPage(Integer scanvma, Integer *vma, int count, Boolean update)
   register uint64_t ephemeraloldbits;
   register uint64_t zoneoldbits;
 
+#if defined(OS_DARWIN)
+  /* Protection lives on DataSpace; tags are always readable */
+  if (mvalid((caddr_t)data,
+	     count*sizeof(Integer),
+	     PROT_READ))
+#else
   if (mvalid((caddr_t)tag,
 	     count,
 	     PROT_READ))
+#endif
   {
     fprintf(stderr,
 	    "SlowScanPage on inaccessible memory at %lx for %x (ATTRIBUTES=0%o)\n",
@@ -1397,86 +1441,26 @@ static int ComputeProtection(register VMAttribute attr)
   return(PROT_READ|PROT_WRITE|PROT_EXEC);
 }
 
-#if defined(OS_DARWIN)
-/* --- macOS 16KB-OS-page protection merge ------------------------------------
-   The VLM tracks protection per 8KB Ivory page, but arm64 macOS protects 16KB
-   at a time, so two sibling VLM pages always share one OS page and a single
-   hardware protection.  Some per-page protections are BARRIERS the GC relies
-   on, so they cannot simply be merged away:
-
-   - The implicit not-(Modified&Ephemeral) read-only state (PROT_READ) is the
-     write barrier that maintains the ephemeral GC's remembered set.  It MAY
-     yield to a writable sibling, but only with COMPENSATION: the read-only
-     page is immediately marked Ephemeral|Modified, as if the now-untrappable
-     write had already happened.  The remembered set over-approximates (extra
-     scanning, never a missed reference).  [Yielding silently here caused the
-     post-GC "Page fault on unallocated VMA" crashes: pages acquired ephemeral
-     references with no fault, the flip never scanned them, and their referents
-     were reclaimed.]
-   - PROT_NONE pages (armed transport fault, guard, non-existent) yield WITHOUT
-     compensation.  This is a KNOWN, accepted hole for the transport read
-     barrier: making it dominant requires delivering the armed page's fault on
-     a sibling access, but Lisp takes those faults on pages it considers wired
-     (e.g. mid-flip, in extra-stack mode) and dies with a fatal stack overflow
-     -- the wiring contract forbids it.  The sound endgame is to move page
-     protection to DataSpace (one 8KB Ivory page = 32KB data = two whole OS
-     pages, no sibling sharing); until then transport/guard/unalloc detection
-     is 16KB-coarse.
-   -------------------------------------------------------------------------- */
-
-/* Merge this page's pending protection with its sibling's into one OS-page
-   protection: the most permissive of the pair (PROT_NONE=0 < PROT_READ|EXEC <
-   PROT_READ|WRITE|EXEC, so numeric max).  May compensate either page's
-   attributes (see above): the pending attributes via *new_attr_p
-   (AdjustProtection stores them), the sibling's directly in VMAttributeTable. */
-static int os_page_protection(Integer vma_page_base, caddr_t address,
-                              VMAttribute *new_attr_p) {
-  Integer sibling = os_sibling_vma(vma_page_base, address);
-  VMAttribute *sib_attr_p = &VMAttributeTable[MemoryPageNumber(sibling)];
-  int own = ComputeProtection(*new_attr_p);
-  int sib = ComputeProtection(*sib_attr_p);
-  int result = (own > sib) ? own : sib;
-
-  /* Compensate a page whose remembered-set write barrier the merge defeats:
-     mark it as written, since the write can no longer be trapped. */
-  if (result > own && own == (PROT_READ|PROT_EXEC) && !VMWriteFault(*new_attr_p))
-    *new_attr_p |= (VMAttribute_Ephemeral|VMAttribute_Modified);
-  if (result > sib && sib == (PROT_READ|PROT_EXEC) && !VMWriteFault(*sib_attr_p))
-    *sib_attr_p |= (VMAttribute_Ephemeral|VMAttribute_Modified);
-
-  /* PROT_NONE defeats (transport/guard/non-existent) are uncompensated */
-  return result;
-}
-#endif  /* OS_DARWIN */
-
 void AdjustProtection(Integer vma, VMAttribute new_attr)
 {
   register VMAttribute *attr = &VMAttributeTable[MemoryPageNumber(vma)];
   register int old, new;
   VMAttribute oa = *attr;
-  
+
   old = ComputeProtection(oa);
   new = ComputeProtection(new_attr);
 
 #if defined(OS_DARWIN)
-  /* macOS arm64 has 16KB hardware pages; VLM tracks 8KB Ivory pages, so two
-     sibling VLM pages share one OS page and are mmap'd/mprotect'd at 8KB
-     granularity the kernel can't honor exactly.  The actual hardware
-     protection can therefore diverge from ComputeProtection(table) -- so the
-     old==new short-circuit is unsound here.  Always re-apply the (sibling-
-     merged) protection to the enclosing OS page so hardware can never get
-     stuck read-only while the table claims the page is writable (which would
-     re-fault forever -> forced DECODEFAULT -> Lisp debugger). */
+  /* Protection lives on DataSpace (one Ivory page = 32KB of data = two whole
+     16KB hardware pages), so per-page protection is exact -- see the comment
+     at the top of this file. */
+  if (old != new)
   {
-    register caddr_t address = (caddr_t)&TagSpace[vma - MemoryPageOffset(vma)];
-    caddr_t os_addr = os_page_align_down(address);
-    /* NB: may add Ephemeral|Modified to new_attr (barrier compensation);
-       the merged attributes are what gets stored below. */
-    int os_prot = os_page_protection(vma - MemoryPageOffset(vma),
-                                     address, &new_attr);
-    if ((mprotect_result = mprotect(os_addr, OS_PAGE_SIZE, os_prot)))
-      vpunt ("AdjustProtection", "mprotect(%lx, #%lx, %x) for VMA %x (os page)",
-             (uint64_t)os_addr, (uint64_t)OS_PAGE_SIZE, os_prot, (uint64_t)vma);
+    register caddr_t address = DataPageAddress(vma);
+
+    if ((mprotect_result = mprotect(address, DataPageSize, new)))
+      vpunt ("AdjustProtection", "mprotect(%lx, #, %lx) for VMA %x",
+	     address, new, (uint64_t)vma);
   }
 #else
   if (old != new)
@@ -1807,19 +1791,37 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
 
 #elif defined(OS_DARWIN) && defined(ARCH_AARCH64)
 
-/* macOS/arm64: mcontext is a pointer; the faulting data address comes from
+/* The thread running iInterpret (set in InstructionSequencer).  DECODEFAULT
+   may only be delivered to that thread: it redirects the faulting PC into the
+   interpreter, which on any other thread (life support, cold load) would be
+   silent corruption.  Under DataSpace protection such threads CAN now fault
+   on Lisp data pages (under tag protection they only ever touched the
+   always-writable data side), so the handler must check. */
+pthread_t vlm_emulator_thread;
+int vlm_emulator_thread_valid = 0;
+
+/* macOS/arm64: mcontext is a pointer; the faulting address comes from
    si->si_addr (equivalently uc->uc_mcontext->__es.__far) and the program
    counter is uc->uc_mcontext->__ss.__pc.  Like the x86_64 path, we do not
-   decode the faulting instruction -- we redirect the PC to DECODEFAULT. */
+   decode the faulting instruction -- we redirect the PC to DECODEFAULT.
+   Protection lives on DataSpace, so most faults arrive there and the vma is
+   recovered in Integer units from the DataSpace base.  But a page whose WAD
+   is unmapped (never created, or reclaimed by the GC) faults on the TAG
+   load -- the generated interpreter loads the tag first -- so tag-space
+   addresses must be attributed to their vma as well. */
 void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
 {
 #define CALL_SIZE 50
   void *call_buffer[CALL_SIZE];
   register ucontext_t *uc = (ucontext_t*)uc_p;
-  register uint64_t maybevma = (uint64_t) ((Tag *)si->si_addr - TagSpace);
+  uint64_t data_off = (uint64_t) ((Integer *)si->si_addr - DataSpace);
+  uint64_t tag_off = (uint64_t) ((Tag *)si->si_addr - TagSpace);
+  register uint64_t maybevma = (data_off >> 32) ? tag_off : data_off;
   register Integer vma = (Integer) maybevma;
   register int num_calls ;
   register VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
+  int emu_thread = vlm_emulator_thread_valid
+		   ? pthread_equal(pthread_self(), vlm_emulator_thread) : -1;
 
   if (maybevma >> 32) {
     /* Not a fault in Lisp space */
@@ -1838,6 +1840,10 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
     if (++times > 10)
     {
       /* make genera bus-error */
+      if (emu_thread == 0)
+	vpunt (NULL, "Repeated memory fault (signal %d) on a non-emulator"
+	       " thread at %p (VMA %x, attributes %o)",
+	       sigval, si->si_addr, vma, attr);
       processor->vma = (uint64_t)vma;
       uc->uc_mcontext->__ss.__pc = (uint64_t)DECODEFAULT;
       return;
@@ -1872,6 +1878,10 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
 
     default:
       /* a true fault, advance the pc into the fault handler */
+      if (emu_thread == 0)
+	vpunt (NULL, "Memory fault (signal %d) on a non-emulator thread"
+	       " at %p (VMA %x, attributes %o) -- cannot deliver to Lisp",
+	       sigval, si->si_addr, vma, attr);
       processor->vma = (uint64_t)vma;
       uc->uc_mcontext->__ss.__pc = (uint64_t)DECODEFAULT;
   }

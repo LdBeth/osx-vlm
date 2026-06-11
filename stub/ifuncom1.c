@@ -3732,8 +3732,8 @@ blockwrite:
 
 g6364:
   t5 = t5 | t4;
-  STQ_U(t8, t5);
   *(u32 *)t6 = t3;
+  STQ_U(t8, t5);
   /* J. if in cache */
   if (t7 != 0)
     goto g6363;

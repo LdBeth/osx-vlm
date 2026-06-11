@@ -140,8 +140,8 @@ g8397:
 
 g8400:
   t6 = t6 | t5;
-  STQ_U(t4, t6);
   *(u32 *)t7 = arg6;
+  STQ_U(t4, t6);
   /* J. if in cache */
   if (t8 != 0)
     goto g8399;
@@ -162,8 +162,8 @@ g8398:
 
 g8403:
   t6 = t6 | t5;
-  STQ_U(t4, t6);
   *(u32 *)t7 = t1;
+  STQ_U(t4, t6);
   /* J. if in cache */
   if (t8 != 0)
     goto g8402;
@@ -215,8 +215,8 @@ g8413:
 
 g8416:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = arg1;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t10 != 0)
     goto g8415;
@@ -485,8 +485,8 @@ g8430:
 
 g8433:
   t6 = t6 | t5;
-  STQ_U(t4, t6);
   *(u32 *)t7 = arg6;
+  STQ_U(t4, t6);
   /* J. if in cache */
   if (t8 != 0)
     goto g8432;
@@ -507,8 +507,8 @@ g8431:
 
 g8436:
   t6 = t6 | t5;
-  STQ_U(t4, t6);
   *(u32 *)t7 = t1;
+  STQ_U(t4, t6);
   /* J. if in cache */
   if (t8 != 0)
     goto g8435;
@@ -794,13 +794,13 @@ g8469:
 
 g8472:
   arg6 = arg6 | arg5;
+  *(u32 *)arg3 = t6;
   STQ_U(arg4, arg6);
   arg4 = *(s32 *)&processor->scovlimit;
   /* Stack cache offset */
   arg5 = t2 - t11;
   /* In range? */
   arg4 = ((u64)arg5 < (u64)arg4) ? 1 : 0;
-  *(u32 *)arg3 = t6;
   /* J. if in cache */
   if (arg4 != 0)
     goto g8471;
@@ -1142,13 +1142,13 @@ g8503:
 
 g8506:
   arg6 = arg6 | arg5;
+  *(u32 *)arg3 = t6;
   STQ_U(arg4, arg6);
   arg4 = *(s32 *)&processor->scovlimit;
   /* Stack cache offset */
   arg5 = t2 - t11;
   /* In range? */
   arg4 = ((u64)arg5 < (u64)arg4) ? 1 : 0;
-  *(u32 *)arg3 = t6;
   /* J. if in cache */
   if (arg4 != 0)
     goto g8505;

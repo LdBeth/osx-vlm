@@ -583,8 +583,8 @@ g8031:
 
 g8028:
   t1 = t1 | t4;
-  STQ_U(t3, t1);
   *(u32 *)t5 = t6;
+  STQ_U(t3, t1);
   /* J. if in cache */
   if (t10 != 0)
     goto g8027;
@@ -739,8 +739,8 @@ g8048:
 
 g8045:
   t1 = t1 | t4;
-  STQ_U(t3, t1);
   *(u32 *)t5 = t8;
+  STQ_U(t3, t1);
   /* J. if in cache */
   if (t10 != 0)
     goto g8044;

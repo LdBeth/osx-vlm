@@ -12,6 +12,7 @@
 
 Integer EnsureVirtualAddress (Integer vma, Boolean faultp);
 Integer EnsureVirtualAddressRange (Integer vma, int count, Boolean faultp);
+void EnsureVirtualMemoryAccessible (Integer vma, int count);
 Integer MapWorldLoad(Integer vma, int length, int worldfile, off_t dataoffset, off_t tagoffset);
 Integer* MapVirtualAddressData (Integer vma);
 Tag* MapVirtualAddressTag (Integer vma);

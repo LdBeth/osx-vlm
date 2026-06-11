@@ -160,8 +160,8 @@ consdoublefloat:
 
 g8671:
   t7 = t7 | t6;
-  STQ_U(t5, t7);
   *(u32 *)t8 = arg5;
+  STQ_U(t5, t7);
   t10 = arg2 + 1;
   t9 = Type_Fixnum;
   t9 = t9 | 64;
@@ -173,8 +173,8 @@ g8671:
 
 g8672:
   t7 = t7 | t6;
-  STQ_U(t5, t7);
   *(u32 *)t8 = arg6;
+  STQ_U(t5, t7);
   sp = sp + 8;
   goto *(void *)r0; /* ret */
 

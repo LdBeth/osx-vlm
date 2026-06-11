@@ -2553,8 +2553,8 @@ g7674:
 
 g7676:
   t12 = t12 | t5;
-  STQ_U(t4, t12);
   *(u32 *)t3 = t11;
+  STQ_U(t4, t12);
   /* J. if in cache */
   if (arg3 != 0)
     goto g7675;
@@ -2673,8 +2673,8 @@ g7655:
 
 g7692:
   t4 = t4 | t3;
-  STQ_U(t2, t4);
   *(u32 *)t5 = t11;
+  STQ_U(t2, t4);
   /* J. if in cache */
   if (t12 != 0)
     goto g7691;
@@ -3320,8 +3320,8 @@ g7737:
 
 g7739:
   t5 = t5 | t4;
-  STQ_U(t3, t5);
   *(u32 *)t2 = t7;
+  STQ_U(t3, t5);
   /* J. if in cache */
   if (t8 != 0)
     goto g7738;

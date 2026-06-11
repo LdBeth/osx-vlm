@@ -649,8 +649,8 @@ g7871:
 
 g7874:
   t3 = t3 | t2;
-  STQ_U(t1, t3);
   *(u32 *)t5 = arg1;
+  STQ_U(t1, t3);
   /* J. if in cache */
   if (t6 != 0)
     goto g7873;
@@ -847,8 +847,8 @@ begindomemorywrite:
 
 g7878:
   t3 = t3 | t2;
-  STQ_U(t1, t3);
   *(u32 *)t4 = arg1;
+  STQ_U(t1, t3);
   /* J. if in cache */
   if (t5 != 0)
     goto g7877;
@@ -971,8 +971,8 @@ g7889:
 
 g7891:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = arg1;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g7890;

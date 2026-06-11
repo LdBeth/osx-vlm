@@ -166,8 +166,8 @@ g7034:
 
 g7036:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = t1;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g7035;
@@ -625,8 +625,8 @@ g7082:
 
 g7084:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = t1;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g7083;
@@ -1477,8 +1477,8 @@ g7152:
 
 g7154:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = t1;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g7153;
@@ -1646,8 +1646,8 @@ g7165:
 
 g7167:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = t1;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g7166;
@@ -2330,8 +2330,8 @@ g7234:
 
 g7236:
   t7 = t7 | t6;
-  STQ_U(t5, t7);
   *(u32 *)t4 = t1;
+  STQ_U(t5, t7);
   /* J. if in cache */
   if (t8 != 0)
     goto g7235;

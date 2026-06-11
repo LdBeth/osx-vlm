@@ -145,10 +145,25 @@
 	((or (member :arm64 *features*) (member :aarch64 *features*)) :aarch64)
 	(t :x86-64)))
 
+;; Which space the VM page-protection machinery guards.  A trapped write must
+;; reach the fault handler with the memory word fully intact (Lisp runs between
+;; DECODEFAULT and the instruction restart), so the store to the PROTECTED
+;; space must be emitted first.  On aarch64 (macOS, 16KB hardware pages) the
+;; emulator protects DataSpace, so VM-WRITE and MEMORY-WRITE in memoryem.lisp
+;; emit the data store before the tag store; everywhere else TagSpace carries
+;; the protection and the original tag-store-first order is preserved.
+(defparameter *data-store-first* (eq *target-arch* :aarch64))
+
 ;; clang -- the C compiler on Darwin -- does not implement GCC's nested-function
 ;; extension, so the nested debug fn show_loc (defined in the hand-written
 ;; stub.c) is excluded there; its sole call site must be omitted to match.
 (defparameter *nested-functions-supported* (not (member :darwin *features*)))
+
+;; Per-label `if (_trace) printf(...)` debug hooks in the generated C.  Off:
+;; they cost a test-and-branch on every label in the interpreter hot path
+;; (previously disabled by hand-editing the generated files; the setting
+;; belongs here so regeneration preserves it).
+(defparameter *emit-tracing* nil)
 
 ;
 (defun macroexpand-careful (form env)
@@ -1156,7 +1171,8 @@
 ;;	 (format t "label: ~S~%" arg1)
 	 (let ((lname (if (is-global-label arg1) arg1 (gotolabel arg1))))
 	   (format destination "~%~A:~%" lname)
-	   (format destination "  if (_trace) printf(\"~A:\\n\");~%" lname)
+	   (when *emit-tracing*
+	     (format destination "  if (_trace) printf(\"~A:\\n\");~%" lname))
 	   (if (equal lname "continuecurrentinstruction")
 	       (if *nested-functions-supported*
 		   (format destination "  if (_show) show_loc();~%" lname)))))

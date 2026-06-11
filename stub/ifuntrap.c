@@ -192,13 +192,13 @@ g8540:
 g8543:
   t12 = t12 | t11;
   t11 = *(u64 *)&(processor->stackcachebasevma);
+  *(u32 *)t9 = t6;
   STQ_U(t10, t12);
   t10 = *(s32 *)&processor->scovlimit;
   /* Stack cache offset */
   t11 = arg1 - t11;
   /* In range? */
   t10 = ((u64)t11 < (u64)t10) ? 1 : 0;
-  *(u32 *)t9 = t6;
   /* J. if in cache */
   if (t10 != 0)
     goto g8542;

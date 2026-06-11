@@ -1320,13 +1320,13 @@ g6892:
 g6895:
   t12 = t12 | t11;
   t11 = *(u64 *)&(processor->stackcachebasevma);
+  *(u32 *)t9 = t6;
   STQ_U(t10, t12);
   t10 = *(s32 *)&processor->scovlimit;
   /* Stack cache offset */
   t11 = t2 - t11;
   /* In range? */
   t10 = ((u64)t11 < (u64)t10) ? 1 : 0;
-  *(u32 *)t9 = t6;
   /* J. if in cache */
   if (t10 != 0)
     goto g6894;
@@ -2428,13 +2428,13 @@ g6946:
 g6949:
   t11 = t11 | arg2;
   arg2 = *(u64 *)&(processor->stackcachebasevma);
+  *(u32 *)t9 = t6;
   STQ_U(arg1, t11);
   arg1 = *(s32 *)&processor->scovlimit;
   /* Stack cache offset */
   arg2 = t2 - arg2;
   /* In range? */
   arg1 = ((u64)arg2 < (u64)arg1) ? 1 : 0;
-  *(u32 *)t9 = t6;
   /* J. if in cache */
   if (arg1 != 0)
     goto g6948;

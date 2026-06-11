@@ -841,8 +841,8 @@ g6540:
 
 g6542:
   t8 = t8 | t7;
-  STQ_U(t4, t8);
   *(u32 *)t3 = t6;
+  STQ_U(t4, t8);
   /* J. if in cache */
   if (arg1 != 0)
     goto g6541;
@@ -961,8 +961,8 @@ g6521:
 
 g6558:
   t4 = t4 | t3;
-  STQ_U(t2, t4);
   *(u32 *)t7 = t6;
+  STQ_U(t2, t4);
   /* J. if in cache */
   if (t8 != 0)
     goto g6557;
@@ -1637,8 +1637,8 @@ g6591:
 
 g6593:
   t7 = t7 | t6;
-  STQ_U(t5, t7);
   *(u32 *)arg6 = arg1;
+  STQ_U(t5, t7);
   /* J. if in cache */
   if (t8 != 0)
     goto g6592;

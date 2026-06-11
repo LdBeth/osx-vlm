@@ -173,6 +173,17 @@ int InstructionSequencer (void)
     if (-1 == sigaction(SIGBUS, &action, NULL))
       vpunt (NULL, "Unable to establish memory fault handler (SIGBUS).");
 
+#if defined(OS_DARWIN) && defined(ARCH_AARCH64)
+    /* Record the thread that runs the interpreter: segv_handler may only
+       redirect THIS thread's PC to DECODEFAULT (see memory.c). */
+    {
+      extern pthread_t vlm_emulator_thread;
+      extern int vlm_emulator_thread_valid;
+      vlm_emulator_thread = pthread_self();
+      vlm_emulator_thread_valid = 1;
+    }
+#endif
+
 #ifdef OS_OSF
     action.sa_handler = (sa_handler_t)fpe_handler;
     action.sa_flags = 0;

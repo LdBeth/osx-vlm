@@ -376,6 +376,12 @@ int DoDiskIO (EmbDiskChannel* diskChannel, DiskChannelState* diskState,
 //			btoread = (btoread * diskChannel->blocksize) / 8192 ;
 			diskState->iovs[i].iov_len = btoread ;
 			nBytes += diskState->iovs[i].iov_len;
+			/* readv(2)/writev(2) transfer straight into/out of DataSpace;
+			   a protected page would fail the syscall with EFAULT (no
+			   catchable fault is raised) */
+			EnsureVirtualMemoryAccessible ((Integer)((EmbWord*) diskState->iovs[i].iov_base
+								 - (EmbWord*) MapVirtualAddressData (0)),
+						       addressPair->n_words);
 		  }
 
 		switch (command->op.cmd)

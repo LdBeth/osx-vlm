@@ -475,6 +475,11 @@ int ConsoleWrite (EmbConsoleChannel* pConsoleChannel, EmbConsoleBuffer* pCommand
 	data += dataTransfer->offset;
 	nBytes = dataTransfer->nBytes;
 
+	/* write(2) reads straight out of DataSpace; a protected buffer page
+	   would fail the syscall with EFAULT (no catchable fault is raised) */
+	EnsureVirtualMemoryAccessible (dataTransfer->address + (dataTransfer->offset >> 2),
+				       (int)(((dataTransfer->offset & 3) + nBytes + 3) >> 2));
+
 	result = EWOULDBLOCK;
 	pollDisplay.fd = consoleChannel->fd;
 	pollDisplay.events = POLLOUT;
@@ -529,6 +534,11 @@ int ConsoleRead (EmbConsoleChannel* pConsoleChannel, EmbConsoleBuffer* pCommand)
 	data = (char*) MapVirtualAddressData (dataTransfer->address);
 	data += dataTransfer->offset;
 	nBytes = dataTransfer->nBytes;
+
+	/* read(2) writes straight into DataSpace; a protected buffer page
+	   would fail the syscall with EFAULT (no catchable fault is raised) */
+	EnsureVirtualMemoryAccessible (dataTransfer->address + (dataTransfer->offset >> 2),
+				       (int)(((dataTransfer->offset & 3) + nBytes + 3) >> 2));
 
 	result = EWOULDBLOCK;
 	pollDisplay.fd = consoleChannel->fd;

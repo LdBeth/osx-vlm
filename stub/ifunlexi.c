@@ -277,8 +277,8 @@ g8072:
 
 g8074:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = t3;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g8073;
@@ -475,8 +475,8 @@ g8085:
 
 g8087:
   t8 = t8 | t7;
-  STQ_U(t6, t8);
   *(u32 *)t5 = t3;
+  STQ_U(t6, t8);
   /* J. if in cache */
   if (t9 != 0)
     goto g8086;

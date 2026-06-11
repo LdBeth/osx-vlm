@@ -243,6 +243,15 @@
 
 ;; (with-multiple-memory-reads (arg1 arg2 arg3 arg4) (VM-write t1 t2 t3 t4 t5 t6 t7))
 
+;; The host VM page-protection traps writes on exactly one of the two spaces
+;; (historically TagSpace; DataSpace on aarch64/macOS, where 16KB hardware
+;; pages cannot protect 8KB tag pages exactly).  A trapped write must arrive
+;; with the word fully intact -- Lisp runs between the fault and the
+;; instruction restart -- so the store to the PROTECTED space must be emitted
+;; first.  Bound by the C-translator driver (stub/process.lisp); the default
+;; preserves the original tag-store-first order.
+(defvar *data-store-first* nil)
+
 ;; Raw write to emulated memory
 (defmacro VM-write (vma tag data temp temp2 temp3 temp4 &optional prefetchp)
   (check-temporaries (vma tag data) (temp temp2 temp3 temp4))
@@ -260,9 +269,14 @@
 	    `((FETCH_M 0 (,temp4)))
 	    `((force-alignment)))
       (BIS ,temp3 ,temp2 ,temp3)		; add new byte
-      (STQ_U ,temp3 0 (,temp))
-      ;; Must happen last, in case of write-first fault
-      (STL ,data 0 (,temp4))			; store data 
+      ;; The protected space's store must happen first, so a write fault
+      ;; arrives with the word intact (see *data-store-first*)
+      ,@(if *data-store-first*
+	    `((STL ,data 0 (,temp4))		; store data
+	      (STQ_U ,temp3 0 (,temp)))
+	    `((STQ_U ,temp3 0 (,temp))
+	      ;; Must happen last, in case of write-first fault
+	      (STL ,data 0 (,temp4))))		; store data
       )))
 
 ;; Decode fault according to page attributes
@@ -785,12 +799,18 @@
       (BIS ,temp3 ,temp2 ,temp3)
       ,@(unless (or *cant-be-in-cache-p* *memoized-base* temp5)
 	  `((LDQ ,temp2 PROCESSORSTATE_STACKCACHEBASEVMA (ivory))))
-      (STQ_U ,temp3 0 (,temp))
+      ;; The protected space's store must happen first, so a write fault
+      ;; arrives with the word intact (see *data-store-first*)
+      ,@(if *data-store-first*
+	    `((STL ,data 0 (,temp4))		; store data
+	      (STQ_U ,temp3 0 (,temp)))
+	    `((STQ_U ,temp3 0 (,temp))))
       ,@(unless (or *cant-be-in-cache-p* temp5)
 	  `((LDL ,temp PROCESSORSTATE_SCOVLIMIT (ivory))
 	    (SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset")
 	    (CMPULT ,temp2 ,temp ,temp "In range?")))
-      (STL ,data 0 (,temp4))
+      ,@(unless *data-store-first*
+	  `((STL ,data 0 (,temp4))))		; store data
       ,@(unless *cant-be-in-cache-p*
 	  `((branch-true ,(or temp5 temp) ,incache "J. if in cache")))
       ,@(if done-label
