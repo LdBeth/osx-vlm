@@ -517,9 +517,13 @@ void VirtualMemoryWrite (unsigned int address, LispObj object)
 void EnsureVirtualMemoryAccessible (Integer vma, int count)
 {
 #if defined(OS_DARWIN)
-  uint64_t evma = (uint64_t)vma + (count > 0 ? count : 0);
+  /* Iterate by page count, not address comparison: comm-area buffers live at
+     the top of the 32-bit space (EmbCommAreaAddress 0xFFFE0080), where
+     vma += MemoryPage_Size wraps around zero and an address-bounded loop
+     never terminates */
+  int pages = ceiling((count > 0 ? count : 0) + MemoryPageOffset(vma), MemoryPage_Size);
 
-  for (vma -= MemoryPageOffset(vma); (uint64_t)vma < evma; vma += MemoryPage_Size)
+  for (vma -= MemoryPageOffset(vma); pages-- > 0; vma += MemoryPage_Size)
   {
     VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
     VMAttribute new_attr = attr | (VMAttribute_Ephemeral|VMAttribute_Modified);

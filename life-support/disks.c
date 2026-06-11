@@ -280,7 +280,12 @@ void DiskLife (EmbDiskChannel* diskChannel)
 		  }
 
 		commandPtr = EmbQueueTakeWord (commandQueue);
-		if (commandPtr)
+		if (0 == commandPtr)
+			/* A stale slot read here loses the command forever and Lisp
+			   eventually reports "Disk unit N hung" -- make it visible */
+			fprintf (stderr, "DiskLife: dropped empty command on unit %d\n",
+					 diskChannel->unit);
+		else
 		  {
 			command = (EmbDiskQueueElement*) HostPointer (commandPtr);
 
