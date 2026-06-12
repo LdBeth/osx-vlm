@@ -10,6 +10,18 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#if defined(OS_DARWIN)
+/* macOS lacks the Linux <linux/if_ether.h> ethertype names.  <net/ethernet.h>
+   supplies ETHERTYPE_IP/ETHERTYPE_ARP; fill in the rest the VLM relies on. */
+#include <net/ethernet.h>
+#ifndef ETH_P_IP
+#define ETH_P_IP	ETHERTYPE_IP		/* 0x0800 */
+#endif
+#ifndef ETHERTYPE_CHAOS
+#define ETHERTYPE_CHAOS	0x0804			/* MIT CHAOSnet */
+#endif
+#endif
 // jj
 #include <X11/X.h>
 #if HAVE_X11_XLIB_XCB_H

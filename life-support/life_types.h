@@ -13,6 +13,13 @@ typedef uint32_t uEmbWord;				/* A word in the communications area */
 typedef EmbWord EmbPtr;					/* "Pointer" to communication area = word offset */
 typedef uEmbWord SignalMask;			/* 32-bit bit mask of signals */
 typedef EmbWord SignalNumber;			/* Index into that bit mask */
+/* On macOS, <stdbool.h> (pulled in via X11/Xlib-xcb.h's xcb headers) defines
+   `bool` as a macro for the 1-byte _Bool.  The embedded communication area
+   requires a 32-bit boolean for ABI compatibility with the Lisp world, so
+   discard any such definition before establishing our own. */
+#ifdef bool
+#undef bool
+#endif
 typedef EmbWord bool;					/* Boolean value for use in embedded data structure */
 typedef unsigned char boolean;			/* Boolean value for day-to-day use */
 typedef unsigned char byte;				/* byte = unsigned 8-bit byte */

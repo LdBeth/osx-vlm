@@ -26,7 +26,14 @@ typedef int64_t LispObj;
 #define MakeLispObj(tag,data) (((((uint64_t)tag))<<32)|(0xFFFFFFFF & ((uint64_t)data)))
 
 /* From C-emulator for compatibility */
+/* On Darwin, Apple's <MacTypes.h> (pulled in transitively by <vmnet/vmnet.h>
+   in the network backend) typedefs Boolean as `unsigned char`.  Where that
+   header has already run -- it defines __MACTYPES__ -- defer to its Boolean to
+   avoid a conflicting-redefinition error; that translation unit (network.c)
+   does not use the Ivory Boolean, so the width difference is harmless. */
+#ifndef __MACTYPES__
 typedef int Boolean;
+#endif
 typedef unsigned char Byte;
 typedef unsigned char Tag;
 typedef unsigned int Integer;

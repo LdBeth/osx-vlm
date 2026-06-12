@@ -91,6 +91,11 @@ void ill_handler (int sigval, siginfo_t *si, void *uc)
 {
   ((ucontext_t*)uc)->uc_mcontext.gregs[REG_RIP] = (uint64_t)DoIStageError;
 }
+#elif defined(OS_DARWIN) && defined(ARCH_AARCH64)
+void ill_handler (int sigval, siginfo_t *si, void *uc)
+{
+     ((ucontext_t*)uc)->uc_mcontext->__ss.__pc = (uint64_t)DoIStageError;
+}
 #elif defined(OS_DARWIN)
 void ill_handler (int sigval, siginfo_t *si, void *uc)
 {
@@ -136,6 +141,11 @@ void fpe_handler (int sigval, siginfo_t *si, void *uc)
 //
 // jj
 //
+#elif defined(OS_DARWIN) && defined(ARCH_AARCH64)
+void fpe_handler (int sigval, siginfo_t *si, void *uc)
+{
+     ((ucontext_t*)uc)->uc_mcontext->__ss.__pc = (uint64_t)ARITHMETICEXCEPTION;
+}
 #elif defined(OS_DARWIN)
 void fpe_handler (int sigval, siginfo_t *si, void *uc)
 {
@@ -421,7 +431,7 @@ static void ComputeSpeed (int64_t *speed) {
   sigaction(SIGALRM, &oldaction, NULL);
   *speed = processor->ticksperms = (stop - start) / 1000000;
 }
-#elif defined(ARCH_X86_64)
+#elif defined(ARCH_X86_64) || defined(ARCH_AARCH64)
 static void ComputeSpeed (int64_t *speed) {
   extern void SpinWheels ();
   struct tms tms;
@@ -443,7 +453,7 @@ static void ComputeSpeed (int64_t *speed) {
 
 static void RunPOST (int64_t speed) {
   int mstimeb, mstimea, result;
-#if defined(ARCH_ALPHA) || defined(ARCH_X86_64)
+#if defined(ARCH_ALPHA) || defined(ARCH_X86_64) || defined(ARCH_AARCH64)
   struct tms tms;
   int64_t tps = sysconf(_SC_CLK_TCK);
 #endif
@@ -454,7 +464,7 @@ static void RunPOST (int64_t speed) {
   else
     InitializeFIBTest (); /* This is the Power on self test */
   if (Trace) InitializeTracing (1000, processor->epc >> 1, 0, NULL);
-#if defined(ARCH_ALPHA) || defined(ARCH_X86_64)
+#if defined(ARCH_ALPHA) || defined(ARCH_X86_64) || defined(ARCH_AARCH64)
   times(&tms);
   mstimeb = (int)((int64_t) (tms.tms_utime+tms.tms_stime)*1000000/tps);
 #elif defined(ARCH_PPC64)
@@ -464,7 +474,7 @@ static void RunPOST (int64_t speed) {
       result!=HaltReason_Halted)
     vwarn ("POST", "FAILED: %s", haltreason(result));
   else {
-#if defined(ARCH_ALPHA) || defined(ARCH_X86_64)
+#if defined(ARCH_ALPHA) || defined(ARCH_X86_64) || defined(ARCH_AARCH64)
     times(&tms);
     mstimea = ((int)((int64_t) (tms.tms_utime+tms.tms_stime)*1000000/tps));
 #elif defined(ARCH_PPC64)
@@ -589,7 +599,7 @@ void InitializeIvoryProcessor (Integer *basedata, Tag *basetag)
 	/* VLM does not use transport bits, clear from table to save a cycle */
 	for (e = &MemoryActionTable[i][0],j=0 ; e < &MemoryActionTable[i][64]; e++, j++) {
 	  *e &= ~MemoryAction_Transport;
-          if (*e) mask |= (1L << j); /* accumulate mask of types with action */
+          if (*e) mask |= (1UL << j); /* accumulate mask of types with action */
 	  matline[j]=*e; /* copy bits into copymat */
         }
         *maskPointer = mask;
@@ -605,8 +615,8 @@ void InitializeIvoryProcessor (Integer *basedata, Tag *basetag)
     processor->eqnoteql=(uint64_t)0x000000000000F800L;
 
     /* The 32 bit value of most positive and most negative fixnum */
-    processor->mostpositivefixnum=(int64_t)((~(-1 << 31)) & 0xFFFFFFFF);
-    processor->mostnegativefixnum=(int64_t)(( (-1 << 31)) & 0xFFFFFFFF);
+    processor->mostpositivefixnum=(int64_t)((~((~0UL) << 31)) & 0xFFFFFFFF);
+    processor->mostnegativefixnum=(int64_t)(( ((~0UL) << 31)) & 0xFFFFFFFF);
 
     processor->halfworddispatch=(int64_t)halfworddispatch;
     processor->fullworddispatch=(int64_t)fullworddispatch;
@@ -670,7 +680,7 @@ void InitializeIvoryProcessor (Integer *basedata, Tag *basetag)
   processor->ticksperms = 33;	/* 33 MHz timebase */
   processor->msclockcache = 0;
   processor->previoustb = timebase ();
-#elif defined(ARCH_X86_64)
+#elif defined(ARCH_X86_64) || defined(ARCH_AARCH64)
   /* MS clock -- initial values */
   processor->mscmultiplier=109051; /* 6.5 ns clock RPCC N=1 */
   processor->msclockcache=0;

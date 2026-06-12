@@ -3,7 +3,9 @@
 /* VLM Unix crypt Support */
 
 #include "std.h"
-#include <crypt.h>
+#if !defined(OS_DARWIN)
+#include <crypt.h>		/* glibc; on macOS crypt() lives in <unistd.h> */
+#endif
 
 #include "life_types.h"
 #include "embed.h"

@@ -6,7 +6,19 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
-#include <netpacket/packet.h>
+#if defined(OS_LINUX)
+#include <netpacket/packet.h>	/* AF_PACKET/sockaddr_ll: Linux raw sockets only */
+#endif
+//
+// On Linux these come from <linux/if_ether.h>; macOS uses BSD names, so
+// supply the few the VLM relies on.
+//
+#ifndef ETH_ALEN
+#define ETH_ALEN 6			/* octets in one ethernet address */
+#endif
+#ifndef ETH_P_IP
+#define ETH_P_IP 0x0800			/* internet protocol ethertype */
+#endif
 //
 // globals
 //

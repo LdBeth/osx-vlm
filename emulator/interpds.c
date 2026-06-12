@@ -1093,11 +1093,15 @@ void InitializeInstructionCache (void)
 	                           +2*ALPHAPAGESIZE);
 
     if (!cp) vpunt (NULL, "Unable to allocate internal data structures");
-    if (!(((uint64_t)cp)&(~(ALPHAPAGESIZE-1))))
-      /* if already aligned, put a blank page at front */
+    /* Ensure at least one 8KB page of padding before instructioncache
+       so that &instructioncache[-1] (used by FLUSHICACHE) is always
+       inside the malloc'd buffer.  On systems where malloc returns
+       page-aligned addresses (e.g. macOS arm64), the low 13 bits are
+       already 0 so we advance by a full page; otherwise round up to
+       the next page boundary (which also guarantees headroom). */
+    if ((((uint64_t)cp) & (ALPHAPAGESIZE-1)) == 0)
       cp += ALPHAPAGESIZE;
     else
-      /* move up to page bound */
       cp = (caddr_t)(((uint64_t)cp+ALPHAPAGESIZE-1)&(~(ALPHAPAGESIZE-1)));
     
     /* we know there is at least 1 cacheline in front of us (as required above) */

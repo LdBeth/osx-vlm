@@ -3,6 +3,16 @@
 #ifndef _STD_H_
 #define _STD_H_
 
+#if defined(__APPLE__)
+/* Enable the Darwin BSD extensions (MAP_ANON, caddr_t, getpagesize, and the
+   ucontext_t/mcontext_t layout used by the fault handlers).  This must precede
+   every system header -- on macOS even <stdlib.h> transitively includes
+   <sys/_ucontext.h>.  Note: do NOT define _XOPEN_SOURCE here -- it would pull
+   in the deprecated <ucontext.h> requirements and hide getpagesize(); the
+   ucontext_t type is supplied by <signal.h> under _DARWIN_C_SOURCE. */
+#define _DARWIN_C_SOURCE
+#endif
+
 #define _GNU_SOURCE
 #define _THREAD_SAFE
 #ifdef _FORTIFY_SOURCE
@@ -11,7 +21,7 @@
 #define _FORTIFY_SOURCE 1
 #include "config.h"
 /* check for ucontext_t */
-#ifndef HAVE_UCONTEXT_T
+#if !defined(HAVE_UCONTEXT_T) && !defined(__APPLE__)
 #include <ucontext.h>
 typedef struct ucontext ucontext_t;
 #endif
@@ -34,6 +44,8 @@ typedef struct ucontext ucontext_t;
 #define ARCH_PPC64
 #elif defined(__x86_64__)
 #define ARCH_X86_64
+#elif defined(__aarch64__) || defined(__arm64__)
+#define ARCH_AARCH64
 #else
 #error "Unsupported processor architecture"
 #endif
@@ -114,9 +126,11 @@ typedef unsigned long int	uintmax_t;
 #endif
 
 #include <signal.h>
-#if defined(OS_DARWIN) || defined(__FreeBSD__)
+#if defined(__FreeBSD__)
 #include <ucontext.h>
 #endif
+/* On macOS, <signal.h> already supplies ucontext_t/mcontext_t; the standalone
+   <ucontext.h> is deprecated and demands _XOPEN_SOURCE, so we avoid it. */
 
 typedef void (*sa_handler_t) (int);
 typedef void (*sa_sigaction_t) (int, siginfo_t*, void*);
