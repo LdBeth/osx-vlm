@@ -1946,7 +1946,7 @@ static void ColdLoadInput (pthread_addr_t argument)
 	struct pollfd xpoll;
 	
 
-	pthread_cleanup_push ((pthread_cleanuproutine_t)pthread_detach,
+	pthread_cleanup_push ((pthread_cleanuproutine_t)null_thread_cleanup,
 			      (void*)self);
 
 	WaitUntilInitializationComplete ();

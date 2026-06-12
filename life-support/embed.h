@@ -851,4 +851,9 @@ enum EmbMBINImpulse
 	EmbMBINImpulseShutdown = 1
   };
 
+/* On macOS, pthread_detach frees the thread structure, causing a subsequent
+   pthread_join to SIGSEGV.  Use a no-op cleanup handler instead -- the
+   Terminate* functions always pthread_join every thread they cancel. */
+static inline void null_thread_cleanup (void *arg) { (void)arg; }
+
 #endif

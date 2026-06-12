@@ -178,7 +178,7 @@ void IvoryLifePolling (pthread_addr_t argument)
   pollingSleep.tv_sec = 0;
   pollingSleep.tv_nsec = 0;
   
-  pthread_cleanup_push ((pthread_cleanuproutine_t)pthread_detach, (void*)self);
+  pthread_cleanup_push ((pthread_cleanuproutine_t)null_thread_cleanup, (void*)self);
   
   while (TRUE)
     {
@@ -260,7 +260,7 @@ void IntervalTimerDriver (pthread_addr_t argument)
   //  struct timeval tmv ; struct timezone tz ;
   int result;
 
-  pthread_cleanup_push ((pthread_cleanuproutine_t)pthread_detach, (void*)self);
+  pthread_cleanup_push ((pthread_cleanuproutine_t)null_thread_cleanup, (void*)self);
   
   WaitUntilInitializationComplete ();
   

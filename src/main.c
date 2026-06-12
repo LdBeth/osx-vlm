@@ -28,9 +28,18 @@
 Boolean Trace = FALSE;
 Boolean EnableIDS = FALSE;
 Boolean TestFunction = FALSE;
-static pthread_key_t mainThread;
+static sigset_t terminationSignals;
 
-static void MaybeTerminateVLM (int signal)
+extern void EnableLifeSupportTermination (void);
+
+/* Termination is handled synchronously on this dedicated thread rather than in
+   an async signal handler.  main() blocks terminationSignals in every thread
+   (the mask is inherited by all threads it spawns), so SIGINT/SIGTERM/... are
+   delivered only here, via sigwait.  Teardown therefore runs in an ordinary
+   thread context -- it never interrupts a worker mid-X-call, so TerminateLife-
+   Support can take XLock and close the display with normal locking. */
+
+static void* TerminationThread (void* ignored)
 {
 #ifdef OS_LINUX
   char *answer = NULL;
@@ -39,63 +48,89 @@ static void MaybeTerminateVLM (int signal)
 #else
   char answer[BUFSIZ];
 #endif
+  int sig, confirmed;
 
-  if (NULL == pthread_getspecific (mainThread))
-    return;
+  (void) ignored;
 
-  if (EmbCommAreaPtr->guestStatus > StartedGuestStatus)
+  /* This thread (not a Life Support worker) is allowed to run teardown. */
+  EnableLifeSupportTermination ();
+
+  for (;;)
     {
-      if (RunningGuestStatus == EmbCommAreaPtr->guestStatus)
-        fprintf (stderr, "\nLisp is running!\n\n");
-      else
-        fprintf (stderr, "\nLisp was running!\n\n");
+      if (sigwait (&terminationSignals, &sig) != 0)
+        continue;
 
-      fprintf (stderr, "If you exit, the current state of Lisp will be lost.\n");
-      fprintf (stderr, "All information in its memory image (e.g., any modified editor\n");
-      fprintf (stderr, "buffers) will be irretrievably lost.  Further, Lisp will abandon\n");
-      fprintf (stderr, "any tasks it is performing for its clients.\n\n");
-
-      fprintf (stderr, "Do you still wish to exit?  (yes or no) ");
-      fflush (stderr);
-
-      while (TRUE)
+      confirmed = TRUE;
+      if (EmbCommAreaPtr->guestStatus > StartedGuestStatus)
         {
-#ifdef OS_LINUX
-          nRead = getline (&answer, answerSize_p, stdin);
-          if (nRead < 0)
-            vpunt (NULL, "Unexpected EOF on standard input");
-          answer[nRead - 1] = '\0';
-#else
-          if (NULL == gets (answer))
-            vpunt (NULL, "Unexpected EOF on standard input");
-#endif
-          if (0 == strcmp (answer, "yes"))
-            break;
-          else if (0 == strcmp (answer, "no"))
-            return;
+          if (RunningGuestStatus == EmbCommAreaPtr->guestStatus)
+            fprintf (stderr, "\nLisp is running!\n\n");
           else
+            fprintf (stderr, "\nLisp was running!\n\n");
+
+          fprintf (stderr, "If you exit, the current state of Lisp will be lost.\n");
+          fprintf (stderr, "All information in its memory image (e.g., any modified editor\n");
+          fprintf (stderr, "buffers) will be irretrievably lost.  Further, Lisp will abandon\n");
+          fprintf (stderr, "any tasks it is performing for its clients.\n\n");
+
+          fprintf (stderr, "Do you still wish to exit?  (yes or no) ");
+          fflush (stderr);
+
+          for (confirmed = -1; confirmed < 0; )
             {
-              fprintf (stderr, "Please answer 'yes' or 'no'.  ");
-              fflush (stderr);
+#ifdef OS_LINUX
+              nRead = getline (&answer, answerSize_p, stdin);
+              if (nRead < 0)
+                vpunt (NULL, "Unexpected EOF on standard input");
+              answer[nRead - 1] = '\0';
+#else
+              if (NULL == gets (answer))
+                vpunt (NULL, "Unexpected EOF on standard input");
+#endif
+              if (0 == strcmp (answer, "yes"))
+                confirmed = TRUE;
+              else if (0 == strcmp (answer, "no"))
+                confirmed = FALSE;
+              else
+                {
+                  fprintf (stderr, "Please answer 'yes' or 'no'.  ");
+                  fflush (stderr);
+                }
             }
         }
+
+      if (!confirmed)
+        continue;               /* user declined -- resume waiting */
+
+      TerminateTracing ();
+      TerminateSpy ();
+      TerminateLifeSupport ();
+
+      _exit (EXIT_SUCCESS);
     }
 
-  TerminateTracing ();
-  TerminateSpy ();
-  TerminateLifeSupport ();
-
-  _exit (EXIT_SUCCESS);
+  return NULL;                  /* not reached */
 }
 
 
 int main (int argc, char** argv)
 {
   VLMConfig config;
-  struct sigaction sigAction;
+  pthread_t terminationThread;
   Integer worldImageSize, worldImageMB;
   char* message;
   int reason;
+
+  /* Block the termination signals before any worker threads are created, so
+     every thread inherits the mask and they are handled only by sigwait in
+     TerminationThread. */
+  sigemptyset (&terminationSignals);
+  sigaddset (&terminationSignals, SIGINT);
+  sigaddset (&terminationSignals, SIGTERM);
+  sigaddset (&terminationSignals, SIGHUP);
+  sigaddset (&terminationSignals, SIGQUIT);
+  if (pthread_sigmask (SIG_BLOCK, &terminationSignals, NULL))
+    vpunt (NULL, "Unable to block termination signals.");
 
   BuildConfiguration (&config, argc, argv);
 #ifdef GENERA
@@ -130,22 +165,8 @@ int main (int argc, char** argv)
   /* TBD: -- Need an equivalent to: fesetenv (FE_NOMASK_ENV) */
 #endif
 
-  if (pthread_key_create (&mainThread, NULL))
-    vpunt (NULL, "Unable to establish per-thread data.");
-
-  pthread_setspecific (mainThread, (void*) TRUE);
-
-  sigAction.sa_handler = (sa_handler_t)MaybeTerminateVLM;
-  sigemptyset (&sigAction.sa_mask);
-  sigAction.sa_flags = 0;
-  if (sigaction (SIGINT, &sigAction, NULL))
-    vpunt (NULL, "Unable to establish SIGINT handler.");
-  if (sigaction (SIGTERM, &sigAction, NULL))
-    vpunt (NULL, "Unable to establish SIGTERM handler.");
-  if (sigaction (SIGHUP, &sigAction, NULL))
-    vpunt (NULL, "Unable to establish SIGHUP handler.");
-  if (sigaction (SIGQUIT, &sigAction, NULL))
-    vpunt (NULL, "Unable to establish SIGQUIT handler.");
+  if (pthread_create (&terminationThread, NULL, TerminationThread, NULL))
+    vpunt (NULL, "Unable to establish the termination handler thread.");
 
 #ifdef IVERIFY
   EnsureVirtualAddressRange (0xF8000000L, 0x00100000L, FALSE);

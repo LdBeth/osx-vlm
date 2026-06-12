@@ -16,15 +16,32 @@
    we must establish a cleanup handler that unlocks the mutex to prevent the possibility
    of a deadlock during application shutdown. */
 
+/* The begin/end_MUTEX_LOCKED locks normally live in the EmbCommArea.  On macOS
+   the EmbCommArea is mapped into DataSpace (1<<42) and a pthread mutex embedded
+   there cannot be locked (EAGAIN), so XLock is redirected to a global mutex in
+   ordinary memory; all other locks stay embedded.  Routing through
+   MUTEX_ADDRESS keeps every call site portable.  NB: on Darwin each lock name
+   must be registered below, or MUTEX_ADDRESS_<name> is undefined (a loud
+   compile error rather than a silent fault). */
+#if defined(OS_DARWIN)
+extern pthread_mutex_t global_XLock;
+#define MUTEX_ADDRESS(lock)       MUTEX_ADDRESS_##lock
+#define MUTEX_ADDRESS_XLock       (&global_XLock)
+#define MUTEX_ADDRESS_signalLock  (&EmbCommAreaPtr->signalLock)
+#define MUTEX_ADDRESS_clockLock   (&EmbCommAreaPtr->clockLock)
+#else
+#define MUTEX_ADDRESS(lock)       (&EmbCommAreaPtr->lock)
+#endif
+
 #define begin_MUTEX_LOCKED(lock) \
 	pthread_cleanup_push ((pthread_cleanuproutine_t)pthread_mutex_unlock, \
-						  (void*)&EmbCommAreaPtr->lock); \
-	if (pthread_mutex_lock (&EmbCommAreaPtr->lock)) \
+						  (void*)MUTEX_ADDRESS(lock)); \
+	if (pthread_mutex_lock (MUTEX_ADDRESS(lock))) \
 		vpunt (NULL, "Unable to lock the Life Support " #lock " in thread %lx",  \
 			   pthread_self ());
 
 #define end_MUTEX_LOCKED(lock) \
-	if (pthread_mutex_unlock (&EmbCommAreaPtr->lock)) \
+	if (pthread_mutex_unlock (MUTEX_ADDRESS(lock))) \
 		vpunt (NULL, "Unable to unlock the Life Support " #lock " in thread %lx", \
 			   pthread_self ()); \
 	pthread_cleanup_pop (FALSE);

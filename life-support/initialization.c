@@ -62,6 +62,15 @@ BootDataArea *BootDataAreaPtr = NULL;
 FEPCommArea *FEPCommAreaPtr = NULL;
 SystemCommArea *SystemCommAreaPtr = NULL;
 EmbCommArea *EmbCommAreaPtr = NULL;
+#if defined(OS_DARWIN)
+/* A pthread mutex embedded in the EmbCommArea cannot be locked on macOS: the
+   area is a MAP_FIXED mapping in DataSpace (1<<42) and the kernel's mutex-wait
+   primitive rejects it -- pthread_mutex_lock returns EAGAIN.  XLock, unlike the
+   other Life Support locks, is taken from the X output path, so we keep it (and
+   its setup flag) in ordinary process memory instead.  See life_prototypes.h. */
+pthread_mutex_t global_XLock;
+static Boolean global_XLockSetup = FALSE;
+#endif
 
 EmbPtr EmbCommAreaAllocPtr = NullEmbPtr;
 size_t EmbCommAreaAllocSize = 0;
@@ -193,6 +202,21 @@ int  InitializeLifeSupport (VLMConfig* config)
 	BootCommAreaPtr = (BootCommArea*) MapVirtualAddressData (BootCommAreaAddress);
 	BootDataAreaPtr = (BootDataArea*) MapVirtualAddressData (BootDataAreaAddress);
 	EmbCommAreaPtr = (EmbCommArea*) MapVirtualAddressData (EmbCommAreaAddress);
+
+#if defined(OS_DARWIN)
+	/* Initialize XLock (in ordinary memory) before any thread that may take
+	   it is created.  Recursive so an X output path already holding it can
+	   call a helper that re-takes it without self-deadlocking. */
+	{
+	  pthread_mutexattr_t xlock_attr;
+	  pthread_mutexattr_init (&xlock_attr);
+	  pthread_mutexattr_settype (&xlock_attr, PTHREAD_MUTEX_RECURSIVE);
+	  if (pthread_mutex_init (&global_XLock, &xlock_attr))
+	    vpunt (NULL, "Unable to create the Life Support X library lock");
+	  pthread_mutexattr_destroy (&xlock_attr);
+	  global_XLockSetup = TRUE;
+	}
+#endif
 
 
 	/* Initialize the BootComm and BootData */
@@ -351,9 +375,11 @@ int  InitializeLifeSupport (VLMConfig* config)
 		vpunt (NULL, "Unable to create the Life Support interval timer thread");
 	EmbCommAreaPtr->clockThreadSetup = TRUE;
 
+#if !defined(OS_DARWIN)
 	if (pthread_mutex_init (&EmbCommAreaPtr->XLock, NULL))
 		vpunt (NULL, "Unable to create the Life Support X library lock");
 	EmbCommAreaPtr->XLockSetup = TRUE;
+#endif
 
 	if (pthread_mutex_init (&EmbCommAreaPtr->wakeupLock, NULL))
 		vpunt (NULL, "Unable to create the VLM wakeup lock");
@@ -362,7 +388,6 @@ int  InitializeLifeSupport (VLMConfig* config)
 	if (pthread_cond_init (&EmbCommAreaPtr->wakeupSignal, NULL))
 		vpunt (NULL, "Unable to create the VLM wakeup signal");
 	EmbCommAreaPtr->wakeupSignalSetup = TRUE;
-
 
 	/* Create the channels, their data structures, and threads */
 
@@ -382,7 +407,9 @@ int  InitializeLifeSupport (VLMConfig* config)
 		EmbCommAreaPtr->unixLoginName = NullEmbPtr;
 	EmbCommAreaPtr->unixUID = getuid ();
 	EmbCommAreaPtr->unixGID = getgid ();
-	cwd = get_current_dir_name ();
+	/* get_current_dir_name() is glibc-only; getcwd(NULL,0) allocates an
+	   equivalent malloc'd string on both glibc and macOS/BSD. */
+	cwd = getcwd (NULL, 0);
 	if (cwd != NULL)
 		EmbCommAreaPtr->unixCwd = MakeEmbString (cwd);
 	else
@@ -441,14 +468,31 @@ int  InitializeLifeSupport (VLMConfig* config)
 }
 
 
+/* Permit the calling thread to run TerminateLifeSupport.  Marks the thread the
+   same way InitializeLifeSupport marks the main thread, so the dedicated
+   termination thread (src/main.c) passes the guard in TerminateLifeSupport. */
+
+void EnableLifeSupportTermination ()
+{
+	pthread_setspecific (mainThread, (void*) TRUE);
+}
+
+
 /* Cleanup Life Support on exit -- Kill existing threads, close disk channels, etc. */
 
 void TerminateLifeSupport ()
 {
+  static int alreadyTerminated = 0;
   struct timespec killSleep;
   void* exit_code;
 
+	/* Only the main thread and the dedicated termination thread may tear down
+	   Life Support.  A worker thread that hit vpunt()->exit() arrives here via
+	   atexit; bail so it can't cancel-and-join itself.  Then run exactly once,
+	   even if the normal-exit and signal paths race. */
 	if (NULL == pthread_getspecific (mainThread))
+		return;
+	if (!__sync_bool_compare_and_swap (&alreadyTerminated, 0, 1))
 		return;
 	/*
 	 * JJ: terminate network first
@@ -485,11 +529,19 @@ void TerminateLifeSupport ()
 		EmbCommAreaPtr->wakeupLockSetup = FALSE;
 	  }
 
+#if defined(OS_DARWIN)
+	if (global_XLockSetup)
+	  {
+		pthread_mutex_destroy (&global_XLock);
+		global_XLockSetup = FALSE;
+	  }
+#else
 	if (EmbCommAreaPtr->XLockSetup)
 	  {
 		pthread_mutex_destroy (&EmbCommAreaPtr->XLock);
 		EmbCommAreaPtr->XLockSetup = FALSE;
 	  }
+#endif
 
 	if (EmbCommAreaPtr->clockThreadSetup)
 	  {

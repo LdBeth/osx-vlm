@@ -277,7 +277,7 @@ void SignalHandlerTopLevel (pthread_addr_t argument)
   SignalHandler *signalHandler = (SignalHandler*) argument;
   pthread_t self = signalHandler->handlerThread;
 
-	pthread_cleanup_push ((pthread_cleanuproutine_t)pthread_detach, (void*)self);
+	pthread_cleanup_push ((pthread_cleanuproutine_t)null_thread_cleanup, (void*)self);
 
 	begin_MUTEX_LOCKED (signalLock);
 
