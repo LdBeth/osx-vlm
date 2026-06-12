@@ -1795,6 +1795,9 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
 
 #elif defined(OS_DARWIN) && defined(ARCH_AARCH64)
 
+#include <mach-o/getsect.h>
+#include <mach-o/ldsyms.h>
+
 /* The thread running iInterpret (set in InstructionSequencer).  DECODEFAULT
    may only be delivered to that thread: it redirects the faulting PC into the
    interpreter, which on any other thread (life support, cold load) would be
@@ -1803,6 +1806,76 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
    always-writable data side), so the handler must check. */
 pthread_t vlm_emulator_thread;
 int vlm_emulator_thread_valid = 0;
+
+/* Exception table for the interpreter's VM accesses (emitted by
+   stub/process.lisp under *explicit-fault-edges*).  Every asm-goto VM
+   load/store contributes an entry mapping its instruction address to the
+   compiler-chosen target of its `decodefault' branch edge.  Because that
+   edge is part of the function's visible CFG, the optimizer keeps register
+   state correct for it, so redirecting the faulting PC to the recorded
+   target is sound at any optimization level -- unlike a blind jam to the
+   DECODEFAULT label address, which is only safe under optnone where every
+   local lives in a fixed stack slot.  dyld's rebase fixups make the
+   entries hold slid runtime addresses before main() runs. */
+typedef struct { uint64_t insn, target; } VMExtableEntry;
+static VMExtableEntry *vm_extable = NULL;
+static size_t vm_extable_count = 0;
+
+static int vm_extable_cmp (const void *a, const void *b)
+{
+  uint64_t ia = ((const VMExtableEntry *)a)->insn;
+  uint64_t ib = ((const VMExtableEntry *)b)->insn;
+  return (ia > ib) - (ia < ib);
+}
+
+/* Called once from InstructionSequencer before iInterpret runs.  The
+   section lives in __DATA, hence is writable: sort it in place so the
+   fault handler can binary search.  Assembler block duplication may emit
+   entries out of address order, so the sort is not optional. */
+void InitializeVMExtable (void)
+{
+  unsigned long size = 0;
+  uint8_t *data = getsectiondata (&_mh_execute_header, "__DATA",
+				  "__vm_extable", &size);
+  if (data == NULL) return;
+  vm_extable = (VMExtableEntry *)data;
+  vm_extable_count = size / sizeof (VMExtableEntry);
+  qsort (vm_extable, vm_extable_count, sizeof (VMExtableEntry),
+	 vm_extable_cmp);
+}
+
+/* Async-signal-safe: pure binary search over the sorted table. */
+static uint64_t VMExtableLookup (uint64_t pc)
+{
+  size_t lo = 0, hi = vm_extable_count;
+  while (lo < hi) {
+    size_t mid = lo + ((hi - lo) >> 1);
+    if (vm_extable[mid].insn < pc)
+      lo = mid + 1;
+    else if (vm_extable[mid].insn > pc)
+      hi = mid;
+    else
+      return vm_extable[mid].target;
+  }
+  return 0;
+}
+
+/* Deliver the fault to Lisp: redirect the PC to this VM access's recorded
+   decodefault edge.  A PC with no entry is a genuine bug -- a VM access
+   the generator failed to instrument, or C code touching protected VM on
+   the emulator thread -- and iInterpret is no longer compiled optnone, so
+   the old blind jam to the DECODEFAULT label would land with garbage
+   register state.  Punt loudly instead; the PC identifies the site. */
+static void DeliverDecodeFault (ucontext_t *uc, Integer vma)
+{
+  uint64_t target = VMExtableLookup (uc->uc_mcontext->__ss.__pc);
+  processor->vma = (uint64_t)vma;
+  if (target == 0)
+    vpunt (NULL, "Memory fault at PC %p (VMA %x) is not a recorded VM"
+	   " access -- cannot deliver to Lisp",
+	   (void *)uc->uc_mcontext->__ss.__pc, vma);
+  uc->uc_mcontext->__ss.__pc = target;
+}
 
 /* macOS/arm64: mcontext is a pointer; the faulting address comes from
    si->si_addr (equivalently uc->uc_mcontext->__es.__far) and the program
@@ -1848,8 +1921,7 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
 	vpunt (NULL, "Repeated memory fault (signal %d) on a non-emulator"
 	       " thread at %p (VMA %x, attributes %o)",
 	       sigval, si->si_addr, vma, attr);
-      processor->vma = (uint64_t)vma;
-      uc->uc_mcontext->__ss.__pc = (uint64_t)DECODEFAULT;
+      DeliverDecodeFault (uc, vma);
       return;
     }
   }
@@ -1886,8 +1958,7 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
 	vpunt (NULL, "Memory fault (signal %d) on a non-emulator thread"
 	       " at %p (VMA %x, attributes %o) -- cannot deliver to Lisp",
 	       sigval, si->si_addr, vma, attr);
-      processor->vma = (uint64_t)vma;
-      uc->uc_mcontext->__ss.__pc = (uint64_t)DECODEFAULT;
+      DeliverDecodeFault (uc, vma);
   }
 }
 

@@ -529,7 +529,16 @@ uint64_t _exectimes[0x2000];
 #endif // EXECTIMES
 #endif
 
+/* On Darwin/aarch64 every VM access carries an explicit asm-goto fault
+   edge to decodefault (recorded in __DATA,__vm_extable; see
+   stub/process.lisp *explicit-fault-edges* and emulator/memory.c), so the
+   optimizer keeps register state correct for fault delivery and the
+   function can be optimized.  Everywhere else the SEGV handler still
+   jams the PC blindly to the DECODEFAULT label address, which is only
+   sound under optnone, where every local lives in a fixed stack slot. */
+#if !(defined(OS_DARWIN) && defined(ARCH_AARCH64))
 __attribute__((optnone))
+#endif
 int iInterpret (PROCESSORSTATEP ivoryp) {
   PROCESSORSTATEP processor;
   u64 ivory = (u64)ivoryp;

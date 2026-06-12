@@ -189,8 +189,12 @@ int InstructionSequencer (void)
     {
       extern pthread_t vlm_emulator_thread;
       extern int vlm_emulator_thread_valid;
+      extern void InitializeVMExtable (void);
       vlm_emulator_thread = pthread_self();
       vlm_emulator_thread_valid = 1;
+      /* Sort the VM-access exception table so segv_handler can map a
+	 faulting PC to its decodefault branch edge (see memory.c). */
+      InitializeVMExtable ();
     }
 #endif
 
