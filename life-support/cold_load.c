@@ -58,6 +58,14 @@ static EmbQueue *keyboard_queue = NULL, *display_queue = NULL;
 static Display *display = NULL;
 static KeySym *orig_meta, *orig_hyper ;
 static int ks_p_kc_meta, ks_p_kc_hyper ;
+static KeySym *orig_yen = NULL ;	/* Apple JIS ¥-key remap (see make_map) */
+static int ks_p_kc_yen ;
+static KeyCode jis_yen_code = 0 ;
+/* Apple JIS: captured once from the pristine keymap (make_map relabels them) */
+static KeyCode jis_super_code = 0 ;	/* left  Command -> Super */
+static KeyCode jis_hyper_code = 0 ;	/* right Command -> Hyper */
+static KeySym *orig_jsuper = NULL, *orig_jhyper = NULL ;
+static int ks_p_kc_jsuper, ks_p_kc_jhyper ;
 static Screen *screen;
 static Visual *visual;
 static Window window, icon_window, root;
@@ -166,6 +174,29 @@ static XModifierKeymap *remove_modifier ( Display *display, KeySym keysym, XModi
 	return NULL ;
 }
 
+/* Find the keycode whose *unshifted* (level 0) keysym is `keysym`.
+   Unlike XKeysymToKeycode, this ignores keys that only carry the keysym at a
+   shifted/Option level -- e.g. on the Mac layout Option+Y also yields ¥, so
+   XKeysymToKeycode(XK_yen) returns the "y" key, not the dedicated ¥ key. */
+static KeyCode find_unshifted_keycode (KeySym keysym)
+{
+	KeyCode result = 0;
+	int min_kc = 0, max_kc = 0, per = 0, i;
+	KeySym *map;
+
+	XDisplayKeycodes(display, &min_kc, &max_kc);
+	map = XGetKeyboardMapping(display, min_kc, max_kc - min_kc + 1, &per);
+	if (map) {
+		for (i = 0; i <= max_kc - min_kc; i++)
+			if (map[i * per] == keysym) {
+				result = (KeyCode)(min_kc + i);
+				break;
+			}
+		XFree(map);
+	}
+	return result;
+}
+
 static void make_map (int for_real_p)
 {
 	KeySym meta_keysym[] = { XK_Meta_L, XK_Alt_L };
@@ -216,8 +247,51 @@ static void make_map (int for_real_p)
 		if (for_real_p) vwarn("cold load",
 				      "Your Meta key now is on ALT");
 	}
+	// Apple JIS: turn the ¥ (yen) key into backslash (Shift+¥ stays bar).
+	// Done on the real X keymap so it also reaches booted Genera, which
+	// pulls the keymap through the console X-protocol proxy.  Target the
+	// dedicated ¥ key (level-0 yen), NOT XKeysymToKeycode(XK_yen) -- that
+	// returns the "y" key, since Option+Y also yields ¥ on the Mac layout.
+	if (keyboardType == Apple_JIS && orig_yen == NULL) {
+		jis_yen_code = find_unshifted_keycode(XK_yen);
+		if (jis_yen_code) {
+			KeySym backslash_keysym[] = { XK_backslash, XK_bar };
+			orig_yen = XGetKeyboardMapping(display, jis_yen_code,
+						       1, &ks_p_kc_yen);
+			XChangeKeyboardMapping(display,
+					       jis_yen_code,
+					       sizeof(backslash_keysym)/sizeof(KeySym),
+					       backslash_keysym,
+					       1);
+			if (for_real_p) vwarn("cold load",
+					      "Your ¥ (yen) key now produces backslash");
+		}
+	}
+	// Apple JIS: relabel the Command keys so booted Genera (which reads the
+	// keymap through the console proxy) sees Super/Hyper rather than Meta.
+	// Meta itself stays on Option via the "Meta on Alt" remap above.
+	if (keyboardType == Apple_JIS) {
+		if (jis_super_code && orig_jsuper == NULL) {
+			KeySym super_keysym[] = { XK_Super_L };
+			orig_jsuper = XGetKeyboardMapping(display, jis_super_code,
+							  1, &ks_p_kc_jsuper);
+			XChangeKeyboardMapping(display, jis_super_code,
+					       1, super_keysym, 1);
+			if (for_real_p) vwarn("cold load",
+					      "Your Super key now is on (left) Command");
+		}
+		if (jis_hyper_code && orig_jhyper == NULL) {
+			KeySym hyper2_keysym[] = { XK_Hyper_R };
+			orig_jhyper = XGetKeyboardMapping(display, jis_hyper_code,
+							  1, &ks_p_kc_jhyper);
+			XChangeKeyboardMapping(display, jis_hyper_code,
+					       1, hyper2_keysym, 1);
+			if (for_real_p) vwarn("cold load",
+					      "Your Hyper key now is on (right) Command");
+		}
+	}
 	// remove non-functional Hyper_L key
-	newmap = remove_modifier ( display, XK_Hyper_L, 
+	newmap = remove_modifier ( display, XK_Hyper_L,
 				   newmap ? 
 				   newmap : 
 				   XGetModifierMapping(display) );
@@ -679,6 +753,33 @@ static void close_display ()
 						       1);
 				XFree (orig_hyper);
 			}
+			if (orig_yen) {
+				XChangeKeyboardMapping(display,
+						       jis_yen_code,
+						       ks_p_kc_yen,
+						       orig_yen,
+						       1);
+				XFree (orig_yen);
+				orig_yen = NULL;
+			}
+			if (orig_jsuper) {
+				XChangeKeyboardMapping(display,
+						       jis_super_code,
+						       ks_p_kc_jsuper,
+						       orig_jsuper,
+						       1);
+				XFree (orig_jsuper);
+				orig_jsuper = NULL;
+			}
+			if (orig_jhyper) {
+				XChangeKeyboardMapping(display,
+						       jis_hyper_code,
+						       ks_p_kc_jhyper,
+						       orig_jhyper,
+						       1);
+				XFree (orig_jhyper);
+				orig_jhyper = NULL;
+			}
 			originalModmap = NULL;
 		}
 		XCloseDisplay(display);
@@ -818,6 +919,9 @@ static void handle_input ()
 				else
 					keysym = XLookupKeysym(&event.xkey, 1);
 			}
+			/* Apple JIS ¥ (yen) key -> backslash; Shift+¥ stays bar (|). */
+			if (XK_yen == keysym)
+				keysym = XK_backslash;
 			if ((XK_space <= keysym) && (keysym <= XK_asciitilde))
 				key = keysym;
 			else if (key == -1)
@@ -1411,6 +1515,49 @@ static void get_keyboard_modifier_codes (int for_real_p,
   *meta_r_code = XKeysymToKeycode(display, XK_Meta_R);
   *alt_l_code = XKeysymToKeycode(display, XK_Alt_L);
 
+  /* Apple JIS (Japanese) keyboard.
+
+     Detected before the German/US/ANSI checks because the ¥ (yen) key is an
+     unambiguous JIS marker, whereas a JIS layout has neither ä nor å and so
+     would otherwise be misread as a DEC keyboard.
+
+     NOTE: the 英数 (Eisu) and かな (Kana) keys flanking the spacebar -- the
+     obvious Super/Hyper candidates -- are swallowed by macOS for input-source
+     switching and never reach XQuartz, so they are unusable.  The JIS Magic
+     Keyboard exposes only a left Control, a left Option (Alt_L), and two
+     Command keys that send Meta_L / Meta_R.  We assign:
+         Control = left Control
+         Meta    = Option        (Alt_L)
+         Super   = left Command   (Meta_L)
+         Hyper   = right Command  (Meta_R)
+     setup_modifier_mapping() puts Meta/Super/Hyper on distinct modifier bits
+     and make_map() relabels the Command keys to Super_L / Hyper_R (and the ¥
+     key to backslash) so booted Genera recognizes them.  The Command keycodes
+     are captured ONCE here from the pristine keymap, because make_map's later
+     remaps make XKeysymToKeycode(XK_Meta_L) ambiguous (Option gets Meta_L too). */
+  if (find_unshifted_keycode(XK_yen) != 0) {
+	  if (!did_show) {
+		  vwarn("cold load",
+		        "presuming an Apple JIS keyboard");
+		  did_show = 1;
+	  };
+	  keyboardType = Apple_JIS;
+	  skMap = (coldmapentry*)&coldmapApple;	/* same cluster as ANSI Apple */
+	  fkMap = (short*)&fkmapApple;
+	  /* ---*** TODO: Find out what KeySym is labelled CLEAR */
+	  skMap->keysym = 0;					/* Apple X11 */
+	  if (jis_super_code == 0) {
+		  jis_super_code = XKeysymToKeycode(display, XK_Meta_L); /* left  Command */
+		  jis_hyper_code = XKeysymToKeycode(display, XK_Meta_R); /* right Command */
+	  }
+	  *control_r_code = 0;					/* no right Control */
+	  *meta_l_code = *alt_l_code;				/* Meta on Option */
+	  *meta_r_code = 0;
+	  *super_code = jis_super_code;
+	  *hyper_code = jis_hyper_code;
+	  return ;
+  }
+
   keycode1 = XKeysymToKeycode(display, XK_ISO_Left_Tab);	/* Linux X server */
   keycode2 = XKeysymToKeycode(display, XK_adiaeresis);	/* ä */
   
@@ -1663,6 +1810,30 @@ static int setup_modifier_mapping ()
   XGrabServer(display);
   modmap = XGetModifierMapping(display);
   do_modifier(&modmap, &changed, control_l_code, control_r_code, 0);
+  if (keyboardType == Apple_JIS) {
+	  /* The two Command keys share one modifier bit by default, so Meta /
+	     Super / Hyper cannot be told apart via do_modifier.  Put each on its
+	     own dedicated bit instead: clear our keys from every modifier slot,
+	     then assign Meta=Mod1, Super=Mod3, Hyper=Mod4 (avoiding Lock and Mod2,
+	     which XQuartz uses).  Control stays on its default Control bit. */
+	  int m;
+	  KeyCode keys[3];
+	  int idx[3];
+	  int i;
+	  keys[0] = meta_l_code; idx[0] = Mod1MapIndex;		/* Option       */
+	  keys[1] = super_code;  idx[1] = Mod3MapIndex;		/* left Command */
+	  keys[2] = hyper_code;  idx[2] = Mod4MapIndex;		/* right Command*/
+	  for (i = 0; i < 3; i++) {
+		  if (keys[i] == 0) continue;
+		  while ((m = find_modifier(modmap, keys[i])) != -1)
+			  modmap = XDeleteModifiermapEntry(modmap, keys[i], m);
+		  modmap = XInsertModifiermapEntry(modmap, keys[i], idx[i]);
+	  }
+	  meta_mask  = Mod1Mask;
+	  super_mask = Mod3Mask;
+	  hyper_mask = Mod4Mask;
+	  changed = TRUE;
+  } else {
   meta_mask = do_modifier(&modmap, &changed,  meta_l_code, meta_r_code, 0);
   if (meta_mask == 0)
 	  vwarn ("cold load init",
@@ -1688,6 +1859,7 @@ static int setup_modifier_mapping ()
 						   super_code,
 						   mask_to_modifier(hyper_mask));
 	  changed = TRUE;
+  }
   }
   if (keyboardType == German) {
 	  isol3_mask = do_modifier(&modmap, &changed, isol3_code, 0, 0);

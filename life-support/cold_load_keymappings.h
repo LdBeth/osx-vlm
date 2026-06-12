@@ -14,6 +14,7 @@ enum KeyboardType {
   DEC_LK401,
   DEC_PC,
   Apple_Pro,
+  Apple_JIS,
   German,
   Us
  };
@@ -180,6 +181,11 @@ static short fkmapApple[] = {
   -1, -1,					/* F22 */
   -1, -1,					/* F23 */
   };
+
+/* Apple JIS (Japanese) keyboard reuses the ANSI Apple maps above -- its
+   navigation/function cluster is identical.  The JIS-specific handling (¥ ->
+   backslash, modifier scheme) lives entirely in cold_load.c; the 英数/かな
+   keys are swallowed by macOS and never reach XQuartz, so they are unused. */
 
 /* German Keyboard */
 
