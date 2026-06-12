@@ -235,9 +235,9 @@
       (ADDQ ,vma Ivory ,temp2)
       (S4ADDQ ,temp2 zero ,data)
       ,@(when prefetchp `((FETCH 0 (,temp2))))	; load tag word
-      (LDQ_U ,tag 0 (,temp2))
+      (VM-LDQ_U ,tag 0 (,temp2))
       ,@(when prefetchp `((FETCH 0 (,data))))
-      (LDL ,data 0 (,data))			; load data
+      (VM-LDL ,data 0 (,data))			; load data
       (EXTBL ,tag ,temp2 ,tag)			; extract the correct tag
       )))
 
@@ -252,6 +252,37 @@
 ;; preserves the original tag-store-first order.
 (defvar *data-store-first* nil)
 
+;; When T (set by process.lisp on aarch64), VM loads/stores use asm-goto
+;; wrappers that emit exception-table entries; on x86-64 the wrappers
+;; expand to the plain ops for byte-identical output.
+(defvar *explicit-fault-edges* nil)
+
+;; Gensym-free wrappers: when *explicit-fault-edges* is T, expand to the
+;; -VM variant (LDL-VM etc.) which emits an asm-goto with an extable
+;; entry; otherwise expand to the plain op.  Must not introduce a gensym
+;; or the deterministic-label contract (process.lisp *gensym-counter*)
+;; breaks and x86-64 output is no longer byte-identical.
+(defmacro VM-LDL (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((LDL-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((LDL ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+(defmacro VM-STL (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((STL-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((STL ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+(defmacro VM-LDQ_U (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((LDQ_U-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((LDQ_U ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+(defmacro VM-STQ_U (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((STQ_U-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((STQ_U ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+
 ;; Raw write to emulated memory
 (defmacro VM-write (vma tag data temp temp2 temp3 temp4 &optional prefetchp)
   (check-temporaries (vma tag data) (temp temp2 temp3 temp4))
@@ -262,7 +293,7 @@
       ,@(when prefetchp
 	  `((FETCH_M 0 (,temp))
 	    (force-alignment)))
-      (LDQ_U ,temp3 0 (,temp))			; temp here is the tag address
+      (VM-LDQ_U ,temp3 0 (,temp))			; temp here is the tag address
       (INSBL ,tag ,temp ,temp2)			; temp2 is the positioned tag
       (MSKBL ,temp3 ,temp ,temp3)		; remove old byte
       ,@(if prefetchp
@@ -272,11 +303,11 @@
       ;; The protected space's store must happen first, so a write fault
       ;; arrives with the word intact (see *data-store-first*)
       ,@(if *data-store-first*
-	    `((STL ,data 0 (,temp4))		; store data
-	      (STQ_U ,temp3 0 (,temp)))
-	    `((STQ_U ,temp3 0 (,temp))
+	    `((VM-STL ,data 0 (,temp4))		; store data
+	      (VM-STQ_U ,temp3 0 (,temp)))
+	    `((VM-STQ_U ,temp3 0 (,temp))
 	      ;; Must happen last, in case of write-first fault
-	      (STL ,data 0 (,temp4))))		; store data
+	      (VM-STL ,data 0 (,temp4))))		; store data
       )))
 
 ;; Decode fault according to page attributes
@@ -575,7 +606,7 @@
 	       ,@(if (lisp:and (eq cycle :general) (or temp4 *cant-be-in-cache-p*))
 		     `((S4ADDQ ,cycle-number zero ,action "Cycle-number -> table offset"))
 		     `((S4ADDQ ,temp3 zero ,data)))
-	       (LDQ_U ,tag 0 (,temp3))
+	       (VM-LDQ_U ,tag 0 (,temp3))
 	       ,@(if (lisp:and (eq cycle :general) (or temp4 *cant-be-in-cache-p*))
 		     `((S4ADDQ ,action Ivory ,action))
 		     (unless *cant-be-in-cache-p*
@@ -592,7 +623,7 @@
 			      ))))
 	       ,@(unless *cant-be-in-cache-p*
 		   `((CMPULT ,temp1 ,(or *memoized-limit* temp2) ,temp2 "In range?")))
-	       (LDL ,data 0 (,data))
+	       (VM-LDL ,data 0 (,data))
 	       (EXTBL ,tag ,temp3 ,tag)
 	       ,@(unless *cant-be-in-cache-p*
 		   `((branch-true ,temp2 ,incache)))
@@ -789,7 +820,7 @@
       ,@(unless (or *cant-be-in-cache-p* *memoized-limit* (null temp5))
 	  `((LDL ,temp5 PROCESSORSTATE_SCOVLIMIT (ivory))))
       (S4ADDQ ,temp zero ,temp4)
-      (LDQ_U ,temp3 0 (,temp))
+      (VM-LDQ_U ,temp3 0 (,temp))
       ,@(unless (or *cant-be-in-cache-p* (null temp5))
 	  `((SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset")
 	    (CMPULT ,temp2 ,(or *memoized-limit* temp5) ,temp5 "In range?")))
@@ -802,15 +833,15 @@
       ;; The protected space's store must happen first, so a write fault
       ;; arrives with the word intact (see *data-store-first*)
       ,@(if *data-store-first*
-	    `((STL ,data 0 (,temp4))		; store data
-	      (STQ_U ,temp3 0 (,temp)))
-	    `((STQ_U ,temp3 0 (,temp))))
+	    `((VM-STL ,data 0 (,temp4))		; store data
+	      (VM-STQ_U ,temp3 0 (,temp)))
+	    `((VM-STQ_U ,temp3 0 (,temp))))
       ,@(unless (or *cant-be-in-cache-p* temp5)
 	  `((LDL ,temp PROCESSORSTATE_SCOVLIMIT (ivory))
 	    (SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset")
 	    (CMPULT ,temp2 ,temp ,temp "In range?")))
       ,@(unless *data-store-first*
-	  `((STL ,data 0 (,temp4))))		; store data
+	  `((VM-STL ,data 0 (,temp4))))		; store data
       ,@(unless *cant-be-in-cache-p*
 	  `((branch-true ,(or temp5 temp) ,incache "J. if in cache")))
       ,@(if done-label

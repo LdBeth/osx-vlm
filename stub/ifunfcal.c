@@ -275,13 +275,23 @@ g6798:
 g6756:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  arg5 = LDQ_U(t7);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->dataread_mask);
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
-  arg6 = *(s32 *)arg6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
   arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6758;
@@ -353,13 +363,23 @@ g6751:
 g6787:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  arg5 = LDQ_U(t7);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->cdr_mask);
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
-  arg6 = *(s32 *)arg6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
   arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6789;
@@ -404,13 +424,23 @@ g6800:
 g6771:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  arg5 = LDQ_U(t7);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->dataread_mask);
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
-  arg6 = *(s32 *)arg6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
   arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6773;
@@ -502,13 +532,23 @@ g6849:
 g6807:
   t5 = t2 + ivory;
   arg6 = (t5 * 4);
-  arg5 = LDQ_U(t5);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg5) : [adr] "r"(t5 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t3 = t2 - t11;
   t6 = *(u64 *)&(processor->dataread_mask);
   /* In range? */
   t4 = ((u64)t3 < (u64)t12) ? 1 : 0;
-  arg6 = *(s32 *)arg6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
   arg5 = (u8)(arg5 >> ((t5&7)*8));
   if (t4 != 0)
     goto g6809;
@@ -592,13 +632,23 @@ g6802:
 g6838:
   t5 = t2 + ivory;
   arg6 = (t5 * 4);
-  arg5 = LDQ_U(t5);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg5) : [adr] "r"(t5 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t3 = t2 - t11;
   t6 = *(u64 *)&(processor->cdr_mask);
   /* In range? */
   t4 = ((u64)t3 < (u64)t12) ? 1 : 0;
-  arg6 = *(s32 *)arg6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
   arg5 = (u8)(arg5 >> ((t5&7)*8));
   if (t4 != 0)
     goto g6840;
@@ -661,13 +711,23 @@ g6851:
 g6822:
   t5 = t2 + ivory;
   arg6 = (t5 * 4);
-  arg5 = LDQ_U(t5);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg5) : [adr] "r"(t5 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t3 = t2 - t11;
   t6 = *(u64 *)&(processor->dataread_mask);
   /* In range? */
   t4 = ((u64)t3 < (u64)t12) ? 1 : 0;
-  arg6 = *(s32 *)arg6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
   arg5 = (u8)(arg5 >> ((t5&7)*8));
   if (t4 != 0)
     goto g6824;
@@ -1233,13 +1293,23 @@ g6863:
   t10 = t1 + ivory;
   t9 = *(s32 *)&processor->scovlimit;
   t6 = (t10 * 4);
-  t7 = LDQ_U(t10);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t7) : [adr] "r"(t10 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t1 - t8;
   t11 = *(u64 *)&(processor->bindread_mask);
   /* In range? */
   t9 = ((u64)t8 < (u64)t9) ? 1 : 0;
-  t6 = *(s32 *)t6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t6) : [adr] "r"(t6) : "memory" : decodefault);
   t7 = (u8)(t7 >> ((t10&7)*8));
   if (t9 != 0)
     goto g6865;
@@ -1260,13 +1330,23 @@ g6873:
   t10 = t5 + ivory;
   t9 = *(s32 *)&processor->scovlimit;
   t2 = (t10 * 4);
-  t3 = LDQ_U(t10);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t3) : [adr] "r"(t10 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t5 - t8;
   t11 = *(u64 *)&(processor->bindread_mask);
   /* In range? */
   t9 = ((u64)t8 < (u64)t9) ? 1 : 0;
-  t2 = *(s32 *)t2;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
   t3 = (u8)(t3 >> ((t10&7)*8));
   if (t9 != 0)
     goto g6875;
@@ -1288,12 +1368,22 @@ g6883:
   t12 = t2 + ivory;
   t11 = *(s32 *)&processor->scovlimit;
   t9 = (t12 * 4);
-  t8 = LDQ_U(t12);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t8) : [adr] "r"(t12 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t10 = t2 - t10;
   /* In range? */
   t11 = ((u64)t10 < (u64)t11) ? 1 : 0;
-  t9 = *(s32 *)t9;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t9) : [adr] "r"(t9) : "memory" : decodefault);
   t8 = (u8)(t8 >> ((t12&7)*8));
   if (t11 != 0)
     goto g6885;
@@ -1313,15 +1403,30 @@ g6892:
   t8 = t8 | t9;
   t10 = t2 + ivory;
   t9 = (t10 * 4);
-  t12 = LDQ_U(t10);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t12) : [adr] "r"(t10 & ~7L) : "memory" : decodefault);
   t11 = (t8 & 0xff) << ((t10&7)*8);
   t12 = t12 & ~(0xffUL << (t10&7)*8);
 
 g6895:
   t12 = t12 | t11;
   t11 = *(u64 *)&(processor->stackcachebasevma);
-  *(u32 *)t9 = t6;
-  STQ_U(t10, t12);
+  asm goto ("0:\tstr %w[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : : [val] "r"(t6), [adr] "r"(t9) : "memory" : decodefault);
+  asm goto ("0:\tstr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : : [val] "r"(t12), [adr] "r"(t10 & ~7L) : "memory" : decodefault);
   t10 = *(s32 *)&processor->scovlimit;
   /* Stack cache offset */
   t11 = t2 - t11;
@@ -1558,16 +1663,36 @@ g6897:
   *(u64 *)&processor->stackcachetopvma = t4;
   t7 = t1 + ivory;
   t5 = (t7 * 4);
-  t4 = LDQ_U(t7);
-  t5 = *(s32 *)t5;
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t4) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
   t4 = (u8)(t4 >> ((t7&7)*8));
   goto g6899;
 
 g6900:
   t7 = t1 + ivory;
   t5 = (t7 * 4);
-  t4 = LDQ_U(t7);
-  t5 = *(s32 *)t5;
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t4) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
   t4 = (u8)(t4 >> ((t7&7)*8));
   t3 = t3 - 1;
   /* advance vma position */
@@ -1830,7 +1955,12 @@ g6907:
   /* Advance SCA position */
   t3 = t3 + 8;
   /* Save data word */
-  *(u32 *)t2 = t4;
+  asm goto ("0:\tstr %w[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : : [val] "r"(t4), [adr] "r"(t2) : "memory" : decodefault);
   /* Advance VMA position */
   t2 = t2 + 4;
 
@@ -1854,7 +1984,12 @@ g6909:
   /* Advance SCA position */
   t3 = t3 + 8;
   /* Get packed tags word */
-  t5 = LDQ_U(t2);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t5) : [adr] "r"(t2 & ~7L) : "memory" : decodefault);
   /* Position the new tag */
   t4 = (t4 & 0xff) << ((t2&7)*8);
   /* Remove old tag */
@@ -1862,7 +1997,12 @@ g6909:
   /* Put in new byte */
   t5 = t4 | t5;
   /* Save packed tags word */
-  STQ_U(t2, t5);
+  asm goto ("0:\tstr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : : [val] "r"(t5), [adr] "r"(t2 & ~7L) : "memory" : decodefault);
   /* Advance VMA position */
   t2 = t2 + 1;
 
@@ -2341,13 +2481,23 @@ g6917:
   arg1 = t1 + ivory;
   t9 = *(s32 *)&processor->scovlimit;
   t6 = (arg1 * 4);
-  t7 = LDQ_U(arg1);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t7) : [adr] "r"(arg1 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t1 - t8;
   arg2 = *(u64 *)&(processor->bindread_mask);
   /* In range? */
   t9 = ((u64)t8 < (u64)t9) ? 1 : 0;
-  t6 = *(s32 *)t6;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t6) : [adr] "r"(t6) : "memory" : decodefault);
   t7 = (u8)(t7 >> ((arg1&7)*8));
   if (t9 != 0)
     goto g6919;
@@ -2368,13 +2518,23 @@ g6927:
   arg1 = t5 + ivory;
   t9 = *(s32 *)&processor->scovlimit;
   t2 = (arg1 * 4);
-  t3 = LDQ_U(arg1);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t3) : [adr] "r"(arg1 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t5 - t8;
   arg2 = *(u64 *)&(processor->bindread_mask);
   /* In range? */
   t9 = ((u64)t8 < (u64)t9) ? 1 : 0;
-  t2 = *(s32 *)t2;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
   t3 = (u8)(t3 >> ((arg1&7)*8));
   if (t9 != 0)
     goto g6929;
@@ -2396,12 +2556,22 @@ g6937:
   t11 = t2 + ivory;
   arg2 = *(s32 *)&processor->scovlimit;
   t9 = (t11 * 4);
-  t8 = LDQ_U(t11);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t8) : [adr] "r"(t11 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   arg1 = t2 - arg1;
   /* In range? */
   arg2 = ((u64)arg1 < (u64)arg2) ? 1 : 0;
-  t9 = *(s32 *)t9;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t9) : [adr] "r"(t9) : "memory" : decodefault);
   t8 = (u8)(t8 >> ((t11&7)*8));
   if (arg2 != 0)
     goto g6939;
@@ -2421,15 +2591,30 @@ g6946:
   t8 = t8 | t9;
   arg1 = t2 + ivory;
   t9 = (arg1 * 4);
-  t11 = LDQ_U(arg1);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t11) : [adr] "r"(arg1 & ~7L) : "memory" : decodefault);
   arg2 = (t8 & 0xff) << ((arg1&7)*8);
   t11 = t11 & ~(0xffUL << (arg1&7)*8);
 
 g6949:
   t11 = t11 | arg2;
   arg2 = *(u64 *)&(processor->stackcachebasevma);
-  *(u32 *)t9 = t6;
-  STQ_U(arg1, t11);
+  asm goto ("0:\tstr %w[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : : [val] "r"(t6), [adr] "r"(t9) : "memory" : decodefault);
+  asm goto ("0:\tstr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : : [val] "r"(t11), [adr] "r"(arg1 & ~7L) : "memory" : decodefault);
   arg1 = *(s32 *)&processor->scovlimit;
   /* Stack cache offset */
   arg2 = t2 - arg2;

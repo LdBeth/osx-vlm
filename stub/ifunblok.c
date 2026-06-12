@@ -194,7 +194,12 @@ g8133:
   t11 = t2 + ivory;
   /* Cycle-number -> table offset */
   t12 = (t1 * 4);
-  t8 = LDQ_U(t11);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t8) : [adr] "r"(t11 & ~7L) : "memory" : decodefault);
   t12 = (t12 * 4) + ivory;
   t7 = (t11 * 4);
   /* Stack cache offset */
@@ -202,7 +207,12 @@ g8133:
   t12 = *(u64 *)(t12 + PROCESSORSTATE_DATAREAD_MASK);
   /* In range? */
   t10 = ((u64)t9 < (u64)arg6) ? 1 : 0;
-  t7 = *(s32 *)t7;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t7) : [adr] "r"(t7) : "memory" : decodefault);
   t8 = (u8)(t8 >> ((t11&7)*8));
   if (t10 != 0)
     goto g8135;
@@ -605,13 +615,23 @@ blockreadalu:
 g8162:
   t11 = t1 + ivory;
   t3 = (t11 * 4);
-  t2 = LDQ_U(t11);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t2) : [adr] "r"(t11 & ~7L) : "memory" : decodefault);
   /* Stack cache offset */
   t9 = t1 - arg5;
   t12 = *(u64 *)&(processor->dataread_mask);
   /* In range? */
   t10 = ((u64)t9 < (u64)arg6) ? 1 : 0;
-  t3 = *(s32 *)t3;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
   t2 = (u8)(t2 >> ((t11&7)*8));
   if (t10 != 0)
     goto g8164;
@@ -1214,7 +1234,12 @@ g8250:
   t10 = *(s32 *)&processor->scovlimit;
   /* Cycle-number -> table offset */
   t12 = (t1 * 4);
-  t2 = LDQ_U(t11);
+  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t2) : [adr] "r"(t11 & ~7L) : "memory" : decodefault);
   t12 = (t12 * 4) + ivory;
   t3 = (t11 * 4);
   /* Stack cache offset */
@@ -1222,7 +1247,12 @@ g8250:
   t12 = *(u64 *)(t12 + PROCESSORSTATE_DATAREAD_MASK);
   /* In range? */
   t10 = ((u64)t9 < (u64)t10) ? 1 : 0;
-  t3 = *(s32 *)t3;
+  asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
+    ".pushsection __DATA,__vm_extable\n\t"
+    ".p2align 3\n\t"
+    ".quad 0b, %l[decodefault]\n\t"
+    ".popsection"
+    : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
   t2 = (u8)(t2 >> ((t11&7)*8));
   if (t10 != 0)
     goto g8252;

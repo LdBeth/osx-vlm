@@ -154,6 +154,17 @@
 ;; the protection and the original tag-store-first order is preserved.
 (defparameter *data-store-first* (eq *target-arch* :aarch64))
 
+;; Emit VM loads/stores as asm-goto statements carrying an exception-table
+;; entry (instruction address -> `decodefault' branch target) in section
+;; __DATA,__vm_extable.  The SIGSEGV/SIGBUS handler (emulator/memory.c)
+;; looks the faulting PC up there and resumes at the compiler-chosen
+;; target.  That makes the fault edge part of iInterpret's visible CFG --
+;; the property that lets it build without optnone: a blind PC jam to the
+;; DECODEFAULT label is only sound when every local lives in a fixed stack
+;; slot.  On x86-64 the VM-* wrappers (memoryem.lisp) expand to the plain
+;; ops, keeping that output byte-identical.
+(defparameter *explicit-fault-edges* (eq *target-arch* :aarch64))
+
 ;; clang -- the C compiler on Darwin -- does not implement GCC's nested-function
 ;; extension, so the nested debug fn show_loc (defined in the hand-written
 ;; stub.c) is excluded there; its sole call site must be omitted to match.
@@ -1148,6 +1159,40 @@
   )
 ;;;;
 
+;; VM-access emission with an explicit fault edge (*explicit-fault-edges*,
+;; aarch64 only).  INSN is the complete arm64 instruction template using
+;; the named operands %[val] / %[adr]; VAL and ADDR are the C operand
+;; expressions.  The asm-goto declares `decodefault' (a label of the one
+;; big iInterpret function, in scope in every generated file) as a branch
+;; target and records this instruction's address against that edge's
+;; target in __DATA,__vm_extable.  The "memory" clobber flushes every
+;; pending store before a potentially-trapping access -- Lisp runs between
+;; decodefault and the instruction restart -- and orders the data STL
+;; before the tag STQ_U, preserving the *data-store-first* invariant.
+(defun emit-vm-access (destination insn val addr outputp)
+  (format destination "  asm goto (\"0:\\t~A\\n\\t\"~%" insn)
+  (format destination "    \".pushsection __DATA,__vm_extable\\n\\t\"~%")
+  (format destination "    \".p2align 3\\n\\t\"~%")
+  (format destination "    \".quad 0b, %l[decodefault]\\n\\t\"~%")
+  (format destination "    \".popsection\"~%")
+  (if outputp
+      (format destination
+	      "    : [val] \"=r\"(~A) : [adr] \"r\"(~A) : \"memory\" : decodefault);~%"
+	      val addr)
+      (format destination
+	      "    : : [val] \"r\"(~A), [adr] \"r\"(~A) : \"memory\" : decodefault);~%"
+	      val addr)))
+
+;; Every live VM-* site addresses a register base with offset 0 (the
+;; memory macros compute the full address first); anything else is a
+;; misuse worth stopping the build for.
+(defun vm-access-base (form arg2 arg3)
+  (if (listp arg3)
+      (setq arg3 (car arg3)))
+  (unless (eq arg2 0)
+    (error "VM access with non-zero offset is not supported: ~S" form))
+  arg3)
+
 ;;
 (defun emit-operation (form destination)
 ;; (format t "emit-operation: form ~S~%" form)
@@ -1690,6 +1735,15 @@
 		  (format destination "  ~A = *((s32 *)(&~A->~A)+~A);~%"
 			  (fixarg arg1) ptr (fixarg member) offset))))))
 
+	;; LDL from VM data space with an explicit fault edge (the asm-goto
+	;; ldrsw matches LDL's s32 load + sign extension to 64 bits).
+	(LDL-VM
+	 (check-comment arg4)
+	 (emit-vm-access destination "ldrsw %[val], [%[adr]]"
+			 (fixarg arg1)
+			 (fixarg (vm-access-base form arg2 arg3))
+			 t))
+
 	(LDQ
 	 (check-comment arg4)
 	 (if (listp arg3)
@@ -1727,6 +1781,17 @@
 		     (fixarg arg1) (fixarg arg3))
 	   (format destination "  ~A = LDQ_U(&~A->~A);~%"
 		   (fixarg arg1) (structptr arg3) (fixarg arg2))))
+
+	;; LDQ_U from VM tag space with an explicit fault edge (tag pages
+	;; fault for residency when their wad is unmapped).  The base
+	;; LDQ_U's & ~7L alignment mask moves into the address operand.
+	(LDQ_U-VM
+	 (check-comment arg4)
+	 (emit-vm-access destination "ldr %[val], [%[adr]]"
+			 (fixarg arg1)
+			 (format nil "~A & ~~7L"
+				 (fixarg (vm-access-base form arg2 arg3)))
+			 t))
 
 	(LDQ_L
 	 (check-comment arg4)
@@ -2155,6 +2220,15 @@
 		  (format destination "  *((u32 *)(&~A->~A)+~A) = ~A;~%"
 			  ptr (fixarg member) offset (fixarg arg1)))))))
 
+	;; STL to VM data space with an explicit fault edge (str %w stores
+	;; the low 32 bits, matching STL's *(u32 *) store).
+	(STL-VM
+	 (check-comment arg4)
+	 (emit-vm-access destination "str %w[val], [%[adr]]"
+			 (fixarg arg1)
+			 (fixarg (vm-access-base form arg2 arg3))
+			 nil))
+
 	(STQ
 	 (check-comment arg4)
 	 (if (listp arg3)
@@ -2207,6 +2281,16 @@
 		   (structptr arg3)
 		   (fixarg arg2)
 		   (fixarg arg1))))
+
+	;; STQ_U to VM tag space with an explicit fault edge; alignment
+	;; mask in the address operand, as in LDQ_U-VM.
+	(STQ_U-VM
+	 (check-comment arg4)
+	 (emit-vm-access destination "str %[val], [%[adr]]"
+			 (fixarg arg1)
+			 (format nil "~A & ~~7L"
+				 (fixarg (vm-access-base form arg2 arg3)))
+			 nil))
 
 	(TRAPB
 	 (check-comment arg1)
