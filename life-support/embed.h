@@ -710,6 +710,18 @@ typedef struct
 	struct sockaddr_ll	sll;		/* Contains information needed to write packets */
 	EmbNetARPReq	*arpReq;	/* List of ARP entries associated with this channel */
 #endif
+#ifdef OS_DARWIN
+	/* vmnet backend handles (opaque void* to keep vmnet/dispatch headers out
+	   of embed.h).  See network-darwin.c.  NULL when built without USE_VMNET. */
+	void	*vmnetInterface;	/* interface_ref for the vmnet virtual NIC */
+	void	*vmnetQueue;		/* dispatch_queue_t for vmnet callbacks */
+	void	*vmnetSem;		/* dispatch_semaphore_t: packets-available signal */
+	unsigned int	net_broken;	/* non-zero once we've had to rewrite a bad source MAC */
+	EmbWord	maxPacketSize;		/* Max packet size negotiated with vmnet */
+	volatile int	receiverStop;	/* Set at shutdown so the receiver thread exits
+					   deterministically (pthread_cancel is
+					   unreliable on macOS) */
+#endif
 #endif
 	EmbNetFilter filter;				/* Our packet filter psuedo-code */
 	pthread_t	receiverThread;			/* Packet receiver runs in this thread */
