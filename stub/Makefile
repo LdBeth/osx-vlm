@@ -177,7 +177,7 @@ AUTOMAKE = ${SHELL} '/Users/ldbeth/Public/Projects/linux-vlm/missing' automake-1
 AWK = nawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2 -fgnu89-inline -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-error=incompatible-function-pointer-types -g0 -fno-strict-aliasing -march=native -fblocks
+CFLAGS = -g -O2 -fgnu89-inline -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-error=incompatible-function-pointer-types -g0 -fno-strict-aliasing -fwrapv -march=native -fblocks
 CLISP = 
 CPP = gcc -E
 CPPFLAGS =  -I/opt/X11/include -DGENERA -DAUTOSTART -DUSE_TAP -DUSE_VMNET

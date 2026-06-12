@@ -139,6 +139,9 @@ fi
 
 AX_CFLAGS_GCC_OPTION(-rdynamic)
 AX_CFLAGS_GCC_OPTION(-fno-strict-aliasing)
+dnl The stubs do Alpha-style wrapping arithmetic on signed values; make that
+dnl defined behavior so the optimizer cannot exploit signed-overflow UB.
+AX_CFLAGS_GCC_OPTION(-fwrapv)
 AX_CFLAGS_GCC_OPTION(-march=native)
 
 AC_ARG_ENABLE([genera],
