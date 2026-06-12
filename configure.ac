@@ -140,7 +140,6 @@ fi
 AX_CFLAGS_GCC_OPTION(-rdynamic)
 AX_CFLAGS_GCC_OPTION(-fno-strict-aliasing)
 AX_CFLAGS_GCC_OPTION(-march=native)
-AX_CFLAGS_GCC_OPTION(-Wall)
 
 AC_ARG_ENABLE([genera],
 	AS_HELP_STRING([--enable-genera],
@@ -300,9 +299,12 @@ fi
 # -fblocks is required, and -framework vmnet must be on the link line.
 AC_ARG_WITH(vmnet,
 	AS_HELP_STRING([--with-vmnet],
-		[use Apple vmnet.framework for host networking (Darwin only, default=no)]),
+		[use Apple vmnet.framework for host networking (Darwin only, default=yes on Darwin)]),
 	[],
-	[with_vmnet=no])
+	[case $host_os in
+	   darwin*) with_vmnet=yes ;;
+	   *) with_vmnet=no ;;
+	 esac])
 if test ! -z $with_vmnet && test "x$with_vmnet" = "xyes"
 then
     case $host_os in
