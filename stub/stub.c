@@ -546,18 +546,32 @@ int iInterpret (PROCESSORSTATEP ivoryp) {
   int _show = 0;
   u64 cpustack[1024];
 
+/* These registers were volatile so the SEGV handler's blind PC jam to
+   the decodefault label would always find them in their stack slots.  On
+   Darwin/aarch64 fault delivery goes through the explicit asm-goto edges
+   (__DATA,__vm_extable), which the optimizer tracks like any other CFG
+   edge, so there the qualifier only costs stack traffic on every access
+   in the interpreter hot path.  Everywhere else the blind jam remains
+   and the qualifier stays (redundant in practice under optnone, which
+   already memory-pins every local, but it documents the requirement). */
+#if defined(OS_DARWIN) && defined(ARCH_AARCH64)
+#define VMSTATE_VOLATILE
+#else
+#define VMSTATE_VOLATILE volatile
+#endif
+
   u64 r0;
-  u64 volatile instn;
+  u64 VMSTATE_VOLATILE instn;
   u64 iword, ecp, ocp, icsize;
-  u64 volatile epc, opc;
-  u64 volatile count;
+  u64 VMSTATE_VOLATILE epc, opc;
+  u64 VMSTATE_VOLATILE count;
   u64 r9=0;
-  u64 volatile r10=0, r11=0;
+  u64 VMSTATE_VOLATILE r10=0, r11=0;
   u64 r12=0, r13=0, r14=0;
-  u64 volatile r15=0, r16;
-  u64 volatile r17;
+  u64 VMSTATE_VOLATILE r15=0, r16;
+  u64 VMSTATE_VOLATILE r17;
   u64 r18, r19;
-  u64 volatile r20, r21, r22, r23, r24, r25, r26, r27=0, r29=0;
+  u64 VMSTATE_VOLATILE r20, r21, r22, r23, r24, r25, r26, r27=0, r29=0;
   u64 sp;
   u64 r31 = 0;
   // 
