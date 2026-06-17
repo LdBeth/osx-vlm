@@ -25,9 +25,17 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdint.h>
+#include <errno.h>
+#include <unistd.h>
+#include <ifaddrs.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/ethernet.h>
+#include <net/if.h>
+#include <net/if_dl.h>
+#include <net/if_types.h>
+#include <net/route.h>
 
 /* vmnet.h drags in CoreFoundation/<MacTypes.h>, which typedefs Boolean.  It
    MUST precede the project headers: world_tools.h -> ivoryrep.h also typedefs
@@ -72,6 +80,8 @@ void NetworkChannelReceiver (pthread_addr_t argument);
 #ifdef USE_VMNET
 static void StartVMNetInterface (EmbNetChannel* p, NetworkInterface* interface,
 								 unsigned char mac[6]);
+static void InstallGuestArpEntry (struct in_addr guestIP, const unsigned char mac[6],
+								  int unitNumber);
 #endif
 
 
@@ -134,6 +144,22 @@ static void InitializeNetChannelDarwin (NetworkInterface* interface, int unitNum
 
 #ifdef USE_VMNET
 	StartVMNetInterface (p, interface, mac);	/* May replace mac[] with vmnet's */
+
+	/* vmnet shared mode doesn't pre-populate the host's neighbor cache, so the
+	   first host->guest packet (rpcbind's reply to PMap GetPort, NFS, ping,
+	   ...) triggers an ARP broadcast.  Genera's reply puts the requester's
+	   MAC in the SHA field instead of its own, the kernel rejects the entry
+	   as a self-claim (incomplete ARP), and the reply is dropped -- NFS dies
+	   with "did not respond to a PMap GetPort request".  network-linux.c
+	   sidesteps this by installing a permanent SIOCSARP entry; do the same
+	   here via the routing socket. */
+	for (pInterface = interface; pInterface != NULL; pInterface = pInterface->anotherAddress)
+		if (pInterface->myProtocol == ETHERTYPE_IP && pInterface->myAddress.s_addr != 0)
+		  {
+			struct in_addr a;
+			a.s_addr = htonl (pInterface->myAddress.s_addr);
+			InstallGuestArpEntry (a, mac, unitNumber);
+		  }
 #else
 	p->vmnetInterface = NULL;
 	p->vmnetQueue = NULL;
@@ -441,6 +467,114 @@ void NetworkChannelReceiver (pthread_addr_t argument)
 
 
 #ifdef USE_VMNET
+
+/* Install a permanent host-side ARP entry mapping the guest's IP to its
+   vmnet-allocated MAC.  Mirrors the SIOCSARP install network-linux.c does at
+   channel init.  See the call site in InitializeNetChannelDarwin for why. */
+
+static void InstallGuestArpEntry (struct in_addr guestIP,
+								  const unsigned char mac[6], int unitNumber)
+{
+  struct ifaddrs *ifa_head = NULL, *ifa;
+  unsigned int ifIndex = 0;
+  uint32_t guest = ntohl (guestIP.s_addr);
+  int s;
+  ssize_t n;
+  static int seq = 0;
+  struct {
+	struct rt_msghdr rtm;
+	struct sockaddr_in dst;
+	struct sockaddr_dl gw;
+  } msg;
+
+	/* Find a host interface whose IPv4 address is in the same subnet as the
+	   guest -- that's the one vmnet bridged us onto (bridge100 on M-series). */
+	if (getifaddrs (&ifa_head) != 0)
+	  {
+		vwarn ("net arp", "ch%d: getifaddrs failed: %s -- static ARP entry NOT installed",
+			   unitNumber, strerror (errno));
+		return;
+	  }
+	for (ifa = ifa_head; ifa != NULL; ifa = ifa->ifa_next)
+	  {
+		struct sockaddr_in *sin, *mask;
+		uint32_t addr, m;
+		if (ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET) continue;
+		if (ifa->ifa_netmask == NULL) continue;
+		sin  = (struct sockaddr_in *) ifa->ifa_addr;
+		mask = (struct sockaddr_in *) ifa->ifa_netmask;
+		addr = ntohl (sin->sin_addr.s_addr);
+		m    = ntohl (mask->sin_addr.s_addr);
+		if ((addr & m) == (guest & m))
+		  {
+			ifIndex = if_nametoindex (ifa->ifa_name);
+			if (ifIndex != 0) break;
+		  }
+	  }
+	freeifaddrs (ifa_head);
+
+	if (ifIndex == 0)
+	  {
+		vwarn ("net arp",
+			   "ch%d: no host interface on guest's subnet -- static ARP entry NOT installed",
+			   unitNumber);
+		return;
+	  }
+
+	s = socket (PF_ROUTE, SOCK_RAW, AF_INET);
+	if (s < 0)
+	  {
+		vwarn ("net arp", "ch%d: PF_ROUTE socket: %s", unitNumber, strerror (errno));
+		return;
+	  }
+
+	memset (&msg, 0, sizeof (msg));
+	msg.rtm.rtm_msglen = sizeof (msg);
+	msg.rtm.rtm_version = RTM_VERSION;
+	msg.rtm.rtm_type = RTM_ADD;
+	msg.rtm.rtm_flags = RTF_HOST | RTF_STATIC;
+	msg.rtm.rtm_addrs = RTA_DST | RTA_GATEWAY;
+	msg.rtm.rtm_inits = RTV_EXPIRE;
+	msg.rtm.rtm_rmx.rmx_expire = 0;			/* Never */
+	msg.rtm.rtm_seq = ++seq;
+	msg.rtm.rtm_pid = getpid ();
+
+	msg.dst.sin_len = sizeof (msg.dst);
+	msg.dst.sin_family = AF_INET;
+	msg.dst.sin_addr = guestIP;
+
+	msg.gw.sdl_len = sizeof (msg.gw);
+	msg.gw.sdl_family = AF_LINK;
+	msg.gw.sdl_index = (unsigned short) ifIndex;
+	msg.gw.sdl_type = IFT_ETHER;
+	msg.gw.sdl_alen = 6;
+	memcpy (LLADDR (&msg.gw), mac, 6);
+
+	n = write (s, &msg, sizeof (msg));
+	if (n < 0 && errno == EEXIST)
+	  {
+		/* Stale entry from a prior boot (guest MAC may have changed) -- replace. */
+		msg.rtm.rtm_type = RTM_CHANGE;
+		msg.rtm.rtm_seq = ++seq;
+		n = write (s, &msg, sizeof (msg));
+	  }
+	if (n < 0)
+		vwarn ("net arp",
+			   "ch%d: RTM_ADD %s -> %02x:%02x:%02x:%02x:%02x:%02x failed: %s"
+			   " (host->guest replies will be undeliverable)",
+			   unitNumber, inet_ntoa (guestIP),
+			   mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], strerror (errno));
+	else
+	  {
+		printf ("net #%d static ARP %s -> %02x:%02x:%02x:%02x:%02x:%02x"
+				" (ifindex %u)\n",
+				unitNumber, inet_ntoa (guestIP),
+				mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], ifIndex);
+	  }
+
+	close (s);
+}
+
 
 /* Extract the value of a "key=value" item from the interface's option string
    (the part of the -network spec after the first semicolon, e.g.
