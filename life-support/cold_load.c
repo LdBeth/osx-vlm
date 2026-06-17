@@ -68,8 +68,10 @@ static EmbColdLoadChannel *cold_channel = NULL;
 static EmbQueue *keyboard_queue = NULL, *display_queue = NULL;
 
 static Display *display = NULL;
-static KeySym *orig_meta, *orig_hyper ;
+static KeySym *orig_meta = NULL, *orig_hyper = NULL ;
 static int ks_p_kc_meta, ks_p_kc_hyper ;
+static KeyCode alt_meta_code = 0 ;	/* Alt  -> Meta  remap (see make_map) */
+static KeyCode menu_hyper_code = 0 ;	/* Menu -> Hyper remap (see make_map) */
 static KeySym *orig_yen = NULL ;	/* Apple JIS ¥-key remap (see make_map) */
 static int ks_p_kc_yen ;
 static KeyCode jis_yen_code = 0 ;
@@ -226,33 +228,30 @@ static void make_map (int for_real_p)
 				    &super_code,
 				    &hyper_code);
 
-	// always put Meta on Alt (if we have an alt key)
-	if (XKeysymToKeycode(display,XK_Alt_L)) {
-		orig_meta = XGetKeyboardMapping ( display,
-						  XKeysymToKeycode(display,
-								   XK_Alt_L),
-						  1,
-						  &ks_p_kc_meta );
-	}
 	// if no Hyper key available, put it on Menu (if there is one)
-	if (XKeysymToKeycode(display,XK_Menu)) {
+	if (orig_hyper == NULL && XKeysymToKeycode(display,XK_Menu)) {
+		menu_hyper_code = XKeysymToKeycode(display, XK_Menu);
 		orig_hyper = XGetKeyboardMapping ( display,
-						   XKeysymToKeycode(display,
-								    XK_Menu),
+						   menu_hyper_code,
 						   1,
 						   &ks_p_kc_hyper );
 		XChangeKeyboardMapping(display,
-				       XKeysymToKeycode(display,XK_Menu),
+				       menu_hyper_code,
 				       sizeof(hyper_keysym)/sizeof(KeySym),
 				       hyper_keysym,
 				       1);
 		if (for_real_p) vwarn("cold load",
 				      "Your Hyper(_R) key now is on (right) Menu");
 	}
-	// always put Meta on Alt
-	if (XKeysymToKeycode(display,XK_Alt_L)) {
+	// always put Meta on Alt (if we have an alt key)
+	if (orig_meta == NULL && XKeysymToKeycode(display,XK_Alt_L)) {
+		alt_meta_code = XKeysymToKeycode(display, XK_Alt_L);
+		orig_meta = XGetKeyboardMapping ( display,
+						  alt_meta_code,
+						  1,
+						  &ks_p_kc_meta );
 		XChangeKeyboardMapping(display,
-				       XKeysymToKeycode(display,XK_Alt_L),
+				       alt_meta_code,
 				       sizeof(meta_keysym)/sizeof(KeySym),
 				       meta_keysym,
 				       1);
@@ -749,21 +748,21 @@ static void close_display ()
 			XFreeModifiermap(originalModmap);
 			if (orig_meta) {
 				XChangeKeyboardMapping(display,
-						       XKeysymToKeycode(display,
-									XK_Alt_L),
+						       alt_meta_code,
 						       ks_p_kc_meta,
 						       orig_meta,
 						       1);
 				XFree (orig_meta);
+				orig_meta = NULL;
 			}
 			if (orig_hyper) {
 				XChangeKeyboardMapping(display,
-						       XKeysymToKeycode(display,
-									XK_Menu),
+						       menu_hyper_code,
 						       ks_p_kc_hyper,
 						       orig_hyper,
 						       1);
 				XFree (orig_hyper);
+				orig_hyper = NULL;
 			}
 			if (orig_yen) {
 				XChangeKeyboardMapping(display,
@@ -1546,8 +1545,13 @@ static void get_keyboard_modifier_codes (int for_real_p,
      and make_map() relabels the Command keys to Super_L / Hyper_R (and the ¥
      key to backslash) so booted Genera recognizes them.  The Command keycodes
      are captured ONCE here from the pristine keymap, because make_map's later
-     remaps make XKeysymToKeycode(XK_Meta_L) ambiguous (Option gets Meta_L too). */
-  if (find_unshifted_keycode(XK_yen) != 0) {
+     remaps make XKeysymToKeycode(XK_Meta_L) ambiguous (Option gets Meta_L too).
+
+     The detection is LATCHED on keyboardType: make_map's yen remap removes the
+     level-0 yen marker from the keymap, and this function runs again afterwards
+     (from setup_modifier_mapping and on MappingNotify) -- re-probing then would
+     silently fall through to the DEC fallback. */
+  if (keyboardType == Apple_JIS || find_unshifted_keycode(XK_yen) != 0) {
 	  if (!did_show) {
 		  vwarn("cold load",
 		        "presuming an Apple JIS keyboard");
@@ -1831,20 +1835,29 @@ static int setup_modifier_mapping ()
 	  int m;
 	  KeyCode keys[3];
 	  int idx[3];
-	  int i;
+	  int i, rows, misplaced;
 	  keys[0] = meta_l_code; idx[0] = Mod1MapIndex;		/* Option       */
 	  keys[1] = super_code;  idx[1] = Mod3MapIndex;		/* left Command */
 	  keys[2] = hyper_code;  idx[2] = Mod4MapIndex;		/* right Command*/
 	  for (i = 0; i < 3; i++) {
 		  if (keys[i] == 0) continue;
-		  while ((m = find_modifier(modmap, keys[i])) != -1)
+		  rows = 0;
+		  misplaced = 0;
+		  while ((m = find_modifier(modmap, keys[i])) != -1) {
+			  if (m != idx[i]) misplaced = 1;
+			  rows++;
 			  modmap = XDeleteModifiermapEntry(modmap, keys[i], m);
+		  }
 		  modmap = XInsertModifiermapEntry(modmap, keys[i], idx[i]);
+		  /* Mark changed only when an entry actually moves: our own
+		     XSetModifierMapping triggers MappingNotify, which re-runs
+		     setup_modifier_mapping -- an unconditional changed would
+		     re-set the (identical) map forever. */
+		  if (misplaced || rows != 1) changed = TRUE;
 	  }
 	  meta_mask  = Mod1Mask;
 	  super_mask = Mod3Mask;
 	  hyper_mask = Mod4Mask;
-	  changed = TRUE;
   } else {
   meta_mask = do_modifier(&modmap, &changed,  meta_l_code, meta_r_code, 0);
   if (meta_mask == 0)

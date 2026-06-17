@@ -39,6 +39,7 @@
 .clang_format
 tags
 TAGS
+CLAUDE.md
 
 # Build directories
 /build/
