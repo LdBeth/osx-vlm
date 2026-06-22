@@ -31,6 +31,33 @@
    the data word that the data-load fault now guards. */
 #endif  /* OS_DARWIN */
 
+#if defined(OS_DARWIN)
+#include <pthread.h>
+/* Serialises VMAttributeTable + mprotect mutations between the emulator
+   thread (GC, interpreter, segv_handler) and life-support threads
+   (EnsureVirtualMemoryAccessible).  Recursive: EnsureVirtualMemoryAccessible
+   holds the lock across its loop body and AdjustProtection re-takes it;
+   the segv_handler may interrupt a lock-holder on the same thread.
+   The constructor init is needed because Darwin lacks a static initialiser
+   for recursive mutexes (PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP is not
+   available on macOS). */
+static pthread_mutex_t vm_protection_lock;
+__attribute__((constructor))
+static void init_vm_protection_lock(void)
+{
+  pthread_mutexattr_t a;
+  pthread_mutexattr_init(&a);
+  pthread_mutexattr_settype(&a, PTHREAD_MUTEX_RECURSIVE);
+  pthread_mutex_init(&vm_protection_lock, &a);
+  pthread_mutexattr_destroy(&a);
+}
+#define VM_PROTECTION_LOCK()   pthread_mutex_lock(&vm_protection_lock)
+#define VM_PROTECTION_UNLOCK() pthread_mutex_unlock(&vm_protection_lock)
+#else
+#define VM_PROTECTION_LOCK()   ((void)0)
+#define VM_PROTECTION_UNLOCK() ((void)0)
+#endif  /* OS_DARWIN */
+
 #include "aistat.h"
 #include "aihead.h"
 #include "ivoryrep.h"
@@ -523,6 +550,7 @@ void EnsureVirtualMemoryAccessible (Integer vma, int count)
      never terminates */
   int pages = ceiling((count > 0 ? count : 0) + MemoryPageOffset(vma), MemoryPage_Size);
 
+  VM_PROTECTION_LOCK();
   for (vma -= MemoryPageOffset(vma); pages-- > 0; vma += MemoryPage_Size)
   {
     VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
@@ -535,6 +563,7 @@ void EnsureVirtualMemoryAccessible (Integer vma, int count)
     if (new_attr != attr)
       AdjustProtection(vma, new_attr);
   }
+  VM_PROTECTION_UNLOCK();
 #endif
 }
 
@@ -1449,7 +1478,10 @@ void AdjustProtection(Integer vma, VMAttribute new_attr)
 {
   register VMAttribute *attr = &VMAttributeTable[MemoryPageNumber(vma)];
   register int old, new;
-  VMAttribute oa = *attr;
+  VMAttribute oa;
+
+  VM_PROTECTION_LOCK();
+  oa = *attr;
 
   old = ComputeProtection(oa);
   new = ComputeProtection(new_attr);
@@ -1488,6 +1520,7 @@ void AdjustProtection(Integer vma, VMAttribute new_attr)
   } else
 #endif
     *attr = new_attr;
+  VM_PROTECTION_UNLOCK();
 }
 
 #ifndef OS_OSF
