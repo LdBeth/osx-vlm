@@ -26,14 +26,9 @@
 #define	DiskPageSize	8192
 
 
-#define SetHostState(dc,p) \
-  { \
-	dc->hostState0 = (((uint64_t) p) >> 32) & 0xFFFFFFFFL; \
-	dc->hostState1 = ((uint64_t) p) & 0xFFFFFFFFL; \
-  }
+#define SetHostState(dc,p)	dc->hostState = (p)
 
-#define HostState(dc) \
-  (DiskChannelState*)(((uint64_t)dc->hostState0 << 32) | dc->hostState1)
+#define HostState(dc)		(DiskChannelState*)dc->hostState
 
 
 /* Attach a disk partition (nee, file) to the disk channel supplied by Lisp and add said

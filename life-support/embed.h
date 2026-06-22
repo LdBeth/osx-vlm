@@ -387,8 +387,7 @@ typedef struct
 		uEmbWord	host_byte_order:1;	/* TRUE => byte swap data for this unit if needed */
 #endif
 	  }		flags;
-	EmbWord		hostState0;			/* Pointer to host specific disk channel data ... */
-	EmbWord		hostState1;			/* ... split into two words to avoid unaligned accesses */
+	void		*hostState;			/* Pointer to host specific disk channel data */
 	EmbWord         blocksize ;                     /* block size in bytes */
 } 		EmbDiskChannel;
 
