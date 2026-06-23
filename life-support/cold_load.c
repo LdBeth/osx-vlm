@@ -1047,7 +1047,7 @@ static void alloc_screen_array (int new_width_pixels, int new_height_pixels)
   progress_bar_first_x = (pixels_per_run_light * 22) + loff;
   progress_bar_width = new_width_pixels - loff - progress_bar_first_x - roff;
   reset_light_state(True);
-  EmbQueuePutWord(keyboard_queue, clsoSetSize<<24);
+  EmbQueuePutWord(keyboard_queue, (EmbWord)((uEmbWord)clsoSetSize<<24));
   width = new_width;
   height = new_height;
 }

@@ -37,7 +37,7 @@ void VirtualMemoryWriteBlockConstantUncached (Integer vma, LispObj object, int c
 typedef unsigned char VMAttribute;
 
 extern Boolean EnableIDS;
-extern VMAttribute VMAttributeTable[1<<(32-MemoryPage_AddressShift)];
+extern VMAttribute VMAttributeTable[1<<(32-MemoryPage_AddressShift)] __attribute__((aligned(0x4000)));
 
 #define VMAccessFault(a) ((a)&VMAttribute_AccessFault)
 #define VMWriteFault(a) ((a)&VMAttribute_WriteFault)

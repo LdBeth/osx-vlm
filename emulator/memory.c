@@ -31,8 +31,16 @@
    the data word that the data-load fault now guards. */
 #endif  /* OS_DARWIN */
 
-#if defined(OS_DARWIN)
+#include "aistat.h"
+#include "aihead.h"
+#include "ivoryrep.h"
+#include "memory.h"
+#include "utilities.h"
+#include <stdio.h>
+#include <execinfo.h>
 #include <pthread.h>
+
+#if defined(OS_DARWIN)
 /* Serialises VMAttributeTable + mprotect mutations between the emulator
    thread (GC, interpreter, segv_handler) and life-support threads
    (EnsureVirtualMemoryAccessible).  Recursive: EnsureVirtualMemoryAccessible
@@ -57,15 +65,6 @@ static void init_vm_protection_lock(void)
 #define VM_PROTECTION_LOCK()   ((void)0)
 #define VM_PROTECTION_UNLOCK() ((void)0)
 #endif  /* OS_DARWIN */
-
-#include "aistat.h"
-#include "aihead.h"
-#include "ivoryrep.h"
-#include "memory.h"
-#include "utilities.h"
-#include <stdio.h>
-#include <execinfo.h>
-#include <pthread.h>
 
 /* Forward references */
 void AdjustProtection(Integer vma, VMAttribute attr);
@@ -130,7 +129,11 @@ static Boolean ResidentPagesWrap = FALSE;
 #define PageNumberMemory(vpn) ((vpn) << MemoryPage_AddressShift)
 
 /* This could be a sparse array, should someone want to implement it */
-VMAttribute VMAttributeTable[1<<(32-MemoryPage_AddressShift)];
+/* Cap alignment at the 16KB page size: clang would otherwise request 32KB
+   for this 512KB BSS array, which exceeds the macOS arm64 __DATA segment
+   maximum alignment and draws an ld warning.  Alignment is non-semantic
+   (the table is index-accessed), so pin it to the platform maximum. */
+VMAttribute VMAttributeTable[1<<(32-MemoryPage_AddressShift)] __attribute__((aligned(0x4000)));
 
 #if defined(OS_DARWIN)
 /* The byte range of DataSpace covered by one Ivory page: 32KB, naturally
@@ -511,7 +514,7 @@ void VirtualMemoryWriteUncached (Integer vma, LispObj object)
     int prot = ComputeProtection(attr);
 
     if (mprotect(address, pagesize, prot) == -1)
-      vpunt ("VirtualMemoryReadUncached", NULL);
+      vpunt ("VirtualMemoryWriteUncached", NULL);
   }
 }
 
@@ -700,7 +703,7 @@ Boolean VirtualMemorySearch (Integer *vma, LispObj object, int count)
   Integer tvma;
 
   /* --- check exists */
-  
+
   for( ; tag < etag; )
   {
    if (!(TagType(ctag ^ *tag))) {
