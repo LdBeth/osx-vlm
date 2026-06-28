@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""rmtd -- fake Symbolics VLM "remote unix" tape server.
+
+The Genera VLM has no tape driver.  To reach a tape it opens a BSD `rexec`
+connection (TCP 512) to a host carrying the `(:TAPE :TCP :UNIX-REXEC)` service,
+runs `/usr/sbin/rmt`, and drives it with the classic BSD remote-magtape (rmt)
+protocol.  See sys.sct/embedding/ux/{unix-protocols,unix-tape}.lisp.
+
+This one process impersonates all of it: rexecd + /etc/rmt + the tape drive.
+The "tape" is a regular file in SIMH .tap format, so filemarks / multi-file
+tapes work and images interchange with other tools.
+
+  Register the tape host in the Genera namespace with MACHINE TYPE "DEC-AXP"
+  (NOT Sun).  DEC-AXP selects the rmt dialect that (a) never issues the binary
+  `S` status command and (b) allows short input records -- both required here.
+
+Run (port 512 is privileged):
+    sudo ./rmtd --tape /path/to/genera.tap
+Test against a high port without root:
+    ./rmtd --tape test.tap --port 1512 -v
+"""
+
+import argparse
+import logging
+import os
+import socket
+import struct
+import sys
+
+DEFAULT_PORT = 512
+
+# mtio MTIOCTOP opcodes -- order from sys.sct/embedding/ux/unix-tape.lisp.
+MTWEOF, MTFSF, MTBSF, MTFSR, MTBSR, MTREW, MTOFFL, MTNOP, MTRETEN, MTERASE, MTEOM = range(11)
+_OP_NAME = {MTWEOF: "WEOF", MTFSF: "FSF", MTBSF: "BSF", MTFSR: "FSR", MTBSR: "BSR",
+           MTREW: "REW", MTOFFL: "OFFL", MTNOP: "NOP", MTRETEN: "RETEN",
+           MTERASE: "ERASE", MTEOM: "EOM"}
+
+# SIMH .tap metadata markers (4-byte little-endian record headers/trailers).
+TAPEMARK = 0x00000000        # tape mark (filemark)
+EOM_MARK = 0xFFFFFFFF        # end of medium
+ERASE_GAP = 0xFFFFFFFE       # erase gap -- skip over
+
+log = logging.getLogger("rmtd")
+
+
+class Tape:
+    """A SIMH .tap file presented as a sequential tape with filemarks.
+
+    Each record:  <u32 len> <len bytes data> [pad to even] <u32 len>
+    A filemark:   <u32 0x00000000>            (no trailer)
+    """
+
+    def __init__(self, path):
+        self.path = path
+        if not os.path.exists(path):
+            open(path, "wb").close()
+            log.info("created empty tape image %s", path)
+        self.f = open(path, "r+b")
+
+    def close(self):
+        try:
+            self.f.flush()
+            os.fsync(self.f.fileno())
+        except OSError:
+            pass
+        self.f.close()
+
+    # --- forward motion ---------------------------------------------------
+    def read_block(self):
+        """Return ('data', bytes) | ('mark', b'') | ('eom', b'').
+
+        On 'data'/'mark' the file is left positioned after the item; on 'eom'
+        the position is left at the marker so a following write can extend.
+        """
+        pos = self.f.tell()
+        hdr = self.f.read(4)
+        if len(hdr) < 4:
+            self.f.seek(pos)
+            return ("eom", b"")
+        (n,) = struct.unpack("<I", hdr)
+        if n == TAPEMARK:
+            return ("mark", b"")            # already stepped past the 4-byte mark
+        if n == ERASE_GAP:
+            return self.read_block()        # transparent
+        if n == EOM_MARK:
+            self.f.seek(pos)
+            return ("eom", b"")
+        length = n & 0x7FFFFFFF             # bit31 = error flag in SIMH; ignore it
+        data = self.f.read(length)
+        if length & 1:
+            self.f.read(1)                  # padding byte
+        self.f.read(4)                      # trailer
+        return ("data", data)
+
+    def fsf(self, count):
+        for _ in range(count):
+            while True:
+                kind, _ = self.read_block()
+                if kind == "mark":
+                    break
+                if kind == "eom":
+                    return
+
+    def fsr(self, count):
+        for _ in range(count):
+            kind, _ = self.read_block()
+            if kind in ("mark", "eom"):
+                break
+
+    # --- backward motion (best effort; Genera flags reverse-skip unsupported)
+    def _back_one(self):
+        pos = self.f.tell()
+        if pos <= 0:
+            self.f.seek(0)
+            return "bot"
+        self.f.seek(pos - 4)
+        (v,) = struct.unpack("<I", self.f.read(4))
+        if v == TAPEMARK:
+            self.f.seek(pos - 4)
+            return "mark"
+        length = v & 0x7FFFFFFF
+        newpos = pos - 4 - (length & 1) - length - 4
+        self.f.seek(max(0, newpos))
+        return "data"
+
+    def bsf(self, count):
+        for _ in range(count):
+            saw = False
+            while True:
+                kind = self._back_one()
+                if kind == "bot":
+                    return
+                if kind == "mark":
+                    saw = True
+                    break
+            if not saw:
+                return
+
+    def bsr(self, count):
+        for _ in range(count):
+            if self._back_one() == "bot":
+                return
+
+    def rewind(self):
+        self.f.seek(0)
+
+    def seek_eom(self):
+        while self.read_block()[0] != "eom":
+            pass
+
+    # --- writing ----------------------------------------------------------
+    def write_block(self, data):
+        n = len(data)
+        self.f.write(struct.pack("<I", n))
+        self.f.write(data)
+        if n & 1:
+            self.f.write(b"\x00")
+        self.f.write(struct.pack("<I", n))
+        self.f.truncate()                   # writing erases everything past here
+        self.f.flush()
+
+    def write_mark(self):
+        self.f.write(struct.pack("<I", TAPEMARK))
+        self.f.truncate()
+        self.f.flush()
+
+    def erase(self):
+        self.f.seek(0)
+        self.f.truncate()
+
+
+def _read_cstr(rf):
+    """Read a NUL-terminated field from the rexec preamble."""
+    out = bytearray()
+    while True:
+        b = rf.read(1)
+        if not b:
+            raise EOFError("eof during rexec handshake")
+        if b == b"\x00":
+            return bytes(out)
+        out += b
+
+
+def _read_exact(rf, n):
+    buf = bytearray()
+    while len(buf) < n:
+        chunk = rf.read(n - len(buf))
+        if not chunk:
+            raise EOFError("eof reading %d bytes of write data" % n)
+        buf += chunk
+    return bytes(buf)
+
+
+def handle(conn, tape_path):
+    rf = conn.makefile("rb")
+    wf = conn.makefile("wb")
+
+    # --- rexec handshake: "\0 user \0 pass \0 command \0", reply one \0 ----
+    _stderr_port = _read_cstr(rf)
+    user = _read_cstr(rf).decode("latin-1")
+    _passwd = _read_cstr(rf)
+    command = _read_cstr(rf).decode("latin-1")
+    log.info("rexec: user=%r command=%r (creds ignored)", user, command)
+    wf.write(b"\x00")                       # success
+    wf.flush()
+
+    tape = Tape(tape_path)
+
+    def reply(fmt, *args):
+        line = (fmt % args).encode("latin-1")
+        wf.write(line)
+        wf.flush()
+        log.debug("  -> %r", line)
+
+    try:
+        while True:
+            cmd = rf.read(1)
+            if not cmd:
+                log.info("client closed connection")
+                break
+
+            if cmd == b"O":                 # O<device>\n<mode>\n  -- open, keep position
+                dev = rf.readline().rstrip(b"\n")
+                mode = rf.readline().rstrip(b"\n")
+                log.debug("O dev=%r mode=%r", dev, mode)
+                reply("A0\n")
+
+            elif cmd == b"C":               # C<device>\n  -- close
+                dev = rf.readline().rstrip(b"\n")
+                log.debug("C dev=%r", dev)
+                reply("A0\n")
+
+            elif cmd == b"R":               # R<count>\n  -- read one record
+                count = int(rf.readline())
+                kind, data = tape.read_block()
+                if kind == "data":
+                    if len(data) > count:
+                        log.warning("record %d > requested %d; returning full record",
+                                    len(data), count)
+                    reply("A%d\n", len(data))
+                    wf.write(data)
+                    wf.flush()
+                else:                       # mark or eom -> 0 bytes == EOF to Genera
+                    log.debug("R: %s -> A0", kind)
+                    reply("A0\n")
+
+            elif cmd == b"W":               # W<count>\n + <count> bytes  -- write
+                count = int(rf.readline())
+                data = _read_exact(rf, count)
+                tape.write_block(data)
+                reply("A%d\n", count)
+
+            elif cmd == b"L":               # L<offset>\n<whence>\n  -- lseek
+                off = int(rf.readline())
+                whence = int(rf.readline())
+                if off == 0 and whence == 0:
+                    tape.rewind()
+                else:                       # Genera only ever rewinds; best effort
+                    tape.f.seek(off, whence)
+                reply("A%d\n", tape.f.tell())
+
+            elif cmd == b"I":               # I<op>\n<count>\n  -- MTIOCTOP
+                op = int(rf.readline())
+                cnt = int(rf.readline())
+                log.debug("I op=%s count=%d", _OP_NAME.get(op, op), cnt)
+                if op == MTWEOF:
+                    for _ in range(cnt):
+                        tape.write_mark()
+                elif op == MTFSF:
+                    tape.fsf(cnt)
+                elif op == MTBSF:
+                    tape.bsf(cnt)
+                elif op == MTFSR:
+                    tape.fsr(cnt)
+                elif op == MTBSR:
+                    tape.bsr(cnt)
+                elif op in (MTREW, MTOFFL):
+                    tape.rewind()
+                elif op == MTEOM:
+                    tape.seek_eom()
+                elif op == MTERASE:
+                    tape.erase()
+                elif op in (MTNOP, MTRETEN):
+                    pass
+                else:
+                    log.warning("unhandled ioctl op %d", op)
+                reply("A0\n")
+
+            elif cmd == b"S":               # status -- DEC-AXP host never sends this
+                log.warning("unexpected S (status) command; host machine-type "
+                            "should be DEC-AXP. Replying empty status.")
+                reply("A0\n")
+
+            else:
+                log.error("unknown rmt command %r; closing", cmd)
+                reply("E22\nunknown command\n")
+                break
+    finally:
+        tape.close()
+        try:
+            wf.close()
+            rf.close()
+        except OSError:
+            pass
+
+
+def main():
+    ap = argparse.ArgumentParser(description="fake VLM rexec+rmt tape server")
+    ap.add_argument("--tape", required=True, help="path to the .tap tape image (created if absent)")
+    ap.add_argument("--host", default="0.0.0.0", help="bind address (default all)")
+    ap.add_argument("--port", type=int, default=DEFAULT_PORT,
+                    help="TCP port (default 512; <1024 needs root)")
+    ap.add_argument("-v", "--verbose", action="count", default=0,
+                    help="-v traces commands, -vv adds replies")
+    args = ap.parse_args()
+
+    level = logging.WARNING - 10 * min(args.verbose, 2)
+    logging.basicConfig(level=level, format="%(asctime)s %(levelname)s %(message)s")
+
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        srv.bind((args.host, args.port))
+    except PermissionError:
+        sys.exit("bind %s:%d failed: port <1024 needs sudo" % (args.host, args.port))
+    srv.listen(1)                           # one tape drive: serve sequentially
+    log.warning("rmtd listening on %s:%d, tape=%s", args.host, args.port, args.tape)
+
+    try:
+        while True:
+            conn, peer = srv.accept()
+            log.info("connection from %s:%d", *peer)
+            try:
+                handle(conn, args.tape)
+            except (EOFError, ConnectionError) as e:
+                log.info("connection ended: %s", e)
+            except Exception:
+                log.exception("error handling connection")
+            finally:
+                conn.close()
+    except KeyboardInterrupt:
+        log.warning("shutting down")
+    finally:
+        srv.close()
+
+
+if __name__ == "__main__":
+    main()

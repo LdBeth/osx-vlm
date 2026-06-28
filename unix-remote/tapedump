@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""tapedump -- inspect a SIMH .tap tape image (as written/read by rmtd).
+
+  ./tapedump genera.tap              # summary: files, record counts, sizes
+  ./tapedump genera.tap -v           # list every record (len + ascii preview)
+  ./tapedump genera.tap -x           # full hex+ascii dump of every record
+  ./tapedump genera.tap -f 1         # restrict to file 1 (0-based, between filemarks)
+  ./tapedump genera.tap -f 1 -o out  # extract file 1's raw record data to ./out
+
+A "file" is the span of records between filemarks. This shows the tape's
+physical structure; the bytes inside records are whatever Genera wrote
+(distribution image, LMFS backup, etc.) and are not decoded here.
+"""
+
+import argparse
+import struct
+import sys
+
+TAPEMARK = 0x00000000
+EOM_MARK = 0xFFFFFFFF
+ERASE_GAP = 0xFFFFFFFE
+
+
+def records(data):
+    """Yield ('data', bytes) | ('mark', None) | ('eom', None) | ('bad', msg)."""
+    i = 0
+    n = len(data)
+    while i < n:
+        if i + 4 > n:
+            yield ("bad", "truncated header at offset %d" % i)
+            return
+        (hdr,) = struct.unpack("<I", data[i:i + 4])
+        i += 4
+        if hdr == TAPEMARK:
+            yield ("mark", None)
+            continue
+        if hdr == EOM_MARK:
+            yield ("eom", None)
+            return
+        if hdr == ERASE_GAP:
+            continue
+        length = hdr & 0x7FFFFFFF
+        if i + length > n:
+            yield ("bad", "record claims %d bytes but only %d remain" % (length, n - i))
+            return
+        rec = data[i:i + length]
+        i += length
+        if length & 1:
+            i += 1                      # padding byte
+        if i + 4 > n:
+            yield ("bad", "missing trailer for %d-byte record" % length)
+            return
+        (tr,) = struct.unpack("<I", data[i:i + 4])
+        i += 4
+        if (tr & 0x7FFFFFFF) != length:
+            yield ("bad", "trailer %d != header %d" % (tr, length))
+            return
+        yield ("data", rec)
+
+
+def preview(b, width=48):
+    return "".join(chr(c) if 32 <= c < 127 else "." for c in b[:width])
+
+
+def hexdump(b, indent="    "):
+    out = []
+    for off in range(0, len(b), 16):
+        chunk = b[off:off + 16]
+        hexs = " ".join("%02x" % c for c in chunk)
+        out.append("%s%06x  %-47s  %s" % (indent, off, hexs, preview(chunk, 16)))
+    return "\n".join(out)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="inspect a SIMH .tap tape image")
+    ap.add_argument("image")
+    ap.add_argument("-v", "--verbose", action="store_true", help="list each record")
+    ap.add_argument("-x", "--hex", action="store_true", help="full hex+ascii of each record")
+    ap.add_argument("-f", "--file", type=int, metavar="N", help="only file N (0-based)")
+    ap.add_argument("-o", "--out", metavar="PATH", help="write selected file's record data to PATH")
+    args = ap.parse_args()
+
+    data = open(args.image, "rb").read()
+
+    fileno = 0
+    recno = 0                           # within current file
+    files = []                          # (nrecords, nbytes) per file
+    cur = [0, 0]
+    extract = bytearray()
+    show = args.verbose or args.hex
+
+    for kind, payload in records(data):
+        if kind == "data":
+            in_scope = (args.file is None or args.file == fileno)
+            if show and in_scope:
+                print("file %d record %d  len=%d  |%s|"
+                      % (fileno, recno, len(payload), preview(payload)))
+                if args.hex:
+                    print(hexdump(payload))
+            if args.out and args.file == fileno:
+                extract += payload
+            cur[0] += 1
+            cur[1] += len(payload)
+            recno += 1
+        elif kind == "mark":
+            if args.file is None or args.file == fileno:
+                if show:
+                    print("file %d: <filemark> after %d record(s), %d byte(s)"
+                          % (fileno, cur[0], cur[1]))
+            files.append(tuple(cur))
+            fileno += 1
+            recno = 0
+            cur = [0, 0]
+        elif kind == "eom":
+            break
+        elif kind == "bad":
+            print("!! malformed tape: %s" % payload, file=sys.stderr)
+            break
+
+    if cur[0]:                          # trailing data with no closing filemark
+        files.append(tuple(cur))
+
+    print("\n%s: %d file(s)" % (args.image, len(files)))
+    for n, (nrec, nbytes) in enumerate(files):
+        print("  file %d: %d record(s), %d byte(s)" % (n, nrec, nbytes))
+    print("  total: %d byte(s) on disk" % len(data))
+
+    if args.out:
+        if args.file is None:
+            sys.exit("--out requires -f N to pick a file")
+        with open(args.out, "wb") as fh:
+            fh.write(extract)
+        print("wrote %d byte(s) of file %d to %s" % (len(extract), args.file, args.out))
+
+
+if __name__ == "__main__":
+    main()
