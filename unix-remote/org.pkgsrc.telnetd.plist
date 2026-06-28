@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>            <string>org.pkgsrc.telnetd</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/pkg/libexec/gtelnetd</string>
+    <string>--exec-login=/usr/bin/login</string>  <!-- use macOS login(1); -E for short -->
+    <string>--no-hostinfo</string>                <!-- skip banner; drop to debug if needed -->
+  </array>
+  <key>inetdCompatibility</key>
+  <dict><key>Wait</key><false/></dict>
+  <key>Sockets</key>
+  <dict>
+    <key>Listeners</key>
+    <dict>
+      <key>SockServiceName</key><string>telnet</string>   <!-- port 23 via /etc/services -->
+      <key>SockType</key><string>stream</string>
+      <key>SockFamily</key><string>IPv4</string>
+      <!-- SECURITY: telnet is plaintext. Bind to one interface, not the world.
+           For local testing use loopback; for Genera->Mac use the vmnet bridge IP. -->
+      <key>SockNodeName</key><string>192.168.2.1</string>
+    </dict>
+  </dict>
+</dict>
+</plist>

@@ -1,4 +1,13 @@
-# unix-remote — fake tape server for the Genera VLM
+# unix-remote — host-side helpers for the Genera VLM
+
+Tools that run on the macOS host to provide Unix-side services the VLM expects
+over the network:
+
+  * `rmtd` — fake tape server (rexec + BSD `rmt`); see below.
+  * `tapedump` — inspect a `.tap` tape image.
+  * `org.pkgsrc.telnetd.plist` — launchd job for a host telnet server.
+
+## Tape server (`rmtd`)
 
 The VLM has no tape driver. Genera reaches a tape by opening a BSD `rexec`
 connection (TCP **512**) to a host carrying the `(:TAPE :TCP :UNIX-REXEC)`
@@ -61,3 +70,47 @@ the image past the write point, matching tape semantics.
 
 `<u32 len LE> <len bytes> [pad to even] <u32 len LE>` per record; `0x00000000`
 = filemark; `0xFFFFFFFF` = end of medium.
+
+# Telnet server (`org.pkgsrc.telnetd.plist`)
+
+macOS ships no telnet client *or* `telnetd`. Get both from pkgsrc GNU
+**inetutils**, which g-prefixes its binaries (`/opt/pkg/libexec/gtelnetd`,
+client `/opt/pkg/bin/gtelnet`):
+
+    sudo /opt/pkg/bin/pkgin install inetutils
+
+macOS has no `inetd` either, so the supplied **launchd** job runs `gtelnetd` in
+inetd-compatibility mode: `launchd` holds the listening socket and hands each
+accepted connection to `gtelnetd` on stdin, which execs macOS `login(1)`.
+
+Key bits of the plist:
+
+  * `--exec-login=/usr/bin/login` — use macOS `login`. (Beware: in GNU
+    `telnetd`, `-l` is *linemode*, not login; the login flag is `-E`.)
+  * `SockServiceName telnet` → port **23** (via `/etc/services`).
+  * `SockNodeName 192.168.2.1` — the macOS host's address on the **vmnet
+    bridge** (guest = `192.168.2.2`, host/gateway = `192.168.2.1`, per
+    `og2vlm/.VLM`). The guest reaches the Mac there, the same path `rmtd` uses.
+    Do **not** bind `127.0.0.1` — the guest can't reach the Mac's loopback.
+
+Install and start (the bridge address `192.168.2.1` only exists **while the VLM
+is running**, so bootstrap with the VLM up or the bind fails with no listener):
+
+    sudo install -o root -g wheel -m 644 org.pkgsrc.telnetd.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/org.pkgsrc.telnetd.plist
+    netstat -an -p tcp | grep '\.23 .*LISTEN'      # expect 192.168.2.1.23 ... LISTEN
+
+Reload after editing the plist (re-copy first — the live job runs the copy in
+`/Library/LaunchDaemons`):
+
+    sudo launchctl bootout system/org.pkgsrc.telnetd
+    sudo install -o root -g wheel -m 644 org.pkgsrc.telnetd.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/org.pkgsrc.telnetd.plist
+
+Then from Genera: `telnet 192.168.2.1` reaches the macOS `login:` prompt.
+
+Troubleshooting: nothing on `:23` + `launchctl print system/org.pkgsrc.telnetd`
+saying *"Could not find service"* means the job isn't loaded — bootstrap it.
+A malformed `SockNodeName` (e.g. a stray `=192.168.2.1`) makes `launchd` bind
+nothing and register no socket; fix the address and re-bootstrap. **Security:**
+telnet is plaintext — keep it bound to the bridge IP, never `0.0.0.0`.
