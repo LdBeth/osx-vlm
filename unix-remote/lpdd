@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+"""lpdd -- minimal LPD (RFC 1179) print server that spools each job to a file.
+
+The Genera VLM hardcopies over LPD/LPR (TCP 515).  We don't want a real
+printer -- the goal is just to capture the PostScript Genera's LGP2 driver
+emits.  macOS ships no `lpd`, and its CUPS no longer supports raw queues or
+`file://` capture, so this stands in: it speaks just enough of RFC 1179 to
+accept a "receive job" and write the data file to a spool directory.  One
+file per job (no overwrite), named from the control file's job/host info, with
+a `.ps`/`.txt` suffix sniffed from the data.
+
+Like `rmtd`, this is a single self-contained impersonation -- here of `lpd`.
+
+Run (port 515 is privileged):
+    sudo ./lpdd --spool /Users/ldbeth/genera-spool
+Test on a high port without root:
+    ./lpdd --spool /tmp/spool --port 1515 -v
+Serve one connection on stdin (inetd / launchd inetdCompatibility):
+    ./lpdd --spool /Users/ldbeth/genera-spool --inetd
+
+Genera namespace: a Printer object, Type LGP2, Interface
+    :LGP  Host <mac-host>  Protocol :LPR  Queue "genera"
+then `Set Printer <name>` (or setq hardcopy:*default-text-printer*).  The
+queue name is ignored here -- every job lands in the spool dir regardless.
+"""
+
+import argparse
+import errno
+import logging
+import os
+import socket
+import sys
+import time
+
+DEFAULT_PORT = 515            # the "printer" service
+
+# RFC 1179 daemon command codes (first byte of a connection).
+CMD_PRINT_JOBS   = 0x01       # print any waiting jobs   (we have none)
+CMD_RECEIVE_JOB  = 0x02       # receive a printer job    <- the one that matters
+CMD_QUEUE_SHORT  = 0x03       # send queue state (short)
+CMD_QUEUE_LONG   = 0x04       # send queue state (long)
+CMD_REMOVE_JOBS  = 0x05       # remove jobs
+
+# RFC 1179 "receive job" subcommand codes.
+SUB_ABORT        = 0x01
+SUB_CONTROL_FILE = 0x02
+SUB_DATA_FILE    = 0x03
+
+ACK = b"\x00"                 # positive acknowledgement octet
+
+log = logging.getLogger("lpdd")
+
+# Monotonic per-run counter so two jobs in the same second don't collide.
+_seq = 0
+
+
+def _next_seq():
+    global _seq
+    _seq += 1
+    return _seq
+
+
+def read_exact(rfile, n):
+    """Read exactly n bytes (n>0) or raise EOFError on short stream."""
+    chunks = []
+    remaining = n
+    while remaining > 0:
+        b = rfile.read(remaining)
+        if not b:
+            raise EOFError("connection closed with %d bytes outstanding" % remaining)
+        chunks.append(b)
+        remaining -= len(b)
+    return b"".join(chunks)
+
+
+def parse_subheader(line):
+    """A control/data subcommand line is "<count> <name>\\n".  Return (count, name)."""
+    rest = line.rstrip(b"\r\n")
+    parts = rest.split(b" ", 1)
+    count = int(parts[0]) if parts[0] else 0
+    name = parts[1].decode("ascii", "replace") if len(parts) > 1 else ""
+    return count, name
+
+
+def parse_control(text):
+    """Pull the human-friendly fields out of an LPD control file.
+
+    Lines are <letter><value>: H=host, P=user, J=job name, N=source file name.
+    """
+    info = {}
+    for line in text.decode("ascii", "replace").splitlines():
+        if not line:
+            continue
+        key, val = line[0], line[1:]
+        if key in "HPJN" and key not in info:
+            info[key] = val
+    return info
+
+
+def make_filename(spool, ctl, data_name, data):
+    """Build a unique, descriptive spool path for one job's data file."""
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    seq = _next_seq()
+    # Prefer the job name, then the source file name, then the LPD data-file name.
+    tag = ctl.get("J") or ctl.get("N") or data_name or "job"
+    # Keep the tag filesystem-safe and short.
+    tag = "".join(c if (c.isalnum() or c in "._-") else "_" for c in tag)[:40].strip("_")
+    ext = ".ps" if data[:2] in (b"%!", b"\x04%") else ".txt"
+    base = "genera-%s-%03d%s%s" % (ts, seq, ("-" + tag) if tag else "", ext)
+    return os.path.join(spool, base)
+
+
+def receive_job(rfile, wfile, spool):
+    """Handle a CMD_RECEIVE_JOB transaction after its command byte was read."""
+    queue = rfile.readline().rstrip(b"\r\n").decode("ascii", "replace")
+    log.info("receive job for queue %r", queue)
+    wfile.write(ACK); wfile.flush()
+
+    ctl = {}
+    while True:
+        head = rfile.read(1)
+        if not head:
+            return                      # client closed -- job complete
+        sub = head[0]
+        line = rfile.readline()         # rest of the subcommand line
+
+        if sub == SUB_ABORT:
+            log.warning("client aborted job")
+            wfile.write(ACK); wfile.flush()
+            return
+
+        if sub not in (SUB_CONTROL_FILE, SUB_DATA_FILE):
+            log.warning("unexpected subcommand 0x%02x; ignoring", sub)
+            wfile.write(ACK); wfile.flush()
+            continue
+
+        count, name = parse_subheader(line)
+        wfile.write(ACK); wfile.flush()         # ready to receive the payload
+
+        if count > 0:
+            payload = read_exact(rfile, count)
+            term = rfile.read(1)                # trailing 0 octet (completion)
+            if term not in (b"\x00", b""):
+                log.warning("missing data terminator after %r (got %r)", name, term)
+        else:
+            # count == 0 means "length unknown": read to end of connection.
+            payload = rfile.read()
+        wfile.write(ACK); wfile.flush()
+
+        if sub == SUB_CONTROL_FILE:
+            ctl = parse_control(payload)
+            log.info("control file %s: %s", name,
+                     ", ".join("%s=%s" % (k, v) for k, v in ctl.items()) or "(empty)")
+        else:
+            path = make_filename(spool, ctl, name, payload)
+            with open(path, "wb") as f:
+                f.write(payload)
+            log.info("wrote %d bytes -> %s", len(payload), path)
+
+        if count == 0:
+            return                      # we drained the stream; nothing more
+
+
+def serve(rfile, wfile, spool):
+    """Dispatch one LPD connection."""
+    head = rfile.read(1)
+    if not head:
+        return
+    cmd = head[0]
+    if cmd == CMD_RECEIVE_JOB:
+        receive_job(rfile, wfile, spool)
+    elif cmd in (CMD_QUEUE_SHORT, CMD_QUEUE_LONG):
+        # No queue here; report an empty queue with a friendly line.
+        rfile.readline()
+        wfile.write(b"no entries\n"); wfile.flush()
+    elif cmd == CMD_PRINT_JOBS:
+        rfile.readline()
+        wfile.write(ACK); wfile.flush()         # nothing to start
+    elif cmd == CMD_REMOVE_JOBS:
+        rfile.readline()                        # acknowledge by doing nothing
+    else:
+        log.warning("unknown daemon command 0x%02x", cmd)
+
+
+def handle_conn(conn, spool):
+    rfile = conn.makefile("rb")
+    wfile = conn.makefile("wb")
+    try:
+        serve(rfile, wfile, spool)
+    except (EOFError, ConnectionError) as e:
+        log.warning("connection error: %s", e)
+    except Exception:
+        log.exception("error handling job")
+    finally:
+        try:
+            rfile.close(); wfile.close()
+        except Exception:
+            pass
+
+
+def bind_listen(host, port, wait):
+    """Bind/listen, optionally waiting for the bridge address to appear."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    while True:
+        try:
+            s.bind((host, port))
+            break
+        except OSError as e:
+            # EADDRNOTAVAIL: the vmnet bridge IP only exists while the VLM runs.
+            if wait and e.errno == errno.EADDRNOTAVAIL:
+                log.info("waiting for %s to appear (is the VLM up?)...", host)
+                time.sleep(2)
+                continue
+            raise
+    s.listen(5)
+    log.info("listening on %s:%d", host, port)
+    return s
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description="LPD print-to-file server for the Genera VLM")
+    p.add_argument("--spool", required=True,
+                   help="directory to write captured jobs into")
+    p.add_argument("--host", default="192.168.2.1",
+                   help="address to bind (default: vmnet bridge 192.168.2.1)")
+    p.add_argument("--port", type=int, default=DEFAULT_PORT,
+                   help="TCP port (default 515; needs root)")
+    p.add_argument("--inetd", action="store_true",
+                   help="serve a single connection on stdin (launchd/inetd mode)")
+    p.add_argument("--wait", action="store_true",
+                   help="retry bind until --host exists (bridge comes up with the VLM)")
+    p.add_argument("-v", "--verbose", action="count", default=0,
+                   help="-v info, -vv debug")
+    args = p.parse_args(argv)
+
+    logging.basicConfig(
+        level=[logging.WARNING, logging.INFO, logging.DEBUG][min(args.verbose, 2)],
+        format="%(asctime)s lpdd %(levelname)s %(message)s")
+
+    os.makedirs(args.spool, exist_ok=True)
+
+    if args.inetd:
+        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM, fileno=0)
+        handle_conn(conn, args.spool)
+        return 0
+
+    srv = bind_listen(args.host, args.port, args.wait)
+    try:
+        while True:
+            conn, addr = srv.accept()
+            log.info("connection from %s:%d", *addr[:2])
+            with conn:
+                handle_conn(conn, args.spool)
+    except KeyboardInterrupt:
+        log.info("shutting down")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -6,6 +6,8 @@ over the network:
   * `rmtd` — fake tape server (rexec + BSD `rmt`); see below.
   * `tapedump` — inspect a `.tap` tape image.
   * `org.pkgsrc.telnetd.plist` — launchd job for a host telnet server.
+  * `lpdd` — LPD print server that spools each hardcopy to a file; see below.
+  * `org.genera.lpdd.plist` — launchd job for `lpdd`.
 
 ## Tape server (`rmtd`)
 
@@ -114,3 +116,74 @@ saying *"Could not find service"* means the job isn't loaded — bootstrap it.
 A malformed `SockNodeName` (e.g. a stray `=192.168.2.1`) makes `launchd` bind
 nothing and register no socket; fix the address and re-bootstrap. **Security:**
 telnet is plaintext — keep it bound to the bridge IP, never `0.0.0.0`.
+
+# LPD print-to-file server (`lpdd`)
+
+Genera hardcopies over **LPD/LPR (TCP 515)**. We don't want a real printer —
+just to capture the PostScript Genera's LGP2 driver emits. macOS ships no
+`lpd`, and its CUPS no longer supports raw queues or `file://` capture (Apple
+keeps gutting CUPS), so `lpdd` stands in. Like `rmtd` impersonates a tape, it
+impersonates `lpd`: it speaks just enough of RFC 1179 to accept a "receive job"
+and write the data file to a spool directory.
+
+    Genera (LGP2/PostScript) --LPD:515--> lpdd --> /Users/ldbeth/genera-spool/*.ps
+
+One file per job (no overwrite). The name is built from the LPD control file —
+`genera-<date>-<seq>-<jobname>.ps` — and the extension is sniffed (`.ps` if the
+data starts with `%!`, else `.txt`). Both LPD data framings are handled: a
+fixed byte count, and count-0 / stream-to-EOF.
+
+## Run
+
+    sudo ./lpdd --spool /Users/ldbeth/genera-spool          # port 515 needs root
+    ./lpdd --spool /tmp/spool --port 1515 -v                # high port, no root
+    ./lpdd --spool /Users/ldbeth/genera-spool --inetd       # one conn on stdin
+
+`--wait` retries the bind until `--host` exists — the vmnet bridge
+`192.168.2.1` only comes up while the VLM runs. `-v` logs jobs, `-vv` is debug.
+
+## launchd job (`org.genera.lpdd.plist`)
+
+A long-running server (NOT `inetdCompatibility`): `launchd` keeps it alive with
+`KeepAlive`, and `lpdd --wait` handles the listen and rides the bridge coming up
+and going down. So — unlike telnetd — you can bootstrap it with the VLM **down**;
+it just waits. Logs to `/Users/ldbeth/genera-spool/lpdd.log`.
+
+    sudo install -o root -g wheel -m 644 org.genera.lpdd.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/org.genera.lpdd.plist
+    netstat -an -p tcp | grep '\.515 .*LISTEN'     # 192.168.2.1.515 LISTEN once VLM is up
+
+Reload after editing (re-copy first — the live job runs the copy in
+`/Library/LaunchDaemons`):
+
+    sudo launchctl bootout system/org.genera.lpdd
+    sudo install -o root -g wheel -m 644 org.genera.lpdd.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/org.genera.lpdd.plist
+
+## Genera namespace
+
+Register a Printer object of a PostScript-capable Type (`LGP2`) whose
+**Interface** reaches the Mac over LPR:
+
+    Interface  :LGP   Host <mac-host>  Protocol :LPR  Queue "genera"
+
+The queue name is cosmetic — `lpdd` spools every job regardless. Make it the
+default:
+
+    Set Printer <name>
+    ;; or
+    (setq hardcopy:*default-text-printer* (net:find-object-named :printer "<name>"))
+
+Print anything (`Hardcopy File`, or a screen hardcopy). The PostScript lands in
+the spool dir; open it in Preview to confirm.
+
+## Notes / gotchas
+
+  * Nothing captured → run `lpdd` in the foreground with `-vv` and watch the
+    handshake; check `lpdd.log` under the launchd job. The bridge IP only exists
+    while the VLM runs, so with `--wait` the listener appears only then.
+  * `lpdd` does no filtering — the file is byte-for-byte what Genera sent, ideal
+    for archiving or distilling to PDF. For a real printer, pipe the spooled
+    `.ps` onward (`lp`, `pstopdf`, etc.) or point Genera at a CUPS queue instead.
+  * **Security:** LPD is unauthenticated — keep it bound to `192.168.2.1`,
+    never `0.0.0.0`.
