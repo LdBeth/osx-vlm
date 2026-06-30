@@ -205,7 +205,7 @@ inline u64 _CPYSN(int rd, int ra, u64 a, int rb, u64 b)
 #define CVTQT(dr, d, s1, sr2, s2) d = _CVTQT(dr, sr2, s2)
 #define CVTTQ(dr, d, s1, sr2, s2) d = _CVTTQ(dr, sr2, s2)
 #define CVTTQV(dr, d, s1, sr2, s2) d = _CVTTQ(dr, sr2, s2)
-#define CVTTQVC(dr, d, s1, sr2, s2) d = _CVTTQ(dr, sr2, s2)
+#define CVTTQVC(dr, d, s1, sr2, s2) d = _CVTTQVC(dr, sr2, s2)
 #define CVTTQVM(dr, d, s1, sr2, s2) d = _CVTTQVM(dr, sr2, s2)
 #define CVTTQSVI(dr, d, s1, sr2, s2) d = _CVTTQ(dr, sr2, s2)
 #define CVTTS(dr, d, s1, sr2, s2) d = _CVTTS(dr, sr2, s2)
@@ -267,6 +267,7 @@ inline u64 _CVTQT(int dr, int rv2, u64 v2)
 
 inline u64 _CVTTQ(int dr, int rv2, u64 v2)
 {
+  extern double rint(double);
   union {
     double d;
     u64 l;
@@ -277,28 +278,48 @@ inline u64 _CVTTQ(int dr, int rv2, u64 v2)
   fregstate[dr] = FPS_Q;
   u.l = v2;
 #ifdef LOUD
-  if (subtrace) printf("_CVTTQ %p %g %p -> %p\n", (void *)v2, u.d, (void *)u.l, (void *)(u64)u.d);
+  if (subtrace) printf("_CVTTQ %p %g %p -> %p\n", (void *)v2, u.d, (void *)u.l, (void *)(s64)rint(u.d));
 #endif
-  return (u64)(s64)(u.d);
+  /* Unqualified CVTTQ (and /V, /SVI) round to nearest-even; rint() honors
+     the default FE_TONEAREST mode, matching CL:ROUND.  The old (s64)u.d
+     was chopped-toward-zero -- that is the /C behavior, now in _CVTTQVC. */
+  return (s64)rint(u.d);
 }
 
-inline u64 _CVTTQVM(int dr, int rv2, u64 v2)
+inline u64 _CVTTQVC(int dr, int rv2, u64 v2)
 {
   union {
     double d;
     u64 l;
   } u;
+  if (fregstate[rv2] > FPS_T) {
+    printf("_CVTTQVC: %p(%d)\n", (void *)v2, fregstate[rv2]);
+  }
+  fregstate[dr] = FPS_Q;
   u.l = v2;
-  //  printf("CVTTQVM: %g %d\n", u.d, (int)trunc(u.d));
-  //  return (int)trunc(u.d);
-if (u.d < 0.0) u.d -= 0.5;
-//if (u.d > 0.0) u.d += 0.5;
-//  printf("CVTTQVM: %g %d\n", u.d, (int)u.d);
+#ifdef LOUD
+  if (subtrace) printf("_CVTTQVC %p %g %p -> %p\n", (void *)v2, u.d, (void *)u.l, (void *)(s64)u.d);
+#endif
+  /* CVTTQ/VC: chopped == round toward zero (CL:TRUNCATE). */
+  return (s64)u.d;
+}
+
+inline u64 _CVTTQVM(int dr, int rv2, u64 v2)
+{
+  extern double floor(double);
+  union {
+    double d;
+    u64 l;
+  } u;
+  u.l = v2;
+  /* CVTTQ/VM rounds toward minus infinity == floor(), NOT truncate-toward-
+     zero.  The old `if (d < 0) d -= 0.5; (long)d` rounded negatives to
+     nearest instead: floor(-2.3) must be -3, that code gave -2. */
   fregstate[dr] = FPS_Q;
 #ifdef LOUD
-  if (subtrace) printf("_CVTTQVM %p -> %p\n", (void *)v2, (void *)(long)u.d);
+  if (subtrace) printf("_CVTTQVM %p -> %p\n", (void *)v2, (void *)(s64)floor(u.d));
 #endif
-  return (long)u.d;
+  return (s64)floor(u.d);
 }
 
 inline u64 _CVTTS(int dr, int rv2, u64 v2)
@@ -351,7 +372,7 @@ inline u64 U64FLTS(float v)
     float f;
     u64 l;
   } u;
-//  u.l = 0;
+  u.l = 0;	/* zero high word: arm64 leaves it indeterminate otherwise */
   u.f = v;
   return u.l;
 }

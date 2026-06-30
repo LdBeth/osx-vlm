@@ -669,14 +669,13 @@ void FindParentWorlds (World* world, char* worldSearchPath)
 	totalWorlds = 0;
 	worlds = NULL;
 
-	scanningDir = strdup (world->pathname);
-	slashPosition = strrchr (scanningDir, '/');
+	slashPosition = strrchr (world->pathname, '/');
 	if (slashPosition != NULL)
-		*slashPosition = 0;
+		scanningDir = strndup (world->pathname, slashPosition - world->pathname);
 	else
-		PuntWorld (world,
-				   "Unable to determine pathname of directory containing world file %s",
-				   world->pathname);
+		/* A bare world filename has no directory component; it was opened
+		   relative to the current working directory, so scan there. */
+		scanningDir = strdup (".");
 
 	ScanOneDirectory (world);
 

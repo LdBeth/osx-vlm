@@ -25,6 +25,10 @@
 
 #define	DiskPageSize	8192
 
+/* Comm-area version the OG2 side stamps to signal it negotiates per-request
+   disk block sizes; older guests leave version at its default. */
+#define	RequestBlockSizeVersion	4711
+
 
 #define SetHostState(dc,p)	dc->hostState = (p)
 
@@ -63,12 +67,13 @@ void AttachDiskChannel (AttachDiskChannelRequest* pRequest)
 	diskState->command_queue_ptr = (EmbQueue*) HostPointer (diskChannel->command_queue);
 	diskState->status_queue_ptr = (EmbQueue*) HostPointer (diskChannel->status_queue);
 	diskState->error_pending = FALSE;
-	if ((request->blockSize == 0) ||
-	    (request->blockSize > 4096) ||
-	    (request->blockSize < 0))
-		diskChannel->blocksize = lblocksize * 4 ;
-	else
+	/* Honor request->blockSize only when the OG2 side advertises support for
+	   it and supplies a sane value; otherwise use the standard blocksize. */
+	if (EmbCommAreaPtr->version == RequestBlockSizeVersion &&
+	    request->blockSize > 0 && request->blockSize <= 4096)
 		diskChannel->blocksize = request->blockSize * 4 ;
+	else
+		diskChannel->blocksize = lblocksize * 4 ;
 	diskState->blocksize = diskChannel->blocksize ;
 
 	if (Type_String != *MapVirtualAddressTag ((Integer) 
@@ -138,20 +143,27 @@ void AttachDiskChannel (AttachDiskChannelRequest* pRequest)
 		return;
 	  }
 
-	if (request->minimumLength > 0)
-		if (request->minimumLength > fileStatus.st_size)
+	if (request->minimumLength)
+	  {
+		off_t sizeInBytes = request->minimumLength;
+		/* A negative minimumLength from Lisp is a count of FEP blocks */
+		if (sizeInBytes < 0)
+			sizeInBytes = -sizeInBytes * DiskPageSize;
+
+		if (sizeInBytes > fileStatus.st_size)
 		  {
-			if (ftruncate (diskState->fd, (off_t) request->minimumLength))
+			if (ftruncate (diskState->fd, sizeInBytes))
 			  {
 				verror ("AttachDiskChannel",
-					    "Unable to set size of disk partition %s to %d bytes", 
-						filename, request->minimumLength);
+					    "Unable to set size of disk partition %s to %lld bytes",
+						filename, (long long) sizeInBytes);
 				request->result = errno;
 				close (diskState->fd);
 				return;
 			  }
-			fileStatus.st_size = request->minimumLength;
+			fileStatus.st_size = sizeInBytes;
 		  }
+	  }
 
 	diskChannel->number_of_pages = fileStatus.st_size / diskChannel->blocksize ;
 
@@ -174,6 +186,11 @@ void GrowDiskPartition (GrowDiskPartitionRequest* pRequest)
   register EmbDiskChannel *diskChannel = (EmbDiskChannel*) HostPointer (request->diskChannel);
   register DiskChannelState *diskState = HostState (diskChannel);
   struct stat fileStatus;
+  off_t sizeInBytes = request->newLength;
+
+	/* A negative newLength from Lisp is a count of FEP blocks */
+	if (sizeInBytes < 0)
+		sizeInBytes = -sizeInBytes * DiskPageSize;
 
 	request->result = ESUCCESS;					/* Presume success */
 	request->errorMsg = NullEmbPtr;				/* Can't return error messages (yet) */
@@ -195,17 +212,17 @@ void GrowDiskPartition (GrowDiskPartitionRequest* pRequest)
 		return;
 	  }
 
-	if (request->newLength > fileStatus.st_size)
+	if (sizeInBytes > fileStatus.st_size)
 	  {
-		if (ftruncate (diskState->fd, (off_t) request->newLength))
+		if (ftruncate (diskState->fd, sizeInBytes))
 		  {
 			verror ("GrowDiskPartition",
-					"Unable to set size of disk partition attached to channel #%d to %d bytes",
-					diskChannel->unit, request->newLength);
+					"Unable to set size of disk partition attached to channel #%d to %lld bytes",
+					diskChannel->unit, (long long) sizeInBytes);
 			request->result = errno;
 			return;
 		  }
-		fileStatus.st_size = request->newLength;
+		fileStatus.st_size = sizeInBytes;
 	  }
 
 	diskChannel->number_of_pages = fileStatus.st_size / diskChannel->blocksize ;
