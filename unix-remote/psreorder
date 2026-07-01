@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+"""psreorder -- fix Genera's reverse page order in captured PostScript.
+
+Open Genera's LGP2 hardcopy driver spools pages LIFO: the DSC %%Page
+comments in a job run N, N-1, ... 1 instead of 1 ... N, so anything that
+prints or renders the file in physical order shows the last page first.
+The %%Page ordinal is otherwise unused by the PostScript itself -- each
+page just ends with "showpage" (via the NextPage procedure, whose
+true/false argument is popped and ignored) -- so correcting the order is
+a pure text rearrangement of the %%Page chunks, the same trick classic
+psutils tools like psselect/pstops use.
+
+This is a stdin -> stdout filter, not wired into lpdd: run it over a live
+job or an already-spooled file.
+
+    gs foo.ps | psreorder | lpr
+    psreorder < ~/genera-spool/genera-....ps > fixed.ps
+
+If the input doesn't look like a clean Genera N..1 reversed job (no
+%%Page comments, out-of-order ordinals, missing/mismatched %%Pages
+count), the input is passed through unchanged.
+"""
+
+import argparse
+import logging
+import re
+import sys
+
+PAGE_RE = re.compile(rb"^%%Page:\s+(\S+)\s+(-?\d+)\s*$")
+PAGES_RE = re.compile(rb"^%%Pages:\s+(\d+)\s*$")
+TRAILER_RE = re.compile(rb"^%%Trailer\b")
+
+log = logging.getLogger("psreorder")
+
+
+def split_lines(data):
+    """Split into lines keeping line terminators, like bytes.splitlines(True)."""
+    return data.splitlines(keepends=True)
+
+
+def find_declared_pages(lines):
+    """Return the %%Pages: count from the header, or None if absent/unparseable."""
+    for line in lines:
+        if line.startswith(b"%%EndComments"):
+            break
+        m = PAGES_RE.match(line)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def split_chunks(lines):
+    """Split into (header, [(ordinal, chunk_bytes), ...], trailer).
+
+    header is everything before the first %%Page: line; trailer is the
+    %%Trailer line onward (or b"" if none found); each page chunk runs
+    from its %%Page: line up to the next %%Page:/%%Trailer line.
+    """
+    page_starts = []
+    trailer_start = None
+    for i, line in enumerate(lines):
+        if PAGE_RE.match(line):
+            page_starts.append(i)
+        elif trailer_start is None and TRAILER_RE.match(line):
+            trailer_start = i
+
+    if not page_starts:
+        return None
+
+    header = b"".join(lines[: page_starts[0]])
+    bounds = page_starts + [trailer_start if trailer_start is not None else len(lines)]
+    pages = []
+    for start, end in zip(page_starts, bounds[1:]):
+        ordinal = int(PAGE_RE.match(lines[start]).group(2))
+        pages.append((ordinal, b"".join(lines[start:end])))
+    trailer = b"".join(lines[trailer_start:]) if trailer_start is not None else b""
+    return header, pages, trailer
+
+
+def reorder(data):
+    """Return (output_bytes, reordered_bool)."""
+    lines = split_lines(data)
+    split = split_chunks(lines)
+    if split is None:
+        return data, False  # no %%Page comments at all -- nothing to do
+
+    header, pages, trailer = split
+    ordinals = [ordinal for ordinal, _ in pages]
+    expected = list(range(len(pages), 0, -1))
+    declared = find_declared_pages(lines)
+
+    if ordinals != expected or (declared is not None and declared != len(pages)):
+        log.warning(
+            "not a clean reversed Genera job (ordinals=%s, %%%%Pages=%s) -- "
+            "passing through unchanged",
+            ordinals, declared)
+        return data, False
+
+    reordered = b"".join(chunk for _, chunk in reversed(pages))
+    return header + reordered + trailer, True
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(
+        description="Fix Genera's reverse (LIFO) PostScript page order; stdin -> stdout")
+    p.add_argument("-v", "--verbose", action="count", default=0,
+                   help="-v info, -vv debug")
+    args = p.parse_args(argv)
+
+    logging.basicConfig(
+        level=[logging.WARNING, logging.INFO, logging.DEBUG][min(args.verbose, 2)],
+        format="%(asctime)s psreorder %(levelname)s %(message)s")
+
+    data = sys.stdin.buffer.read()
+    output, reordered = reorder(data)
+    log.info("%s (%d bytes)", "reordered" if reordered else "unchanged", len(output))
+    sys.stdout.buffer.write(output)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

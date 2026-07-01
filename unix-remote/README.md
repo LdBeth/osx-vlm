@@ -8,6 +8,7 @@ over the network:
   * `org.pkgsrc.telnetd.plist` — launchd job for a host telnet server.
   * `lpdd` — LPD print server that spools each hardcopy to a file; see below.
   * `org.genera.lpdd.plist` — launchd job for `lpdd`.
+  * `psreorder` — fixes Genera's reverse page order in spooled PostScript; see below.
 
 ## Tape server (`rmtd`)
 
@@ -187,3 +188,11 @@ the spool dir; open it in Preview to confirm.
     `.ps` onward (`lp`, `pstopdf`, etc.) or point Genera at a CUPS queue instead.
   * **Security:** LPD is unauthenticated — keep it bound to `192.168.2.1`,
     never `0.0.0.0`.
+  * Open Genera's LGP2 driver spools pages last-first (a %%Page: N..1 DSC
+    run). `psreorder` is a stdin/stdout filter that fixes this — it does not
+    run inside `lpdd`, so fix a capture after the fact:
+
+        ./psreorder < ~/genera-spool/genera-....ps > fixed.ps
+
+    It passes input through unchanged (with a warning) if the page order
+    doesn't match that exact reversed pattern.
