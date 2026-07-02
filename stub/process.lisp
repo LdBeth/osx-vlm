@@ -1087,6 +1087,10 @@
 ;;(defun gotolabel (str)
 ;;  (lc str))
 
+(defvar global-labels nil)
+(defvar call-label-count 0)
+(defvar just-start nil)
+
 (defun add-global-label-symbol (sym)
   (setq global-labels (append global-labels (list sym))))
 
@@ -1201,7 +1205,10 @@
 	(arg1 (car (cdr form)))
 	(arg2 (car (cddr form)))
 	(arg3 (car (cdddr form)))
-	(arg4 (car (cddddr form))))
+	(arg4 (car (cddddr form)))
+	;; set by, and used only within, individual CASE clauses below
+	;; (CALL-SUBROUTINE / VM-READ / SRA / SRL / SLL)
+	arg5 label shiftarg)
 ;; (format t "cmd: ~S~%" cmd)
   (case cmd
 	(start
@@ -2397,10 +2404,9 @@
  		  "ifunbits" "ifunblok" "ifunbind" "ifunfull"
  		  "ifunbnum" "ifuntrap" "ihalt" "idouble"
  		  "ifunjosh" "ifuntran"))
-    (progn
+    (let ((outputfilename (format nil "~A.c" file))
+	  (inputfilename (format nil "../alpha-emulator/~A.as" file)))
 ;      (setq count (+ 1 count))
-      (setq outputfilename (format nil "~A.c" file))
-      (setq inputfilename (format nil "../alpha-emulator/~A.as" file))
       (format t "compiling ~A~8,11T" inputfilename)
       (format t "--> ~A~%" outputfilename)
       (process-asm-source
@@ -2417,9 +2423,11 @@
   (load "../emulator/aihead.lisp")
   (load "../emulator/errortbl.lisp")
   (load "../emulator/traps.lisp")
-  (load "intrpmac.lisp")
-
+  ;; aistat.lisp before intrpmac.lisp: PC-TO-ICACHEENT (intrpmac.lisp)
+  ;; references |cacheline$K-mask| at macroexpansion time, defined by
+  ;; aistat.lisp.
   (load "../alpha-emulator/aistat.lisp")
+  (load "intrpmac.lisp")
 
   (dolist (file
 	   '("alphamac"
@@ -2429,9 +2437,7 @@
 	     "imacblok" "imaclexi" "imacgene" "imacinst" "imacialu"
 	     "imacloop" "imacmath" "imacbind" "imacjosh" "imacarra"
 	     "imacpred" "imacsubp" "imactrap"))
-    (progn
-      (setq filename (format nil "../alpha-emulator/~A.lisp" file))
-      (load filename))))
+    (load (format nil "../alpha-emulator/~A.lisp" file))))
 
 (defun load-macros-old ()
   (load "clisp-support.lisp")
@@ -2619,9 +2625,466 @@
     (add-global-label-symbol sym)))
 
 
+;; --- VM fault-edge / store-ordering overrides ---------------------------
+;; The following redefines VM-read, VM-write, MEMORY-READ-INTERNAL,
+;; MEMORY-WRITE (alpha-emulator/memoryem.lisp) and STACK-DUMP
+;; (alpha-emulator/stacklis.lisp) verbatim, after LOAD-MACROS has loaded
+;; the originals, swapping their plain LDL/STL/LDQ_U/STQ_U forms for the
+;; VM-* wrappers below.  This keeps alpha-emulator/ byte-identical to the
+;; upstream port; all aarch64/macOS-specific behaviour lives here instead.
+;; See *data-store-first* / *explicit-fault-edges* above for the rationale.
+(defun install-vm-access-overrides ()
+  ;; EVAL defers compilation of the forms below to when this function is
+  ;; actually called (from BUILD, after LOAD-MACROS).  Without this, SBCL
+  ;; compiles this DEFUN's body as soon as process.lisp is read -- before
+  ;; CHECK-TEMPORARIES/FIND-MEMORY-SUBROUTINE/etc. exist as macros -- and
+  ;; misparses their call sites below as plain function calls.
+  (eval
+   '(progn
+
+;; Gensym-free wrappers: when *explicit-fault-edges* is T, expand to the
+;; -VM variant (LDL-VM etc.) which emits an asm-goto with an extable
+;; entry; otherwise expand to the plain op.  Must not introduce a gensym
+;; or the deterministic-label contract (*gensym-counter*, below) breaks
+;; and x86-64 output is no longer byte-identical.
+(defmacro VM-LDL (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((LDL-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((LDL ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+(defmacro VM-STL (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((STL-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((STL ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+(defmacro VM-LDQ_U (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((LDQ_U-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((LDQ_U ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+(defmacro VM-STQ_U (reg offset base &optional comment)
+  (if *explicit-fault-edges*
+      `((STQ_U-VM ,reg ,offset ,base ,@(if comment `(,comment))))
+      `((STQ_U ,reg ,offset ,base ,@(if comment `(,comment))))))
+
+;; Raw read from emulated memory.
+(defmacro VM-read (vma tag data temp temp2 &optional prefetchp)
+  (check-temporaries (vma) (tag data temp))
+  (assert (not (stringp prefetchp)) () "VM-Read does not accept comments")
+  (let ()
+    `(
+      (ADDQ ,vma Ivory ,temp2)
+      (S4ADDQ ,temp2 zero ,data)
+      ,@(when prefetchp `((FETCH 0 (,temp2))))	; load tag word
+      (VM-LDQ_U ,tag 0 (,temp2))
+      ,@(when prefetchp `((FETCH 0 (,data))))
+      (VM-LDL ,data 0 (,data))			; load data
+      (EXTBL ,tag ,temp2 ,tag)			; extract the correct tag
+      )))
+
+;; Raw write to emulated memory
+(defmacro VM-write (vma tag data temp temp2 temp3 temp4 &optional prefetchp)
+  (check-temporaries (vma tag data) (temp temp2 temp3 temp4))
+  (assert (not (stringp prefetchp)) () "VM-Write does not accept comments")
+  (let ()
+    `((ADDQ ,vma Ivory ,temp)
+      (S4ADDQ ,temp zero ,temp4)
+      ,@(when prefetchp
+	  `((FETCH_M 0 (,temp))
+	    (force-alignment)))
+      (VM-LDQ_U ,temp3 0 (,temp))			; temp here is the tag address
+      (INSBL ,tag ,temp ,temp2)			; temp2 is the positioned tag
+      (MSKBL ,temp3 ,temp ,temp3)		; remove old byte
+      ,@(if prefetchp
+	    `((FETCH_M 0 (,temp4)))
+	    `((force-alignment)))
+      (BIS ,temp3 ,temp2 ,temp3)		; add new byte
+      ;; The protected space's store must happen first, so a write fault
+      ;; arrives with the word intact (see *data-store-first*)
+      ,@(if *data-store-first*
+	    `((VM-STL ,data 0 (,temp4))		; store data
+	      (VM-STQ_U ,temp3 0 (,temp)))
+	    `((VM-STQ_U ,temp3 0 (,temp))
+	      ;; Must happen last, in case of write-first fault
+	      (VM-STL ,data 0 (,temp4))))		; store data
+      )))
+
+(defun memory-read-internal (vma tag data cycle temp temp2 temp3 &optional temp4 done-label signedp inlinep &aux subr args linkage)
+  "Cycle is either a constant cycle type or a register containing the
+  cycle number."
+  #+memory-inline (setq inlinep t)
+  (if temp4
+      (check-temporaries (vma tag data) (temp temp2 temp3 temp4))
+      (check-temporaries (vma tag data) (temp temp2 temp3)))
+  (unless inlinep
+    (multiple-value-setq (subr args linkage)
+      (find-memory-subroutine
+	(vma tag data cycle temp temp2 temp3 temp4)
+	(*memoized-vmdata* *memoized-vmtags* *memoized-base* *memoized-limit*))))
+  (let* ((cycle-number (case cycle
+			 (processorstate_dataread 0)
+			 (processorstate_datawrite 1)
+			 (processorstate_bindread 2)
+			 (processorstate_bindwrite 3)
+			 (processorstate_bindreadnomonitor 4)
+			 (processorstate_bindwritenomonitor 5)
+			 (processorstate_header 6)
+			 (processorstate_structureoffset 7)
+			 (processorstate_scavenge 8)
+			 (processorstate_cdr 9)
+			 (processorstate_gccopy 10)
+			 (processorstate_raw 11)
+			 (processorstate_rawtranslate 12)
+			 (t
+			   ;; Make sure cycle is a (non-conflicting) register
+			   (check-temporaries (cycle) (vma tag data temp temp2 temp3))
+			   (shiftf cycle :general))))
+	 (cycle-mask (unless (eq cycle :general)
+		       (intern (concatenate 'string (string cycle) "_MASK"))))
+	 #+obsolete
+	 (cantransport (member cycle '(:general
+					processorstate_dataread
+					processorstate_bindread
+					processorstate_bindreadnomonitor
+					processorstate_header
+					processorstate_scavenge)))
+	 (canindirect (not (member cycle '(processorstate_scavenge
+					    processorstate_gccopy
+					    processorstate_raw
+					    processorstate_rawtranslate))))
+	 (cycle-indirect-mask (when canindirect
+				(unless (eq cycle :general)
+				  (memory-indirect-mask cycle-number))))
+	 (cantransform (member cycle '(:general
+					processorstate_dataread
+					processorstate_rawtranslate)))
+	 (canlookup (member cycle '(:general
+				     processorstate_dataread
+				     processorstate_datawrite)))
+	 (top (gensym))
+	 (wasincache (gensym))
+	 (incache (gensym))
+	 (notindirect (gensym))
+	 (decodeaction (gensym))
+	 (decodecommontail (if #-memory-inline inlinep #+memory-inline nil
+			       (intern (concatenate 'string (string *function-being-processed*)
+						    "DECODE"))
+			       (gensym)))
+	 (doaction (gensym))
+	 (checklookup (if canlookup (gensym) doaction))
+	 (checktransform (if cantransform (gensym) checklookup))
+	 (checkindirect (if canindirect (gensym) checktransform))
+	 (dbcachemiss (gensym))
+	 (done (or done-label (gensym)))
+	 ;; readability
+	 (temp1 temp)
+	 (action-memoized (lisp:and *memoized-action* (eq *memoized-action-cycle* cycle)))
+	 (action (if action-memoized *memoized-action* (or temp4 temp))))
+    (flet ((main-expansion ()
+	     `((comment "Memory Read Internal")
+	       (unlikely-label ,top)
+	       ;; VM-read to validate access, but then check for cached
+
+	       ;; The next sequence is equivalent (believe it or not) to:
+	       ;;  (VM-read ,vma ,tag ,data ,temp2 ,temp3 "Read the emulated Ivory Word")
+	       ;;  (VMAtoSCAmaybe ,vma ,temp ,notincache ,temp2 ,temp3)
+	       ;;  (stack-read2 ,temp1 ,tag ,data "Read from stack cache")
+	       ,@(unless (or *memoized-base* *cant-be-in-cache-p*)
+		   `((LDQ ,temp1 PROCESSORSTATE_STACKCACHEBASEVMA (ivory) "Base of stack cache")))
+	       (ADDQ ,vma Ivory ,temp3)
+	       ,@(unless (or *memoized-limit* *cant-be-in-cache-p*)
+		   `((LDL ,temp2 PROCESSORSTATE_SCOVLIMIT (ivory))))
+	       ,@(if (lisp:and (eq cycle :general) (or temp4 *cant-be-in-cache-p*))
+		     `((S4ADDQ ,cycle-number zero ,action "Cycle-number -> table offset"))
+		     `((S4ADDQ ,temp3 zero ,data)))
+	       (VM-LDQ_U ,tag 0 (,temp3))
+	       ,@(if (lisp:and (eq cycle :general) (or temp4 *cant-be-in-cache-p*))
+		     `((S4ADDQ ,action Ivory ,action))
+		     (unless *cant-be-in-cache-p*
+		       `((SUBQ ,vma ,(or *memoized-base* temp1) ,temp1 "Stack cache offset"))))
+	       ,@(when (or temp4 *cant-be-in-cache-p*)
+		   (cond ((eq cycle 'processorstate_raw) ())
+			 ((eq cycle :general)
+			  `(;; Table offset == cycle-number * 16
+			    (S4ADDQ ,temp3 zero ,data)
+			    ,@(unless *cant-be-in-cache-p*
+				`((SUBQ ,vma ,(or *memoized-base* temp1) ,temp1 "Stack cache offset")))
+			    (LDQ ,action PROCESSORSTATE_DATAREAD_MASK (,action))))
+			 (t `((LDQ ,action ,cycle-mask (ivory))
+			      ))))
+	       ,@(unless *cant-be-in-cache-p*
+		   `((CMPULT ,temp1 ,(or *memoized-limit* temp2) ,temp2 "In range?")))
+	       (VM-LDL ,data 0 (,data))
+	       (EXTBL ,tag ,temp3 ,tag)
+	       ,@(unless *cant-be-in-cache-p*
+		   `((branch-true ,temp2 ,incache)))
+	       (unlikely-label ,wasincache)
+	       ,@(unless (or temp4 *cant-be-in-cache-p*)
+		   (cond ((eq cycle 'processorstate_raw) ())
+			 ((eq cycle :general)
+			  `(;; Table offset == cycle-number * 16
+			    (S4ADDQ ,cycle-number zero ,action "Cycle-number -> table offset")
+			    (S4ADDQ ,action Ivory ,action)
+			    (LDQ ,action PROCESSORSTATE_DATAREAD_MASK (,action))))
+			 (t `((LDQ ,action ,cycle-mask (ivory))
+			      ))))
+	       ,@(if (eq cycle 'processorstate_raw)
+		     `(,@(unless signedp `((EXTLL ,data 0 ,data))))
+		     ;; NOTE: SRL "ignores" the cdr-code (only uses low 6 bits for shift)
+		     `(,@(when cycle-indirect-mask
+			   `((load-constant ,temp3 ,cycle-indirect-mask)))
+		       (SRL ,action ,tag ,action)
+		       ,@(when cycle-indirect-mask
+			   `((SRL ,temp3 ,tag ,temp3)))
+		       ,@(unless signedp `((EXTLL ,data 0 ,data)))
+		       (BLBS ,action ,decodeaction)))
+	       ,@(if done-label
+		     `((BR zero ,done))
+		     `((unlikely-label ,done))))))
+      (unless inlinep
+	(when subr
+	  (if (null args)
+	      (return-from memory-read-internal
+		(let ((todecode (intern (concatenate 'string (string subr) "DECODE"))))
+		  #+debug
+		  (format *trace-output* "~&In ~A Used ~A"
+			  *function-being-processed* subr)
+		  (if (eq cycle 'processorstate_raw)
+		      (unless *cant-be-in-cache-p*
+			(push
+			  `((label ,incache)
+			    (BSR ,linkage ,todecode)
+			    (BR zero ,done))
+			  *function-epilogue*))
+		      (push
+			`((label ,decodeaction)
+			  ,@(when cycle-indirect-mask
+			      `((BLBC ,temp3 ,notindirect)
+				(EXTLL ,data 0 ,vma "Do the indirect thing")
+				(BR zero ,top)
+				(label ,notindirect)))
+			  (label ,incache)
+			  (BSR ,linkage ,todecode)
+			  (BR zero ,done))
+			*function-epilogue*))
+		  (main-expansion)
+		  ))
+	      #+debug
+	      (format *trace-output* "~&In ~A Couldn't use ~A ~A->~A"
+		      *function-being-processed* subr args `(,vma ,tag ,data)))))
+      #+debug
+      (format *trace-output* "~&In ~A VMA=~A TAG=~A DATA=~A CYCLE=~A"
+	      *function-being-processed* vma tag data cycle)
+      ;; Unlikely expansion
+      (progn
+	(unless (eq cycle 'processorstate_raw)
+	  (push
+	    `(
+	      (label ,decodeaction)
+	      ,@(when cycle-indirect-mask
+		  `((BLBC ,temp3 ,notindirect)
+		    (EXTLL ,data 0 ,vma "Do the indirect thing")
+		    (BR zero ,top)))
+	      (label ,notindirect)
+	      ,@(if (eq cycle :general)
+		    `(;; Table offset == cycle-number * 16
+		      (S4ADDQ ,cycle-number zero ,action "Cycle-number -> table offset")
+		      (S4ADDQ ,action Ivory ,action)
+		      (LDQ ,action PROCESSORSTATE_DATAREAD (,action)))
+		    `((LDQ ,action ,cycle (ivory) "Load the memory action table for cycle")))
+	      (TagType ,tag ,temp3 "Discard the CDR code")
+	      (STQ ,vma PROCESSORSTATE_VMA (ivory) "stash the VMA for the (likely) trap")
+	      (S4ADDQ ,temp3 ,action ,temp3  "Adjust for a longword load")
+	      (LDL ,action 0 (,temp3)      "Get the memory action")
+	      ,@(when (lisp:and canindirect (not cycle-indirect-mask))
+		  `((label ,checkindirect)
+		    (AND ,action |MemoryActionIndirect| ,temp2)
+		    (BEQ ,temp2 ,checktransform)
+		    (EXTLL ,data 0 ,vma "Do the indirect thing")
+		    (BR zero ,top)))
+	      ,@(when cantransform
+		  `((label ,checktransform)
+		    (AND ,action |MemoryActionTransform| ,temp3)
+		    (BEQ ,temp3 ,checklookup)
+		    (BIC ,tag #x3F ,tag)
+		    (BIS ,tag |TypeExternalValueCellPointer| ,tag)
+		    (BR zero ,done)))
+	      ,@(when canlookup
+		  ;; +++ Caveat emptor:  we do not follow the microcode
+		  ;; implementation.  In order to implement this at all
+		  ;; reasonably, we require that the binding cache be
+		  ;; safeguarded (hence implying it is scavenged at flip
+		  ;; time).  Minima does this.
+		  `(
+		    (passthru "#ifndef MINIMA")
+		    (unlikely-label ,checklookup)
+		    (passthru "#endif")
+		    (passthru "#ifdef MINIMA")
+		    (label ,checklookup)
+		    (AND ,action |MemoryActionBinding| ,temp3)
+		    (LDQ ,temp2 PROCESSORSTATE_DBCMASK (ivory))
+		    (BEQ ,temp3 ,doaction)
+		    (SLL ,vma 1 ,temp1)
+		    ;; --- Could save LDQ/S4ADDQ below by storing DBCBASE
+		    ;; as an index into Ivory VM data rather than a vma
+		    (LDQ ,temp3 PROCESSORSTATE_DBCBASE (ivory))
+		    (AND ,temp1 ,temp2 ,temp1 "Hash index")
+		    ;; Don't need tag, inline: (VM-Read ,vma ,temp1 ,temp2 ,temp3 ,tag)
+		    (BIS zero 1 ,temp2)
+		    (SLL ,temp2 |IvoryMemoryData| ,temp2)
+		    ;; --- Why is ADDQ not sufficient instead of next two?
+		    (ADDL ,temp1 ,temp3 ,temp1)
+		    (EXTLL ,temp1 0 ,temp1 "Clear sign-extension")
+		    (S4ADDQ ,temp1 ,temp2 ,temp2)
+		    (LDL ,temp1 0 (,temp2) "Fetch the key")
+		    ;; Get the vma from next location and indirect
+		    ;; Don't need tag, inline: (VM-Read ,vma ,tag ,data ,temp2 ,temp3)
+		    (LDL ,data 4 (,temp2) "Fetch value")
+		    (SUBL ,vma ,temp1 ,temp3 "Compare")
+		    (BNE ,temp3 ,dbcachemiss "Trap on miss")
+		    (EXTLL ,data 0 ,vma "Extract the pointer, and indirect")
+		    (BR zero ,top "This is another memory read tailcall.")
+		    (label ,dbcachemiss)
+		    (external-branch DBCACHEMISSTRAP)
+		    (passthru "#endif")
+		    ))
+	      (unlikely-label ,doaction)
+	      (memory-action ,action ,cycle-number))
+	    *function-epilogue*))
+	(unless *cant-be-in-cache-p*
+	  (push
+	    `(;; Memory common tail:  disambiguate incache from exception
+	      ,@(when inlinep
+		  `((label ,decodecommontail)
+		    ,@(unless (eq cycle 'processorstate_raw)
+			`((branch-false ,temp2 ,notindirect)))))
+	      (label ,incache)
+	      (LDQ ,temp2 PROCESSORSTATE_STACKCACHEDATA (ivory))
+	      (S8ADDQ ,temp1 ,temp2 ,temp1 "reconstruct SCA")
+	      (LDL ,data 0 (,temp1))
+	      (LDL ,tag 4 (,temp1) "Read from stack cache")
+	      (BR zero ,wasincache))
+	    *function-epilogue*)))
+      (main-expansion))))
+
+(defmacro memory-write (vma tag data cycle temp temp2 temp3 temp4 &optional temp5 done-label)
+  (if temp5
+      (check-temporaries (vma tag data) (temp temp2 temp3 temp4 temp5))
+      (check-temporaries (vma tag data) (temp temp2 temp3 temp4)))
+  (assert (lisp:and (not (eql tag 'zero)) (not (eql data 'zero))))
+  (assert (eq cycle 'PROCESSORSTATE_RAW) () "You probably meant STORE-CONTENTS")
+  (let ((done (or done-label (gensym)))
+	(incache (gensym)))
+    (unless *cant-be-in-cache-p*
+      (push
+	`((label ,incache)
+	  ,@(if temp5
+		`(;; Have to reload this due to insufficient registers
+		  ,@(unless *memoized-base*
+		      `((LDQ ,temp2 PROCESSORSTATE_STACKCACHEBASEVMA (ivory))
+			(force-alignment)))
+		  (LDQ ,temp PROCESSORSTATE_STACKCACHEDATA (ivory))
+		  (SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset"))
+		`((LDQ ,temp PROCESSORSTATE_STACKCACHEDATA (ivory))))
+	  (S8ADDQ ,temp2 ,temp ,temp "reconstruct SCA")
+	  (stack-write2 ,temp ,tag ,data "Store in stack")
+	  (BR zero ,done))
+	*function-epilogue*))
+    `(
+;     (force-alignment)				;tuned for aligned
+      ;; VM-write to validate access, but then check for cached
+      ;; Below is in-lined:
+      ;;   (VM-write vma tag data temp temp2 temp3 temp4)
+      ;;   (VMAtoSCAmaybe vma temp done temp2 temp3)
+      ;; for better dual-issue
+      ,@(unless (or *cant-be-in-cache-p* *memoized-base* (null temp5))
+	  `((LDQ ,temp2 PROCESSORSTATE_STACKCACHEBASEVMA (ivory))))
+      (ADDQ ,vma Ivory ,temp)
+      ,@(unless (or *cant-be-in-cache-p* *memoized-limit* (null temp5))
+	  `((LDL ,temp5 PROCESSORSTATE_SCOVLIMIT (ivory))))
+      (S4ADDQ ,temp zero ,temp4)
+      (VM-LDQ_U ,temp3 0 (,temp))
+      ,@(unless (or *cant-be-in-cache-p* (null temp5))
+	  `((SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset")
+	    (CMPULT ,temp2 ,(or *memoized-limit* temp5) ,temp5 "In range?")))
+      (INSBL ,tag ,temp ,temp2)
+      (MSKBL ,temp3 ,temp ,temp3)
+      (force-alignment)
+      (BIS ,temp3 ,temp2 ,temp3)
+      ,@(unless (or *cant-be-in-cache-p* *memoized-base* temp5)
+	  `((LDQ ,temp2 PROCESSORSTATE_STACKCACHEBASEVMA (ivory))))
+      ;; The protected space's store must happen first, so a write fault
+      ;; arrives with the word intact (see *data-store-first*)
+      ,@(if *data-store-first*
+	    `((VM-STL ,data 0 (,temp4))		; store data
+	      (VM-STQ_U ,temp3 0 (,temp)))
+	    `((VM-STQ_U ,temp3 0 (,temp))))
+      ,@(unless (or *cant-be-in-cache-p* temp5)
+	  `((LDL ,temp PROCESSORSTATE_SCOVLIMIT (ivory))
+	    (SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset")
+	    (CMPULT ,temp2 ,temp ,temp "In range?")))
+      ,@(unless *data-store-first*
+	  `((VM-STL ,data 0 (,temp4))))		; store data
+      ,@(unless *cant-be-in-cache-p*
+	  `((branch-true ,(or temp5 temp) ,incache "J. if in cache")))
+      ,@(if done-label
+	    `((BR zero ,done))
+	    `((unlikely-label ,done))))))
+
+;; Hand coded versions of stack-read2 and VM-Write to use fewer registers,
+;; from alpha-emulator/stacklis.lisp; the write-back stores go through the
+;; VM-* wrappers for the same reason as VM-write/memory-write above.
+(defmacro stack-dump (VMA SCA count temp temp2)
+  (check-temporaries (VMA SCA count) (temp temp2))
+  (let ((datal1 (gensym))
+        (datal2 (gensym))
+	(tagl1 (gensym))
+	(tagl2 (gensym)))
+    `((STL ,count PROCESSORSTATE_SCOVDUMPCOUNT (ivory) "Will be destructively modified")
+      (ADDQ ,vma Ivory ,temp2 "Starting address of tags")
+      (S4ADDQ ,temp2 zero ,vma "Starting address of data")
+      (comment "Dump the data")
+      (FETCH 0 (,sca))
+      (FETCH_M 0 (,vma))
+      (BR zero ,datal1)
+      (label ,datal2)
+      (LDL ,temp 0 (,sca) "Get data word")
+      (SUBQ ,count 1 ,count)
+      (ADDQ ,sca 8 ,sca "Advance SCA position")
+      (VM-STL ,temp 0 (,vma) "Save data word")
+      (ADDQ ,vma 4 ,vma "Advance VMA position")
+      (unlikely-label ,datal1)
+      (BGT ,count ,datal2)
+      (comment "Dump the tags")
+      (LDL ,count PROCESSORSTATE_SCOVDUMPCOUNT (ivory) "Restore the count")
+      (BIS zero ,temp2 ,vma "Restore tag VMA")
+      (SLL ,count 3 ,temp)
+      (SUBQ ,sca ,temp ,sca "Restore orginal SCA")
+      (FETCH 0 (,sca))
+      (FETCH_M 0 (,vma))
+      (BR zero ,tagl1)
+      (label ,tagl2)
+      (SUBQ ,count 1 ,count)
+      (LDL ,temp 4 (,sca) "Get tag word")
+      (ADDQ ,sca 8 ,sca "Advance SCA position")
+      (VM-LDQ_U ,temp2 0 (,vma) "Get packed tags word")
+      (INSBL ,temp ,vma ,temp "Position the new tag")
+      (MSKBL ,temp2 ,vma ,temp2 "Remove old tag")
+      (BIS ,temp ,temp2 ,temp2 "Put in new byte")
+      (VM-STQ_U ,temp2 0 (,vma) "Save packed tags word")
+      (ADDQ ,vma 1 ,vma "Advance VMA position")
+      (unlikely-label ,tagl1)
+      (BGT ,count ,tagl2)
+      ))) ;; closes stack-dump's backquote-list / let / defmacro
+
+     ) ;; closes PROGN
+   ) ;; closes EVAL
+  ) ;; closes DEFUN install-vm-access-overrides
+
 (defun build ()
 ;  (load-macros-old)
   (load-macros)
+  (install-vm-access-overrides)
 ;;   (defmacro define-procedure (name (&rest args) &body body &environment env)
 ;;     (let ((*function-being-processed* name))
 ;;       `((start ,name ,(length args))
