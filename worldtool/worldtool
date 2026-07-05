@@ -1,3 +1,0 @@
-#!/bin/sh
-# worldtool -- Genera world file inspector/builder (see ../CLAUDE.md, plan)
-exec sbcl --script "$(dirname "$0")/main.lisp" "$@"

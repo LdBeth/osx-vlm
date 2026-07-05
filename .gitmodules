@@ -1,0 +1,3 @@
+[submodule "worldtool"]
+	path = worldtool
+	url = git@github.com:LdBeth/worldtool.git
