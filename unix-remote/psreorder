@@ -1,14 +1,26 @@
 #!/usr/bin/env python3
-"""psreorder -- fix Genera's reverse page order in captured PostScript.
+"""psreorder -- fix Genera hardcopy PostScript captured from Open Genera.
 
-Open Genera's LGP2 hardcopy driver spools pages LIFO: the DSC %%Page
-comments in a job run N, N-1, ... 1 instead of 1 ... N, so anything that
-prints or renders the file in physical order shows the last page first.
-The %%Page ordinal is otherwise unused by the PostScript itself -- each
-page just ends with "showpage" (via the NextPage procedure, whose
-true/false argument is popped and ignored) -- so correcting the order is
-a pure text rearrangement of the %%Page chunks, the same trick classic
-psutils tools like psselect/pstops use.
+Two independent, opt-out-able fixes, applied as a stdin -> stdout filter:
+
+1. Reverse page order.  Open Genera's LGP2 hardcopy driver spools pages
+   LIFO: the DSC %%Page comments in a job run N, N-1, ... 1 instead of
+   1 ... N, so anything that prints or renders the file in physical order
+   shows the last page first.  The %%Page ordinal is otherwise unused by
+   the PostScript itself -- each page just ends with "showpage" (via the
+   NextPage procedure, whose true/false argument is popped and ignored) --
+   so correcting the order is a pure text rearrangement of the %%Page
+   chunks, the same trick classic psutils tools like psselect/pstops use.
+
+2. Blank stray control characters (--no-patch-fonts to disable).  The SAGE
+   formatter strands the source newline before every @end(...) as a literal
+   #\Return (Symbolics code 141 = 0o215) on the block's last line, and the
+   hardcopy driver emits it verbatim as "141 cs show".  Code 141 is .notdef
+   in every font, but Genera's downloaded bitmap fonts define .notdef as an
+   empty glyph (invisible) while the resident core PostScript fonts image it
+   as a visible box (e.g. the title page's "Draft <box> July 2026").  We
+   reencode code 141 to /space in the 13 core fonts, matching the bitmap
+   fonts' empty .notdef, so the box disappears.  No page content is touched.
 
 This is a stdin -> stdout filter, not wired into lpdd: run it over a live
 job or an already-spooled file.
@@ -18,7 +30,8 @@ job or an already-spooled file.
 
 If the input doesn't look like a clean Genera N..1 reversed job (no
 %%Page comments, out-of-order ordinals, missing/mismatched %%Pages
-count), the input is passed through unchanged.
+count), the page order is left unchanged; if it has no /IntFonts prolog,
+the font patch is skipped.  Either way unrecognized input passes through.
 """
 
 import argparse
@@ -29,6 +42,42 @@ import sys
 PAGE_RE = re.compile(rb"^%%Page:\s+(\S+)\s+(-?\d+)\s*$")
 PAGES_RE = re.compile(rb"^%%Pages:\s+(\d+)\s*$")
 TRAILER_RE = re.compile(rb"^%%Trailer\b")
+INTFONTS_RE = re.compile(rb"^/IntFonts\s*\[")
+
+# PostScript injected into the prolog to blank Genera's stray #\Return (code
+# 141 = 0o215), which the resident core fonts otherwise image as a .notdef box.
+# It remaps code 141 to /space (paints nothing) in the 13 core PostScript fonts
+# -- exactly the resident set the LGP2 driver's make-builtin-lgp2-font can emit
+# -- matching the empty .notdef of Genera's downloaded bitmap fonts.  The Return
+# is always emitted as an isolated run with its own moveto, so /space's advance
+# width is never visible, and ASCII text (batched via the "s" operator) is
+# untouched.  Must land before /IntFonts (whose findfonts must get the patched
+# fonts) and before the initial `save` (NextPage does restore/save between
+# pages, which would otherwise roll the patch back on page 2+); injecting right
+# before the /IntFonts line satisfies both.
+PATCH_MARKER = b"psrPatchFont"
+PATCH_SNIPPET = b"""\
+%%BeginProcSet: psreorder-blank-control 1.0
+% linux-vlm psreorder: Genera strands #\\Return (code 141 = 0o215) before @end;
+% resident core fonts image it as a .notdef box.  Remap 141 -> /space (blank) in
+% the 13 core fonts to match Genera's downloaded bitmap fonts' empty .notdef.
+/psrBlankCode 141 def
+/psrPatchFont {                       % /FontName  ->  -
+  dup findfont
+  dup length dict begin               % copy the font dict, skipping /FID
+    { 1 index /FID ne { def } { pop pop } ifelse } forall
+    /Encoding Encoding 256 array copy def
+    Encoding psrBlankCode /space put
+    currentdict
+  end
+  definefont pop
+} bind def
+[/Helvetica /Helvetica-Bold /Helvetica-Oblique /Helvetica-BoldOblique
+ /Times-Roman /Times-Bold /Times-Italic /Times-BoldItalic
+ /Courier /Courier-Bold /Courier-Oblique /Courier-BoldOblique /Symbol]
+{ psrPatchFont } forall
+%%EndProcSet
+"""
 
 log = logging.getLogger("psreorder")
 
@@ -57,22 +106,25 @@ def split_chunks(lines):
     from its %%Page: line up to the next %%Page:/%%Trailer line.
     """
     page_starts = []
+    ordinals = []
     trailer_start = None
     for i, line in enumerate(lines):
-        if PAGE_RE.match(line):
+        m = PAGE_RE.match(line)
+        if m:
             page_starts.append(i)
+            ordinals.append(int(m.group(2)))
         elif trailer_start is None and TRAILER_RE.match(line):
             trailer_start = i
 
     if not page_starts:
         return None
 
+    # Each page runs up to the next %%Page:, and the last up to the trailer.
+    end = trailer_start if trailer_start is not None else len(lines)
+    ends = page_starts[1:] + [end]
     header = b"".join(lines[: page_starts[0]])
-    bounds = page_starts + [trailer_start if trailer_start is not None else len(lines)]
-    pages = []
-    for start, end in zip(page_starts, bounds[1:]):
-        ordinal = int(PAGE_RE.match(lines[start]).group(2))
-        pages.append((ordinal, b"".join(lines[start:end])))
+    pages = [(ordinal, b"".join(lines[start:stop]))
+             for ordinal, start, stop in zip(ordinals, page_starts, ends)]
     trailer = b"".join(lines[trailer_start:]) if trailer_start is not None else b""
     return header, pages, trailer
 
@@ -100,11 +152,34 @@ def reorder(data):
     return header + reordered + trailer, True
 
 
+def patch_fonts(data):
+    """Return (output_bytes, patched_bool).
+
+    Inject PATCH_SNIPPET immediately before the /IntFonts line so the resident
+    core fonts blank code 141.  No-op (unchanged) if the patch is already
+    present or the input has no /IntFonts prolog (not a Genera LGP2 job).
+    """
+    if PATCH_MARKER in data:
+        return data, False  # already patched -- idempotent
+    lines = split_lines(data)
+    for i, line in enumerate(lines):
+        if INTFONTS_RE.match(line):
+            lines.insert(i, PATCH_SNIPPET)
+            return b"".join(lines), True
+    log.warning("no /IntFonts prolog found -- skipping font patch")
+    return data, False
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(
-        description="Fix Genera's reverse (LIFO) PostScript page order; stdin -> stdout")
+        description="Fix Genera hardcopy PostScript (reverse page order + blank "
+                    "stray control chars); stdin -> stdout")
     p.add_argument("-v", "--verbose", action="count", default=0,
                    help="-v info, -vv debug")
+    p.add_argument("--no-patch-fonts", dest="patch_fonts", action="store_false",
+                   default=True,
+                   help="do not reencode code 141 (#\\Return) to /space in the "
+                        "core fonts; only reorder pages")
     args = p.parse_args(argv)
 
     logging.basicConfig(
@@ -112,9 +187,16 @@ def main(argv=None):
         format="%(asctime)s psreorder %(levelname)s %(message)s")
 
     data = sys.stdin.buffer.read()
-    output, reordered = reorder(data)
-    log.info("%s (%d bytes)", "reordered" if reordered else "unchanged", len(output))
-    sys.stdout.buffer.write(output)
+    # Independent transforms on disjoint regions (page bodies vs. prolog header);
+    # order is immaterial.
+    data, reordered = reorder(data)
+    patched = False
+    if args.patch_fonts:
+        data, patched = patch_fonts(data)
+    log.info("pages %s, fonts %s (%d bytes)",
+             "reordered" if reordered else "unchanged",
+             "patched" if patched else "unchanged", len(data))
+    sys.stdout.buffer.write(data)
     return 0
 
 
