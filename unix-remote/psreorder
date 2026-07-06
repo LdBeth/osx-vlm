@@ -3,14 +3,47 @@
 
 Two independent, opt-out-able fixes, applied as a stdin -> stdout filter:
 
-1. Reverse page order.  Open Genera's LGP2 hardcopy driver spools pages
-   LIFO: the DSC %%Page comments in a job run N, N-1, ... 1 instead of
-   1 ... N, so anything that prints or renders the file in physical order
-   shows the last page first.  The %%Page ordinal is otherwise unused by
-   the PostScript itself -- each page just ends with "showpage" (via the
-   NextPage procedure, whose true/false argument is popped and ignored) --
-   so correcting the order is a pure text rearrangement of the %%Page
-   chunks, the same trick classic psutils tools like psselect/pstops use.
+1. Reverse page order (SAFELY -- see below).  Open Genera's LGP2 hardcopy
+   driver spools pages LIFO: the DSC %%Page comments run N, N-1, ... 1, so
+   anything that renders the file in physical order (e.g. Acrobat Distiller
+   -> PDF) shows the last page first.
+
+   The naive psutils/psselect trick -- rearranging the %%Page text chunks --
+   CORRUPTS this driver's output, because its pages are NOT independent.  To
+   bound printer VM the driver downloads bitmap glyphs *incrementally, on
+   first use, in LIFO order*, and periodically tears the whole font state
+   down and rebuilds it.  Concretely the job is a sequence of ~N/13 runs, and
+   between runs, in the inter-page gap, it does:
+
+       false NextPage          % end previous page (showpage; restore; save)
+       restore restore save    % unwind to VM level 0, re-establish base save
+       /FONT enc SetupBitmapFont ... DefineBitmapChar<hex> ... FinishFont
+       ... (every font this run needs, with only the glyphs it needs) ...
+       /ExtToInt [...] def  /IntFonts [ ... findfont ... ] def
+       save lgp2-getmatrix     % re-establish page save
+       %%Page: k k             % draw this run's pages
+
+   `SetupBitmapFont` recreates the font's /chardefs from scratch, so each
+   run's glyph set REPLACES (not extends) the previous one -- a page renders
+   correctly only next to the exact font generation that precedes it.  Move a
+   page (which is what page reversal does) and its glyphs are absent ->
+   "undefinedresult; OffendingCommand: show", and Distiller flushes the job.
+
+   So we do not move text blindly.  We make the pages independent first:
+     * inject an ADDITIVE SetupBitmapFont (reuse /chardefs when the font
+       already exists) so successive batches accumulate into the full glyph
+       union instead of replacing each other;
+     * hoist every run's font-machinery block (SetupBitmapFont..IntFonts,
+       verbatim, inline hex intact) to just before the first page's
+       `save lgp2-getmatrix`, dropping the `restore restore save ... save`
+       teardown that used to wrap each one;
+     * with all glyphs defined once, below the page save, and never torn
+       down, the drawing-only page blocks (%%Page..NextPage) become freely
+       reorderable -- so we emit them 1..N.
+   Save/restore stays balanced: the base save persists for the whole job and
+   NextPage only cycles the page save, whose snapshot now captures every
+   font.  If the input does not match this exact structure we leave the page
+   order unchanged (native LIFO, still valid) rather than risk corruption.
 
 2. Repair modern-font encoding mismatches (--no-patch-fonts to disable).  The
    LGP2 driver reaches high-bit glyphs by raw character code, assuming the old
@@ -32,13 +65,7 @@ Two independent, opt-out-able fixes, applied as a stdin -> stdout filter:
 This is a stdin -> stdout filter, not wired into lpdd: run it over a live
 job or an already-spooled file.
 
-    gs foo.ps | psreorder | lpr
     psreorder < ~/genera-spool/genera-....ps > fixed.ps
-
-If the input doesn't look like a clean Genera N..1 reversed job (no
-%%Page comments, out-of-order ordinals, missing/mismatched %%Pages
-count), the page order is left unchanged; if it has no /IntFonts prolog,
-the font patch is skipped.  Either way unrecognized input passes through.
 """
 
 import argparse
@@ -50,6 +77,52 @@ PAGE_RE = re.compile(rb"^%%Page:\s+(\S+)\s+(-?\d+)\s*$")
 PAGES_RE = re.compile(rb"^%%Pages:\s+(\d+)\s*$")
 TRAILER_RE = re.compile(rb"^%%Trailer\b")
 INTFONTS_RE = re.compile(rb"^/IntFonts\s*\[")
+# NextPage ends every page: "false NextPage" (or "true" on the last one).
+NEXTPAGE_RE = re.compile(rb"^\s*(?:true|false)\s+NextPage\s*$")
+
+# The page-establishing save the driver emits right before each %%Page (and,
+# once, right before the first).  We split the header on it and re-establish it
+# after the hoisted font machinery.  Its inter-page cousin, the bare "save"
+# that follows "restore restore", is matched separately.
+SAVE_LGP2 = b"save lgp2-getmatrix"
+
+# Additive replacement for the driver's /SetupBitmapFont.  The original does
+# `/FONT 10 dict def ... /chardefs 256 dict def`, a *fresh* dict every call, so
+# each run's glyph batch clobbers the last.  We can't simply reuse the existing
+# dict: FinishFont's `definefont` makes the font dictionary READ-ONLY, so a
+# later `/FontType 3 def` into it raises invalidaccess.  Instead we build a
+# fresh (writable) dict each call -- exactly as the driver does -- but seed its
+# /chardefs with the glyphs accumulated so far (copied forward from the prior
+# generation), so once the per-run teardown is removed the 27 batches merge
+# into one complete font.  DefineBitmapChar / FinishFont / IntFonts are
+# untouched and keep working verbatim.
+ADDITIVE_SETUP = b"""\
+%%BeginProcSet: psreorder-additive-fonts 1.2
+% linux-vlm psreorder: make SetupBitmapFont accumulate glyphs across the
+% hoisted per-run batches.  Each batch defines a fresh writable font (in the
+% current dict, exactly as the driver's original does), but pre-seeds its
+% /chardefs with the glyphs carried forward from the prior generation, so the
+% batches merge into one complete font instead of replacing each other.  Pure
+% stack, no work dict, so the font lands where FinishFont/findfont expect it.
+/SetupBitmapFont {                    % /FontName  Encoding  ->  -
+	exch                              % Encoding /FontName
+	dup where
+	  { pop dup load /chardefs get }  % carry forward accumulated glyphs
+	  { 256 dict }                    % first time: nothing to carry
+	ifelse                            % Encoding /FontName oldchardefs
+	1 index 10 dict def               % define /FontName -> fresh writable dict
+	1 index load begin                % enter the fresh font dict
+	  /FontType 3 def
+	  /FontMatrix 72 300 div dup matrix scale def
+	  /FontBBox [99999 99999 -99999 -99999] def
+	  /BuildChar { BuildBitmapChar } def
+	  /chardefs 256 dict def
+	  { chardefs 3 1 roll put } forall   % copy oldchardefs in: dict key value put
+	  pop                             % discard /FontName
+	  /Encoding exch def              % Encoding -> font dict
+	end } bind def
+%%EndProcSet
+"""
 
 # PostScript injected into the prolog to fix two encoding mismatches (see the
 # module docstring).  It reencodes the 13 core PostScript fonts -- exactly the
@@ -114,64 +187,140 @@ def find_declared_pages(lines):
     return None
 
 
-def split_chunks(lines):
-    """Split into (header, [(ordinal, chunk_bytes), ...], trailer).
+def split_document(lines):
+    """Return (header, chunks, trailer) or None.
 
-    header is everything before the first %%Page: line; trailer is the
-    %%Trailer line onward (or b"" if none found); each page chunk runs
-    from its %%Page: line up to the next %%Page:/%%Trailer line.
+    header  -- lines before the first %%Page:
+    chunks  -- list of (ordinal, [lines]); each chunk runs from its %%Page:
+               line up to the next %%Page: (or the trailer).
+    trailer -- %%Trailer line onward (or [] if none).
     """
-    page_starts = []
+    page_idx = []
     ordinals = []
     trailer_start = None
     for i, line in enumerate(lines):
         m = PAGE_RE.match(line)
         if m:
-            page_starts.append(i)
+            page_idx.append(i)
             ordinals.append(int(m.group(2)))
         elif trailer_start is None and TRAILER_RE.match(line):
             trailer_start = i
 
-    if not page_starts:
+    if not page_idx:
         return None
 
-    # Each page runs up to the next %%Page:, and the last up to the trailer.
     end = trailer_start if trailer_start is not None else len(lines)
-    ends = page_starts[1:] + [end]
-    header = b"".join(lines[: page_starts[0]])
-    pages = [(ordinal, b"".join(lines[start:stop]))
-             for ordinal, start, stop in zip(ordinals, page_starts, ends)]
-    trailer = b"".join(lines[trailer_start:]) if trailer_start is not None else b""
-    return header, pages, trailer
+    ends = page_idx[1:] + [end]
+    header = lines[: page_idx[0]]
+    chunks = [(ordinal, lines[start:stop])
+              for ordinal, start, stop in zip(ordinals, page_idx, ends)]
+    trailer = lines[trailer_start:] if trailer_start is not None else []
+    return header, chunks, trailer
 
 
-def reorder(data):
-    """Return (output_bytes, reordered_bool)."""
+def split_chunk(chunk):
+    """Split one page chunk into (drawing_lines, machinery_lines) or None.
+
+    drawing_lines   -- %%Page: ... through the single NextPage line (inclusive).
+    machinery_lines -- the run's hoistable font block, extracted from the
+                       inter-page gap that follows NextPage by stripping the
+                       `restore restore save` ... `save lgp2-getmatrix` teardown
+                       wrapper; [] if this gap carries no download.
+    Returns None (caller bails) if the chunk doesn't match the expected shape.
+    """
+    nextpage = [i for i, line in enumerate(chunk) if NEXTPAGE_RE.match(line)]
+    if len(nextpage) != 1:
+        return None
+    cut = nextpage[0]
+    drawing = chunk[: cut + 1]
+    gap = chunk[cut + 1:]
+
+    # Trim blank lines around the gap body.
+    lo, hi = 0, len(gap)
+    while lo < hi and not gap[lo].strip():
+        lo += 1
+    while hi > lo and not gap[hi - 1].strip():
+        hi -= 1
+    core = gap[lo:hi]
+
+    if not core:
+        return drawing, []            # a page with no new-glyph download
+
+    # Expected wrapper: restore / restore / save ... machinery ... save lgp2.
+    if (len(core) >= 5
+            and core[0].strip() == b"restore"
+            and core[1].strip() == b"restore"
+            and core[2].strip() == b"save"
+            and core[-1].strip() == SAVE_LGP2):
+        return drawing, core[3:-1]
+    return None
+
+
+def restructure(data):
+    """Return (output_bytes, reordered_bool).
+
+    Hoist every run's font machinery ahead of the pages, make the fonts
+    additive/permanent, and emit the drawing blocks in ascending page order.
+    On any structural mismatch, return the input unchanged (native order is
+    still valid PostScript -- just reversed -- so a bail never corrupts).
+    """
     lines = split_lines(data)
-    split = split_chunks(lines)
+    split = split_document(lines)
     if split is None:
-        return data, False  # no %%Page comments at all -- nothing to do
+        return data, False            # no %%Page comments -- nothing to do
+    header, chunks, trailer = split
 
-    header, pages, trailer = split
-    ordinals = [ordinal for ordinal, _ in pages]
-    expected = list(range(len(pages), 0, -1))
-    declared = find_declared_pages(lines)
-
-    if ordinals != expected or (declared is not None and declared != len(pages)):
-        log.warning(
-            "not a clean reversed Genera job (ordinals=%s, %%%%Pages=%s) -- "
-            "passing through unchanged",
-            ordinals, declared)
+    ordinals = [ordinal for ordinal, _ in chunks]
+    expected = list(range(len(chunks), 0, -1))
+    declared = find_declared_pages(header)
+    if ordinals != expected or (declared is not None and declared != len(chunks)):
+        log.warning("not a clean reversed Genera job (ordinals=%s, %%%%Pages=%s) "
+                    "-- passing through unchanged", ordinals, declared)
         return data, False
 
-    reordered = b"".join(chunk for _, chunk in reversed(pages))
-    return header + reordered + trailer, True
+    # Peel each chunk into its drawing block and its (optional) font machinery.
+    drawings = []
+    machinery = []
+    for ordinal, chunk in chunks:
+        parts = split_chunk(chunk)
+        if parts is None:
+            log.warning("page %s has an unexpected inter-page structure -- "
+                        "passing through unchanged", ordinal)
+            return data, False
+        drawing, mach = parts
+        drawings.append((ordinal, drawing))
+        machinery.extend(mach)
+
+    # Locate the base save (first `save lgp2-getmatrix`) and the page save
+    # (last one, immediately before the first %%Page).  We inject the additive
+    # SetupBitmapFont right after the base save and the hoisted machinery right
+    # before the page save, so every glyph is defined once, below the page
+    # save, and captured in its snapshot.
+    save_idx = [i for i, line in enumerate(header) if line.strip() == SAVE_LGP2]
+    if len(save_idx) < 2:
+        log.warning("header lacks the expected base/page `save lgp2-getmatrix` "
+                    "pair -- passing through unchanged")
+        return data, False
+    base_i, page_i = save_idx[0], save_idx[-1]
+
+    new_header = (header[: base_i + 1]
+                  + [ADDITIVE_SETUP]
+                  + header[base_i + 1: page_i]
+                  + machinery
+                  + header[page_i:])
+
+    body = []
+    for _, drawing in sorted(drawings, key=lambda t: t[0]):
+        body.extend(drawing)
+
+    out = b"".join(new_header) + b"".join(body) + b"".join(trailer)
+    return out, True
 
 
 def patch_fonts(data):
     """Return (output_bytes, patched_bool).
 
-    Inject PATCH_SNIPPET immediately before the /IntFonts line so the core
+    Inject PATCH_SNIPPET immediately before the first /IntFonts line so the core
     fonts get the reencoding (blank 141; restore Symbol 183/190).  No-op
     (unchanged) if the patch is already present or the input has no /IntFonts
     prolog (not a Genera LGP2 job).
@@ -193,10 +342,12 @@ def main(argv=None):
                     "font encodings); stdin -> stdout")
     p.add_argument("-v", "--verbose", action="count", default=0,
                    help="-v info, -vv debug")
+    p.add_argument("--no-reorder", dest="reorder", action="store_false",
+                   default=True, help="do not reverse page order")
     p.add_argument("--no-patch-fonts", dest="patch_fonts", action="store_false",
                    default=True,
                    help="do not repair font encodings (blank code 141, restore "
-                        "Symbol 183/190); only reorder pages")
+                        "Symbol 183/190)")
     args = p.parse_args(argv)
 
     logging.basicConfig(
@@ -204,9 +355,9 @@ def main(argv=None):
         format="%(asctime)s psreorder %(levelname)s %(message)s")
 
     data = sys.stdin.buffer.read()
-    # Independent transforms on disjoint regions (page bodies vs. prolog header);
-    # order is immaterial.
-    data, reordered = reorder(data)
+    reordered = False
+    if args.reorder:
+        data, reordered = restructure(data)
     patched = False
     if args.patch_fonts:
         data, patched = patch_fonts(data)
