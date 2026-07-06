@@ -12,15 +12,22 @@ Two independent, opt-out-able fixes, applied as a stdin -> stdout filter:
    so correcting the order is a pure text rearrangement of the %%Page
    chunks, the same trick classic psutils tools like psselect/pstops use.
 
-2. Blank stray control characters (--no-patch-fonts to disable).  The SAGE
-   formatter strands the source newline before every @end(...) as a literal
-   #\Return (Symbolics code 141 = 0o215) on the block's last line, and the
-   hardcopy driver emits it verbatim as "141 cs show".  Code 141 is .notdef
-   in every font, but Genera's downloaded bitmap fonts define .notdef as an
-   empty glyph (invisible) while the resident core PostScript fonts image it
-   as a visible box (e.g. the title page's "Draft <box> July 2026").  We
-   reencode code 141 to /space in the 13 core fonts, matching the bitmap
-   fonts' empty .notdef, so the box disappears.  No page content is touched.
+2. Repair modern-font encoding mismatches (--no-patch-fonts to disable).  The
+   LGP2 driver reaches high-bit glyphs by raw character code, assuming the old
+   Type-1 resident fonts' encoding; two things break on today's fonts:
+   * The SAGE formatter strands the source newline before every @end(...) as a
+     literal #\Return (Symbolics code 141 = 0o215), emitted as "141 cs show".
+     Code 141 is .notdef in every font, but Genera's downloaded bitmap fonts
+     define .notdef as an empty glyph (invisible) while the resident core fonts
+     image it as a visible box (e.g. the title page's "Draft <box> July 2026").
+     We remap 141 -> /space in the 13 core fonts to match the bitmap fonts.
+   * In /Symbol the driver emits 183 (0o267) and 190 (0o276) for /bullet and
+     /arrowhorizex, which the old Type-1 SymbolEncoding carried at those code
+     points but the modern (TrueType) Symbol does not -- so Acrobat Distiller
+     resolves them to .notdef and drops them from the embedded subset (the
+     em-dash-like rule between clauses vanishes).  We restore them by glyph
+     name, which the modern Symbol still provides.
+   No page content is touched; only the prolog's font dicts are reencoded.
 
 This is a stdin -> stdout filter, not wired into lpdd: run it over a live
 job or an already-spooled file.
@@ -44,23 +51,28 @@ PAGES_RE = re.compile(rb"^%%Pages:\s+(\d+)\s*$")
 TRAILER_RE = re.compile(rb"^%%Trailer\b")
 INTFONTS_RE = re.compile(rb"^/IntFonts\s*\[")
 
-# PostScript injected into the prolog to blank Genera's stray #\Return (code
-# 141 = 0o215), which the resident core fonts otherwise image as a .notdef box.
-# It remaps code 141 to /space (paints nothing) in the 13 core PostScript fonts
-# -- exactly the resident set the LGP2 driver's make-builtin-lgp2-font can emit
-# -- matching the empty .notdef of Genera's downloaded bitmap fonts.  The Return
-# is always emitted as an isolated run with its own moveto, so /space's advance
-# width is never visible, and ASCII text (batched via the "s" operator) is
-# untouched.  Must land before /IntFonts (whose findfonts must get the patched
-# fonts) and before the initial `save` (NextPage does restore/save between
-# pages, which would otherwise roll the patch back on page 2+); injecting right
-# before the /IntFonts line satisfies both.
+# PostScript injected into the prolog to fix two encoding mismatches (see the
+# module docstring).  It reencodes the 13 core PostScript fonts -- exactly the
+# resident set the LGP2 driver's make-builtin-lgp2-font can emit -- by (a)
+# remapping code 141 (stray #\Return) to /space, matching the empty .notdef of
+# Genera's downloaded bitmap fonts, and (b) for /Symbol only, restoring the two
+# glyphs the modern Symbol lost at their old Type-1 code points: 183 -> /bullet
+# and 190 -> /arrowhorizex.  Each patched code is emitted by the driver as an
+# isolated run with its own moveto, so a changed advance width is never visible,
+# and ASCII text (batched via the "s" operator) is untouched.  Must land before
+# /IntFonts (whose findfonts must get the patched fonts) and before the initial
+# `save` (NextPage does restore/save between pages, which would otherwise roll
+# the patch back on page 2+); injecting right before the /IntFonts line does both.
 PATCH_MARKER = b"psrPatchFont"
 PATCH_SNIPPET = b"""\
-%%BeginProcSet: psreorder-blank-control 1.0
-% linux-vlm psreorder: Genera strands #\\Return (code 141 = 0o215) before @end;
-% resident core fonts image it as a .notdef box.  Remap 141 -> /space (blank) in
-% the 13 core fonts to match Genera's downloaded bitmap fonts' empty .notdef.
+%%BeginProcSet: psreorder-font-encoding 1.1
+% linux-vlm psreorder reencodes the 13 core fonts to fix two Genera-vs-modern
+% mismatches: (a) #\\Return (code 141 = 0o215), stranded before @end and imaged
+% as a .notdef box by the resident fonts, is remapped to /space (blank) to match
+% Genera's bitmap fonts' empty .notdef; (b) /Symbol reaches /bullet and
+% /arrowhorizex by the old Type-1 code points 183 (0o267) and 190 (0o276), which
+% the modern (TrueType) Symbol lacks there -- so Distiller drops them -- and we
+% restore them by glyph name.
 /psrBlankCode 141 def
 /psrPatchFont {                       % /FontName  ->  -
   dup findfont
@@ -68,6 +80,10 @@ PATCH_SNIPPET = b"""\
     { 1 index /FID ne { def } { pop pop } ifelse } forall
     /Encoding Encoding 256 array copy def
     Encoding psrBlankCode /space put
+    dup /Symbol eq {                  % restore glyphs the modern Symbol hides
+      Encoding 183 /bullet put         % old Type-1 SymbolEncoding 0o267
+      Encoding 190 /arrowhorizex put   % old Type-1 SymbolEncoding 0o276
+    } if
     currentdict
   end
   definefont pop
@@ -155,9 +171,10 @@ def reorder(data):
 def patch_fonts(data):
     """Return (output_bytes, patched_bool).
 
-    Inject PATCH_SNIPPET immediately before the /IntFonts line so the resident
-    core fonts blank code 141.  No-op (unchanged) if the patch is already
-    present or the input has no /IntFonts prolog (not a Genera LGP2 job).
+    Inject PATCH_SNIPPET immediately before the /IntFonts line so the core
+    fonts get the reencoding (blank 141; restore Symbol 183/190).  No-op
+    (unchanged) if the patch is already present or the input has no /IntFonts
+    prolog (not a Genera LGP2 job).
     """
     if PATCH_MARKER in data:
         return data, False  # already patched -- idempotent
@@ -172,14 +189,14 @@ def patch_fonts(data):
 
 def main(argv=None):
     p = argparse.ArgumentParser(
-        description="Fix Genera hardcopy PostScript (reverse page order + blank "
-                    "stray control chars); stdin -> stdout")
+        description="Fix Genera hardcopy PostScript (reverse page order + repair "
+                    "font encodings); stdin -> stdout")
     p.add_argument("-v", "--verbose", action="count", default=0,
                    help="-v info, -vv debug")
     p.add_argument("--no-patch-fonts", dest="patch_fonts", action="store_false",
                    default=True,
-                   help="do not reencode code 141 (#\\Return) to /space in the "
-                        "core fonts; only reorder pages")
+                   help="do not repair font encodings (blank code 141, restore "
+                        "Symbol 183/190); only reorder pages")
     args = p.parse_args(argv)
 
     logging.basicConfig(
