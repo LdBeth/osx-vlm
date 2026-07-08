@@ -125,16 +125,12 @@ class Tape:
 
     def bsf(self, count):
         for _ in range(count):
-            saw = False
             while True:
                 kind = self._back_one()
                 if kind == "bot":
                     return
                 if kind == "mark":
-                    saw = True
                     break
-            if not saw:
-                return
 
     def bsr(self, count):
         for _ in range(count):
@@ -253,10 +249,7 @@ def handle(conn, tape_path):
             elif cmd == b"L":               # L<offset>\n<whence>\n  -- lseek
                 off = int(rf.readline())
                 whence = int(rf.readline())
-                if off == 0 and whence == 0:
-                    tape.rewind()
-                else:                       # Genera only ever rewinds; best effort
-                    tape.f.seek(off, whence)
+                tape.f.seek(off, whence)    # Genera only ever rewinds (0,0); this is general
                 reply("A%d\n", tape.f.tell())
 
             elif cmd == b"I":               # I<op>\n<count>\n  -- MTIOCTOP
