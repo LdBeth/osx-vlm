@@ -1,12 +1,22 @@
 #!/usr/bin/env python3
-"""psreorder -- fix Genera hardcopy PostScript captured from Open Genera.
+"""psfix -- fix Genera hardcopy PostScript captured from Open Genera.
 
-Two independent, opt-out-able fixes, applied as a stdin -> stdout filter:
+Two independent fixes, applied as a stdin -> stdout filter:
 
-1. Reverse page order (SAFELY -- see below).  Open Genera's LGP2 hardcopy
-   driver spools pages LIFO: the DSC %%Page comments run N, N-1, ... 1, so
-   anything that renders the file in physical order (e.g. Acrobat Distiller
-   -> PDF) shows the last page first.
+  * font-encoding repair -- ON by default (--no-patch-fonts to disable);
+  * page reversal        -- OFF by default, enabled with --reorder.
+
+Page reversal is opt-in because the correct fix is Lisp-side: give the printer
+namespace object a `Default-Print-Backwards NIL` User Property and Open Genera
+spools pages in ascending order to begin with (hardcopy/postscript.lisp's
+default-print-backwards feeds the stream's :send-page-buffers).  Reach for
+--reorder only for a capture taken before that attribute was set, or from a
+printer still emitting the LGP2 default (last-first) order.
+
+1. Reverse page order (--reorder; SAFELY -- see below).  Open Genera's LGP2
+   hardcopy driver spools pages LIFO by default: the DSC %%Page comments run
+   N, N-1, ... 1, so anything that renders the file in physical order (e.g.
+   Acrobat Distiller -> PDF) shows the last page first.
 
    The naive psutils/psselect trick -- rearranging the %%Page text chunks --
    CORRUPTS this driver's output, because its pages are NOT independent.  To
@@ -65,7 +75,8 @@ Two independent, opt-out-able fixes, applied as a stdin -> stdout filter:
 This is a stdin -> stdout filter, not wired into lpdd: run it over a live
 job or an already-spooled file.
 
-    psreorder < ~/genera-spool/genera-....ps > fixed.ps
+    psfix < ~/genera-spool/genera-....ps > fixed.ps          # font repair only
+    psfix --reorder < old-capture.ps > fixed.ps              # + page reversal
 """
 
 import argparse
@@ -97,8 +108,8 @@ SAVE_LGP2 = b"save lgp2-getmatrix"
 # into one complete font.  DefineBitmapChar / FinishFont / IntFonts are
 # untouched and keep working verbatim.
 ADDITIVE_SETUP = b"""\
-%%BeginProcSet: psreorder-additive-fonts 1.2
-% linux-vlm psreorder: make SetupBitmapFont accumulate glyphs across the
+%%BeginProcSet: psfix-additive-fonts 1.2
+% linux-vlm psfix: make SetupBitmapFont accumulate glyphs across the
 % hoisted per-run batches.  Each batch defines a fresh writable font (in the
 % current dict, exactly as the driver's original does), but pre-seeds its
 % /chardefs with the glyphs carried forward from the prior generation, so the
@@ -138,8 +149,8 @@ ADDITIVE_SETUP = b"""\
 # the patch back on page 2+); injecting right before the /IntFonts line does both.
 PATCH_MARKER = b"psrPatchFont"
 PATCH_SNIPPET = b"""\
-%%BeginProcSet: psreorder-font-encoding 1.1
-% linux-vlm psreorder reencodes the 13 core fonts to fix two Genera-vs-modern
+%%BeginProcSet: psfix-font-encoding 1.1
+% linux-vlm psfix reencodes the 13 core fonts to fix two Genera-vs-modern
 % mismatches: (a) #\\Return (code 141 = 0o215), stranded before @end and imaged
 % as a .notdef box by the resident fonts, is remapped to /space (blank) to match
 % Genera's bitmap fonts' empty .notdef; (b) /Symbol reaches /bullet and
@@ -168,7 +179,7 @@ PATCH_SNIPPET = b"""\
 %%EndProcSet
 """
 
-log = logging.getLogger("psreorder")
+log = logging.getLogger("psfix")
 
 
 def split_lines(data):
@@ -338,12 +349,15 @@ def patch_fonts(data):
 
 def main(argv=None):
     p = argparse.ArgumentParser(
-        description="Fix Genera hardcopy PostScript (reverse page order + repair "
-                    "font encodings); stdin -> stdout")
+        description="Fix Genera hardcopy PostScript: repair font encodings "
+                    "(default) and optionally reverse page order; stdin -> stdout")
     p.add_argument("-v", "--verbose", action="count", default=0,
                    help="-v info, -vv debug")
-    p.add_argument("--no-reorder", dest="reorder", action="store_false",
-                   default=True, help="do not reverse page order")
+    p.add_argument("--reorder", dest="reorder", action="store_true",
+                   default=False,
+                   help="reverse page order (only for a capture from a printer "
+                        "that still spools last-first; set Default-Print-Backwards "
+                        "NIL on the printer namespace object instead)")
     p.add_argument("--no-patch-fonts", dest="patch_fonts", action="store_false",
                    default=True,
                    help="do not repair font encodings (blank code 141, restore "
@@ -352,7 +366,7 @@ def main(argv=None):
 
     logging.basicConfig(
         level=[logging.WARNING, logging.INFO, logging.DEBUG][min(args.verbose, 2)],
-        format="%(asctime)s psreorder %(levelname)s %(message)s")
+        format="%(asctime)s psfix %(levelname)s %(message)s")
 
     data = sys.stdin.buffer.read()
     reordered = False

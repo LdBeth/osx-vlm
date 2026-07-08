@@ -8,7 +8,7 @@ over the network:
   * `org.pkgsrc.telnetd.plist` — launchd job for a host telnet server.
   * `lpdd` — LPD print server that spools each hardcopy to a file; see below.
   * `org.genera.lpdd.plist` — launchd job for `lpdd`.
-  * `psreorder` — fixes Genera's reverse page order in spooled PostScript; see below.
+  * `psfix` — repairs font encodings (and optionally page order) in spooled Genera PostScript; see below.
 
 ## Tape server (`rmtd`)
 
@@ -188,11 +188,18 @@ the spool dir; open it in Preview to confirm.
     `.ps` onward (`lp`, `pstopdf`, etc.) or point Genera at a CUPS queue instead.
   * **Security:** LPD is unauthenticated — keep it bound to `192.168.2.1`,
     never `0.0.0.0`.
-  * Open Genera's LGP2 driver spools pages last-first (a %%Page: N..1 DSC
-    run). `psreorder` is a stdin/stdout filter that fixes this — it does not
-    run inside `lpdd`, so fix a capture after the fact:
+  * `psfix` is a stdin/stdout filter (not run inside `lpdd`) that repairs two
+    modern-font encoding mismatches in captured Genera PostScript — it blanks
+    the stray `#\Return` (code 141) and restores the two Symbol glyphs modern
+    fonts drop (183/190). Run it over a capture before distilling to PDF:
 
-        ./psreorder < ~/genera-spool/genera-....ps > fixed.ps
+        ./psfix < ~/genera-spool/genera-....ps > fixed.ps
 
-    It passes input through unchanged (with a warning) if the page order
-    doesn't match that exact reversed pattern.
+  * Page order is now a Lisp-side setting, not a filter concern: give the
+    printer's namespace object a `Default-Print-Backwards NIL` User Property
+    (Namespace Editor → the printer → add User Property) and Open Genera's LGP2
+    driver spools pages ascending instead of its last-first default. Only for a
+    capture taken before that was set (or a printer still spooling last-first)
+    do you need `psfix --reorder`, which reverses the pages safely despite the
+    driver's incremental glyph download. Without `--reorder` the page order is
+    left untouched.
