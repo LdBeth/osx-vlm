@@ -120,6 +120,3 @@
 0	  2(and (eql embedded-host (access-path-host access-path))
 0	       2(access-path-supports-multiple-interactors-p access-path))))0))
 
-bedded-host (access-path-host access-path))
-0	       2(access-path-supports-multiple-interactors-p access-path))))0))
-

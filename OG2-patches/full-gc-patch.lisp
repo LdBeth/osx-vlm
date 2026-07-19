@@ -97,6 +97,16 @@
     (format t "~[~0;no~1;one~:;~0@*~d~] error~:P found, " errs)
     (format t "~[~0;no fixes~1;one fix~:;~0@*~d fixes~] applied.~&" fixes)))
 
+;; OG2 (7/19/26): msrd self-destructs after one run (fdefinition becomes
+;; IGNORE, replacing the old manual redefinition).  It is one-time
+;; normalization; re-running it re-dynamizes what
+;; MAKE-SURVIVING-REGIONS-STATIC just made static and transports the
+;; whole world again (slow GCs, dirty pages, bigger IDS deltas).  A boot
+;; where the manual disarm happened too early once lost the
+;; permanent-region rescue; correctness now rests on
+;; DEMOTE-PERMANENT-REGIONS, so msrd's timing is purely layout/perf.
+;; The IGNORE definition persists in saved worlds; reloading this patch
+;; file is what re-arms it.
 (defun make-static-regions-dynamic (&key
 		     (areas `(FLAVOR::*FLAVOR-AREA*
 			       FS:PATHNAME-AREA
@@ -145,7 +155,51 @@
 	    (incf regs)))))
     (format t "~&~[~0;No~1;One~:;~0@*~d~] region~:P made dynamic" regs)
 ;    (si:region-check :all-areas all-areas :verbose verbose :fix-regions nil)
+    (setf (fdefinition 'make-static-regions-dynamic) #'ignore)
     ))
+
+;; OG2 (7/19/26): unconditional companion to MAKE-STATIC-REGIONS-DYNAMIC.
+;; The base world was cut with SYMBOLICS-SYSTEM-RELEASE, so packages (and
+;; the other SPEC2 areas) ship in %PERMANENT-LEVEL regions.  GC-SYMBOLS
+;; forwards every package through weakspace, and its raw %AREA-NUMBER
+;; tests (the :AFTER-FLIP leader touch and the package rebuild) silently
+;; skip any package whose region is never condemned: the carcass's words
+;; are all element-forwards, so the weak copy's leader metadata loses its
+;; last strong reference, is reclaimed, and the next lookup traps on a
+;; DTP-NULL leader slot the intern handler rightly refuses to patch
+;; (seen live 7/19/26, FIND-SYMBOL in METERING-INTERFACE).
+;; MAKE-STATIC-REGIONS-DYNAMIC rescues these regions as a side effect,
+;; but only when it actually runs, and we routinely fdefine it to IGNORE
+;; after the first GC of a boot.  So demote permanent regions to static
+;; here, unconditionally: static is condemned by GC-STATIC-LEVEL in every
+;; release mode, and this runs at the same pre-flip point where msrd has
+;; rewritten level bits safely for years.  Read-only regions are left
+;; alone (CONSTANTS-AREA; migrate-cell-tables.lisp handles the one
+;; object class there that GC-SYMBOLS forwards).
+(defun demote-permanent-regions (&key verbose)
+  (let ((regs 0)
+	(non-space (list si:%REGION-SPACE-FREE
+			 si:%REGION-SPACE-OLD
+			 si:%REGION-SPACE-WEAK)))
+    (loop for area in (lisp:set-difference sys:area-list
+					   '(CLOS-INTERNALS::*CLOS-STATIC-AREA*
+					     CLOS-INTERNALS::*CLOS-WEAK-LINK-AREA*
+					     DW::*PRESENTATION-AREA*
+					     DW::*PRESENTATION-TYPE-AREA*))
+	  do
+      (si:do-area-regions (region (eval area))
+	(let ((bits (si:region-bits region)))
+	  (when (and (= (ldb si:%%REGION-LEVEL bits) si:%PERMANENT-LEVEL)
+		     (not (ldb-test si:%%REGION-TEMPORARY bits))
+		     (not (ldb-test si:%%REGION-STACK bits))
+		     (not (member (ldb si:%%REGION-SPACE-TYPE bits) non-space))
+		     (ldb-test %%REGION-SCAVENGE-ENABLE bits)
+		     (not (ldb-test %%REGION-READ-ONLY bits)))
+	    (setf (aref sys:*region-bits* region)
+		  (dpb si:%STATIC-LEVEL si:%%REGION-LEVEL bits))
+	    (incf regs)))))
+    (when (or verbose (plusp regs))
+      (format t "~&~D permanent region~:P demoted to static.~%" regs))))
 
 ;; The workhorse
 (DEFUN IMMEDIATE-GC (&REST OPTIONS
@@ -191,8 +245,22 @@
     ;; Do it.
     (LET* (;; This is for communications with individual optimizations.
 	   (*IMMEDIATE-GC-OPTIONS* OPTIONS)
-	   ;; This is mainly for compatibility.
-	   (*FULL-GC-FOR-SYSTEM-RELEASE* (EQ MODE 'SYMBOLICS-SYSTEM-RELEASE))
+	   ;; OG2: bound to NIL unconditionally (stock: T in SYMBOLICS-SYSTEM-RELEASE).
+	   ;; The T binding makes GC-SYMBOLS stamp CONSTANTS/PKG-AREA regions
+	   ;; %PERMANENT-LEVEL around its rebuild (FIX-AREA) and makes
+	   ;; MAKE-SURVIVING-REGIONS-STATIC migrate a dozen areas to permanent --
+	   ;; sound only for Symbolics' one-shot final GC before shipping.
+	   ;; MAKE-STATIC-REGIONS-DYNAMIC (called below) strips that permanence at
+	   ;; the next GC entry everywhere EXCEPT read-only regions, so the only
+	   ;; survivor is the rebuilt cell table's permanent CONSTANTS-AREA region,
+	   ;; which the next GC never flips: its carcass ends up fully forwarded
+	   ;; into weakspace and unsnappable (~14,700 dangling refs; diagnosed live
+	   ;; 7/19/26).  With NIL, SYMBOLICS-SYSTEM-RELEASE keeps its extra
+	   ;; optimizations (COMPRESS-DEBUG-INFO, REMOVE-POINTERS-TO-COMPILED-
+	   ;; FUNCTIONS; GC-PERMANENT-OBJECTS is #+3600 and absent here) but
+	   ;; creates no permanent regions and is repeatable, like
+	   ;; :LAYERED-SYSTEM-RELEASE.
+	   (*FULL-GC-FOR-SYSTEM-RELEASE* NIL)
 	   ;; This is for communication between the optimizations and the flipper.
 	   (*IMMEDIATE-GC-FLIP-OPTIONS* NIL)
 	   ;; This is so that an optimization can alter its behavior depending on whether
@@ -212,6 +280,14 @@
 	   (*IMMEDIATE-GC-LEVEL-MIGRATION-ARRAY* NIL)
 	   (*IMMEDIATE-GC-AREA-MIGRATION-ARRAY* NIL)
 	   (*IMMEDIATE-GC-REGION-MIGRATION-ARRAY* NIL))
+      ;; Permanent regions are only hazardous to GC-SYMBOLS (it forwards
+      ;; packages and CONSTANTS-AREA cell tables through weakspace and
+      ;; can't see them in regions that never flip).  Weaker modes handle
+      ;; permanent data safely, and demoting there would make a routine
+      ;; Optimize World transport sealed data (GC-STATIC-LEVEL condemns
+      ;; static in :LAYERED-IDS-RELEASE) -- pure churn and IDS growth.
+      (WHEN (MEMQ 'GC-SYMBOLS OPTIMIZE)
+	(demote-permanent-regions :verbose verbose))
       1(make-static-regions-dynamic :all-areas 0t1 :verbose verbose)
 0      1(region-check :all-areas 0t1 :fix-regions t :show-errors nil :verbose verbose)
 0      (WITH-DATA-STACK

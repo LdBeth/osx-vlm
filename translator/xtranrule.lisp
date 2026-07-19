@@ -46,7 +46,7 @@
   (with-temporary-registers (temp)
     (compute-operand-address instn temp)
     (writeTOS temp))
-  (TOSvalid :invalid)
+  (TOSvalid :invalid))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;	      Translation support for MovemHW instruction
