@@ -512,13 +512,40 @@ Integer LoadMapData (World* world, LoadMapEntry* mapEntry)
 }
 
 
+/* The per-Q load loops below batch through a chunk buffer and
+   VirtualMemoryReadBlock/WriteBlock instead of per-word
+   VirtualMemoryRead/Write: the target pages have just been ensured
+   (existing pages are forced Modified, hence writable), so the block
+   operations need no per-word protection handling. */
+#define LoadMapChunkQs 256
+
+/* LoadMapCopy replacement for the old per-word read/write loop.  That loop
+   had memcpy-forward propagation semantics when the ranges overlap (each
+   word is read after all earlier words were written), so chunks are clamped
+   to the copy distance to reproduce it exactly. */
+static void LoadMapCopyQs (Integer to, Integer from, int count)
+{
+  LispObj chunk[LoadMapChunkQs];
+  int i, n;
+
+	for (i = 0; i < count; i += n, to += n, from += n)
+	  {
+		n = count - i;
+		if (n > LoadMapChunkQs) n = LoadMapChunkQs;
+		if ((from < to) && ((int)(to - from) < n))
+			n = (int)(to - from);
+		VirtualMemoryReadBlock (from, chunk, n);
+		VirtualMemoryWriteBlock (to, chunk, n);
+	  }
+}
+
 Integer VLMLoadMapData (World* world, LoadMapEntry* mapEntry)
 {
-  LispObj q;
+  LispObj chunk[LoadMapChunkQs];
   World* mapWorld;
-  Integer pageNumber, theAddress=0, theSourceAddress;
+  Integer pageNumber, theAddress=0;
   off_t dataOffset, tagOffset;
-  int increment = 0, i;
+  int increment = 0, i, n, j;
 
 	switch (mapEntry->op.opcode)
 	{
@@ -534,10 +561,13 @@ Integer VLMLoadMapData (World* world, LoadMapEntry* mapEntry)
 			printf("LoadMapDataPages @ %x, count %d\n", theAddress, mapEntry->op.count);
 //---
 			theAddress = mapEntry->address;
-			for (i = 0; i < (int)mapEntry->op.count; i++, theAddress++)
+			for (i = 0; i < (int)mapEntry->op.count; i += n, theAddress += n)
 			  {
-				ReadSwappedVLMWorldFileNextQ (mapWorld, &q);
-				VirtualMemoryWrite (theAddress, q);
+				n = (int)mapEntry->op.count - i;
+				if (n > LoadMapChunkQs) n = LoadMapChunkQs;
+				for (j = 0; j < n; j++)
+					ReadSwappedVLMWorldFileNextQ (mapWorld, &chunk[j]);
+				VirtualMemoryWriteBlock (theAddress, chunk, n);
 			  }
 		  }
 		else
@@ -563,10 +593,8 @@ Integer VLMLoadMapData (World* world, LoadMapEntry* mapEntry)
 
 	  case LoadMapCopy:
 		EnsureVirtualAddressRange (mapEntry->address, (int)mapEntry->op.count, FALSE);
-		theAddress = mapEntry->address;
-		theSourceAddress = LispObjData (mapEntry->data);
-		for (i = 0; i < (int)mapEntry->op.count; i++, theAddress++, theSourceAddress++)
-			VirtualMemoryWrite (theAddress, VirtualMemoryRead (theSourceAddress));
+		LoadMapCopyQs (mapEntry->address, LispObjData (mapEntry->data),
+					   (int)mapEntry->op.count);
 		break;
 
 	  default:
@@ -580,9 +608,9 @@ Integer VLMLoadMapData (World* world, LoadMapEntry* mapEntry)
 
 Integer IvoryLoadMapData (World* world, LoadMapEntry* mapEntry)
 {
-  LispObj q;
-  Integer theAddress, theSourceAddress;
-  int increment = 0, i;
+  LispObj chunk[LoadMapChunkQs];
+  Integer theAddress;
+  int increment = 0, i, n, j;
 
 	EnsureVirtualAddressRange (mapEntry->address, (int)mapEntry->op.count, FALSE);
 
@@ -592,10 +620,13 @@ Integer IvoryLoadMapData (World* world, LoadMapEntry* mapEntry)
 		ReadIvoryWorldFilePage (world, LispObjData (mapEntry->data));
 		world->currentQNumber = 0;
 		theAddress = mapEntry->address;
-		for (i = 0; i < (int)mapEntry->op.count; i++, theAddress++)
+		for (i = 0; i < (int)mapEntry->op.count; i += n, theAddress += n)
 		  {
-			ReadIvoryWorldFileNextQ (world, &q);
-			VirtualMemoryWrite (theAddress, q);
+			n = (int)mapEntry->op.count - i;
+			if (n > LoadMapChunkQs) n = LoadMapChunkQs;
+			for (j = 0; j < n; j++)
+				ReadIvoryWorldFileNextQ (world, &chunk[j]);
+			VirtualMemoryWriteBlock (theAddress, chunk, n);
 		  }
 		break;
 
@@ -609,10 +640,8 @@ Integer IvoryLoadMapData (World* world, LoadMapEntry* mapEntry)
 		break;
 
 	  case LoadMapCopy:
-		theAddress = mapEntry->address;
-		theSourceAddress = LispObjData (mapEntry->data);
-		for (i = 0; i < (int)mapEntry->op.count; i++, theAddress++, theSourceAddress++)
-			VirtualMemoryWrite (theAddress, VirtualMemoryRead (theSourceAddress));
+		LoadMapCopyQs (mapEntry->address, LispObjData (mapEntry->data),
+					   (int)mapEntry->op.count);
 		break;
 
 	  default:

@@ -174,6 +174,10 @@ int InstructionSequencer (void)
     action.sa_flags = SA_SIGINFO;
 #endif
     sigemptyset(&action.sa_mask);
+    /* SIGSEGV and SIGBUS share segv_handler and its static fault-loop
+       state: block both while either is being handled */
+    sigaddset(&action.sa_mask, SIGSEGV);
+    sigaddset(&action.sa_mask, SIGBUS);
     if (-1 == sigaction(SIGSEGV, &action, NULL))
       vpunt (NULL, "Unable to establish memory fault handler.");
 
@@ -206,6 +210,8 @@ int InstructionSequencer (void)
     action.sa_flags = SA_SIGINFO;
 #endif
     sigemptyset(&action.sa_mask);
+    sigaddset(&action.sa_mask, SIGSEGV);
+    sigaddset(&action.sa_mask, SIGBUS);
     if (-1 == sigaction(SIGFPE, &action, NULL))
       vpunt (NULL, "Unable to establish floating point exception handler");
 
@@ -515,7 +521,13 @@ void InitializeIvoryProcessor (Integer *basedata, Tag *basetag)
     /* processor state preceeds TagSpace, both accessed from Ivory register */
     caddr_t state_page = (caddr_t)MapVirtualAddressTag(0) - ALPHAPAGESIZE*2; /* pr */
     caddr_t block;
-    
+
+#if defined(OS_DARWIN)
+    /* Claim the tag/data windows before anything is mapped into them, so
+       later MAP_FIXED wad creation can never clobber a foreign mapping */
+    ReserveIvoryAddressSpace ();
+#endif
+
     if (state_page != mmap(state_page, 2*ALPHAPAGESIZE, PROT_READ|PROT_WRITE, /* pr */
 		            MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED,-1,0))
       vpunt (NULL, "Couldn't create processor state page");

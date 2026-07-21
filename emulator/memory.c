@@ -70,9 +70,6 @@ static void init_vm_protection_lock(void)
 void AdjustProtection(Integer vma, VMAttribute attr);
 static int ComputeProtection(register VMAttribute attr);
 #define ceiling(n,d) (((n) + ((d) - 1)) / (d))
-#ifndef OS_OSF
-static int mvalid(caddr_t address, size_t count, int access);
-#endif
 
 Integer memory_vma;
 int mprotect_result;
@@ -105,6 +102,28 @@ Integer *DataSpace = (Integer *)((int64_t)1<<38);	/* 4<<32 bytes of data */
 Tag *TagSpace = (Tag *)((int64_t)1<<40);		/* 1<<32 bytes of tages */
 /* Data space must be TagSpace*4 for Ivory-based address scheme */
 Integer *DataSpace = (Integer *)((int64_t)1<<42);	/* 4<<32 bytes of data */
+
+/* Reserve the whole tag and data windows up front: the wad mmaps below use
+   MAP_FIXED, which silently replaces whatever the system may have put there.
+   Claiming both windows PROT_NONE at startup turns an address-space
+   collision into an immediate startup failure instead of latent corruption,
+   and guarantees the windows stay available.  A PROT_NONE anonymous mapping
+   costs address space only.  Called once from InitializeIvoryProcessor,
+   before anything is mapped into either window. */
+void ReserveIvoryAddressSpace (void)
+{
+  caddr_t tag = (caddr_t)TagSpace;
+  caddr_t data = (caddr_t)DataSpace;
+  size_t tagBytes = (size_t)sizeof(Tag) << 32;
+  size_t dataBytes = (size_t)sizeof(Integer) << 32;
+
+  /* No MAP_FIXED: if the window is not free, mmap lands elsewhere and we
+     punt with the evidence instead of clobbering the occupant */
+  if (tag != mmap(tag, tagBytes, PROT_NONE, MAP_ANON|MAP_PRIVATE, -1, 0))
+    vpunt (NULL, "Couldn't reserve the Ivory tag window at %lx", tag);
+  if (data != mmap(data, dataBytes, PROT_NONE, MAP_ANON|MAP_PRIVATE, -1, 0))
+    vpunt (NULL, "Couldn't reserve the Ivory data window at %lx", data);
+}
 #endif
 
 
@@ -116,7 +135,7 @@ static PHTEntry ResidentPages[16384];			/* --- size according to machine */
 static PHTEntry *ResidentPagesPointer = ResidentPages;
 static Boolean ResidentPagesWrap = FALSE;
 
-#define VMAinStackCacheP(vma) ((uint64_t)vma - processor->stackcachebasevma) < processor->scovlimit
+#define VMAinStackCacheP(vma) (((uint64_t)(vma) - processor->stackcachebasevma) < processor->scovlimit)
 
 /* 
    --- We know underlying machine uses 8192-byte pages, we have to
@@ -212,9 +231,16 @@ Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
     (void)memset((unsigned char *)data, (unsigned char) -1, sizeof(Integer[MemoryWad_Size]));
 #if defined(OS_DARWIN)
     /* Protection lives on DataSpace: apply it after initializing the wad;
-       tags stay permanently read/write. */
-    if (prot != (PROT_READ|PROT_WRITE|PROT_EXEC)
-	&& mprotect(data, sizeof(Integer[MemoryWad_Size]), prot))
+       tags stay permanently read/write.  Keep the mapping in lockstep with
+       the attribute table for EVERY page of the wad: the non-created pages
+       read as attribute 0, i.e. PROT_NONE, and AdjustProtection derives a
+       page's current protection from its table entry -- if the whole wad
+       kept this page's protection, a later SetCreated of a sibling page
+       whose computed protection happens to equal ComputeProtection(0)
+       would skip its mprotect and never get the fault it asked for. */
+    if (mprotect(data, sizeof(Integer[MemoryWad_Size]), PROT_NONE)
+	|| (prot != PROT_NONE
+	    && mprotect(DataPageAddress(vma), DataPageSize, prot)))
     {
       verror (NULL, "Couldn't protect data wad at %lx for VMA %x", data, vma);
       munmap(data, sizeof(Integer[MemoryWad_Size]));
@@ -254,6 +280,23 @@ Integer DestroyVirtualAddress (Integer vma)
     caddr_t data = (caddr_t)&DataSpace[aligned_vma];
     caddr_t tag = (caddr_t)&TagSpace[aligned_vma];
 
+#if defined(OS_DARWIN)
+    /* Replace the wad with a fresh PROT_NONE reservation rather than
+       munmap: frees the pages but keeps the window claimed (see
+       ReserveIvoryAddressSpace) */
+    if (data != mmap(data, sizeof(Integer[MemoryWad_Size]), PROT_NONE,
+		     MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0))
+    {
+      verror (NULL, "Couldn't unmap data wad at %lx for VMA %x", data, vma);
+      result = 0;
+    }
+    if (tag != mmap(tag, sizeof(Tag[MemoryWad_Size]), PROT_NONE,
+		    MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0))
+    {
+      verror (NULL, "Couldn't unmap tag wad at %lx for VMA %x", tag, vma);
+      result = 0;
+    }
+#else
     if (munmap(data, sizeof(Integer[MemoryWad_Size])))
     {
       verror (NULL, "Couldn't unmap data wad at %lx for VMA %x", data, vma);
@@ -264,6 +307,7 @@ Integer DestroyVirtualAddress (Integer vma)
       verror (NULL, "Couldn't unmap tag wad at %lx for VMA %x", tag, vma);
       result = 0;
     }
+#endif
   }
 
   return(result);
@@ -443,9 +487,18 @@ Tag* MapVirtualAddressTag(Integer vma)
   return(&TagSpace[vma]);
 }
 
+/* The attribute table is authoritative for a page's protection --
+   AdjustProtection keeps table and mapping in lockstep (or dies), so the
+   uncached accessors derive accessibility from ComputeProtection(attr)
+   instead of probing the mapping with a scratch signal handler (the old
+   mvalid() swapped the process-wide SIGSEGV/SIGBUS handlers around a
+   shared jmp_buf: an emulator-thread barrier fault in that window would
+   longjmp onto another thread's stack).  The protection lock is held
+   across the whole access so the GC cannot retune the page in between. */
+
 LispObj VirtualMemoryReadUncached (Integer vma)
 {
-  VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
+  VMAttribute attr;
   Integer aligned_vma = vma - MemoryPageOffset(vma);
 #if defined(OS_DARWIN)
   /* Protection lives on DataSpace */
@@ -455,8 +508,12 @@ LispObj VirtualMemoryReadUncached (Integer vma)
   int pagesize = sizeof(Tag)*MemoryPage_Size;
   caddr_t address = (caddr_t) &TagSpace[aligned_vma];
 #endif
-  int protected = mvalid(address, pagesize, PROT_READ);
+  int protected;
   LispObj contents;
+
+  VM_PROTECTION_LOCK();
+  attr = VMAttributeTable[MemoryPageNumber(vma)];
+  protected = !(ComputeProtection(attr) & PROT_READ);
 
   if (protected)
      if (mprotect(address, pagesize, PROT_READ) == -1)
@@ -472,6 +529,7 @@ LispObj VirtualMemoryReadUncached (Integer vma)
     if (mprotect(address, pagesize, prot) == -1)
       vpunt ("VirtualMemoryReadUncached", NULL);
   }
+  VM_PROTECTION_UNLOCK();
 
   return (contents);
 }
@@ -489,7 +547,7 @@ LispObj VirtualMemoryRead (unsigned int address)
 
 void VirtualMemoryWriteUncached (Integer vma, LispObj object)
 {
-  VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
+  VMAttribute attr;
   Integer aligned_vma = vma - MemoryPageOffset(vma);
 #if defined(OS_DARWIN)
   /* Protection lives on DataSpace */
@@ -499,10 +557,14 @@ void VirtualMemoryWriteUncached (Integer vma, LispObj object)
   int pagesize = sizeof(Tag)*MemoryPage_Size;
   caddr_t address = (caddr_t) &TagSpace[aligned_vma];
 #endif
-  int protected = mvalid(address, pagesize, PROT_WRITE);
+  int protected;
+
+  VM_PROTECTION_LOCK();
+  attr = VMAttributeTable[MemoryPageNumber(vma)];
+  protected = !(ComputeProtection(attr) & PROT_WRITE);
 
   if (protected)
-     if (mprotect(address, pagesize, PROT_WRITE) == -1)
+     if (mprotect(address, pagesize, PROT_READ|PROT_WRITE) == -1)
         vpunt ("VirtualMemoryWriteUncached", NULL);
 
   /* check exists done by spy*/
@@ -516,6 +578,7 @@ void VirtualMemoryWriteUncached (Integer vma, LispObj object)
     if (mprotect(address, pagesize, prot) == -1)
       vpunt ("VirtualMemoryWriteUncached", NULL);
   }
+  VM_PROTECTION_UNLOCK();
 }
 
 
@@ -586,7 +649,7 @@ void VirtualMemoryReadBlockUncached (Integer vma, LispObj *object, int count)
 void VirtualMemoryReadBlock (unsigned int address, LispObj *object, int count)
 {
   if ((uint64_t)address < processor->stackcachebasevma) {
-    int pc = ((uint64_t)(address+count-1) < processor->stackcachebasevma) ? count
+    int pc = (((uint64_t)address+count-1) < processor->stackcachebasevma) ? count
              : processor->stackcachebasevma - (uint64_t)address;
     VirtualMemoryReadBlockUncached (address, object, pc);
     count -= pc;
@@ -622,7 +685,7 @@ void VirtualMemoryWriteBlockUncached (Integer vma, LispObj *object, int count)
 void VirtualMemoryWriteBlock (unsigned int address, LispObj *object, int count)
 {
   if ((uint64_t)address < processor->stackcachebasevma) {
-    int pc = ((uint64_t)(address+count-1) < processor->stackcachebasevma) ? count
+    int pc = (((uint64_t)address+count-1) < processor->stackcachebasevma) ? count
              : processor->stackcachebasevma - (uint64_t)address;
     VirtualMemoryWriteBlockUncached (address, object, pc);
     count -= pc;
@@ -672,9 +735,9 @@ void VirtualMemoryWriteBlockConstantUncached (Integer vma, LispObj object,
 
 void VirtualMemoryWriteBlockConstant (unsigned int address, LispObj object,
                                       int count, int increment)
-{ 
+{
   if ((uint64_t)address < processor->stackcachebasevma) {
-    int pc = ((uint64_t)(address+count-1) < processor->stackcachebasevma) ? count
+    int pc = (((uint64_t)address+count-1) < processor->stackcachebasevma) ? count
              : processor->stackcachebasevma - (uint64_t)address;
     VirtualMemoryWriteBlockConstantUncached (address, object, pc, increment);
     count -= pc;
@@ -741,8 +804,14 @@ Boolean VirtualMemoryCopy (Integer from, Integer to, int count, int mode)
 void VirtualMemoryEnable (register Integer vma, int count, Boolean faultp)
 {
   register VMAttribute *attr = &VMAttributeTable[MemoryPageNumber(vma)];
-  register VMAttribute *eattr = &VMAttributeTable[MemoryPageNumber(vma + count + 
-								   MemoryPage_Size - 1)];
+  /* 64-bit end computation: a range ending at the top of the 32-bit space
+     would wrap and make eattr < attr, silently skipping the enable */
+  uint64_t elimit = MemoryPageNumber((uint64_t)vma + count + MemoryPage_Size - 1);
+  register VMAttribute *eattr;
+
+  if (elimit > sizeof(VMAttributeTable))	/* 1-byte entries: bytes == entries */
+    elimit = sizeof(VMAttributeTable);
+  eattr = &VMAttributeTable[elimit];
   register VMAttribute oa, a;
 
   if (!processor->zoneoldspace) 
@@ -962,16 +1031,7 @@ Boolean SlowScanPage(Integer scanvma, Integer *vma, int count, Boolean update)
   register uint64_t ephemeraloldbits;
   register uint64_t zoneoldbits;
 
-#if defined(OS_DARWIN)
-  /* Protection lives on DataSpace; tags are always readable */
-  if (mvalid((caddr_t)data,
-	     count*sizeof(Integer),
-	     PROT_READ))
-#else
-  if (mvalid((caddr_t)tag,
-	     count,
-	     PROT_READ))
-#endif
+  if (!(ComputeProtection(VMAttributeTable[MemoryPageNumber(scanvma)]) & PROT_READ))
   {
     fprintf(stderr,
 	    "SlowScanPage on inaccessible memory at %lx for %x (ATTRIBUTES=0%o)\n",
@@ -1015,7 +1075,9 @@ Boolean SlowScanPage(Integer scanvma, Integer *vma, int count, Boolean update)
 Boolean ScanPage(Integer scanvma, Integer *vma, int count, Boolean update)
 {
   Integer startvma = scanvma - MemoryPageOffset(scanvma);
-  Integer endvma = scanvma + count;
+  /* 64-bit: for the topmost page scanvma + count wraps to 0 and the scan
+     loops below would exit immediately without scanning anything */
+  uint64_t endvma = (uint64_t)scanvma + count;
   Boolean ephemeral = FALSE;
   Boolean wrapped = FALSE;
 
@@ -1028,9 +1090,9 @@ Boolean ScanPage(Integer scanvma, Integer *vma, int count, Boolean update)
       register uint64_t pointertypes = 0x0000FFF4FFFFF8F7L;
       /* registers in order of frequency of use */
       register uint64_t tagbits;
-      register Integer thisvma = (wrapped?startvma:scanvma)&~07;
-      register Integer nextvma = thisvma + 8;
-      register Integer limitvma = (wrapped?scanvma:endvma);
+      register uint64_t thisvma = (wrapped?startvma:scanvma)&~07;
+      register uint64_t nextvma = thisvma + 8;
+      register uint64_t limitvma = (wrapped?(uint64_t)scanvma:endvma);
       register int64_t *tags8 = &((int64_t *)TagSpace)[thisvma>>3];
       register Integer word; 
       register uint64_t ephemeraloldbits;
@@ -1266,7 +1328,7 @@ Boolean VirtualMemoryResidentScan (Integer *vma, Integer *count, register VMAttr
 					       : ResidentPagesPointer;
   register VMAttribute *attr = VMAttributeTable;
 
-  for ( ; scan <= escan; scan++)
+  for ( ; scan < escan; scan++)
   {
     if (sense)
     {
@@ -1317,8 +1379,10 @@ int VMCommand(int command)
      register int vpn = MemoryPageNumber(vma);
      register int words = vm->ExtentRegister;
 
-     /* Optimization */
-     if(WadCreated(vma) && (words <= MemoryPage_Size))
+     /* Optimization -- only when the range stays within one page: a
+      * mid-page vma with words <= MemoryPage_Size can still straddle
+      * a page boundary, which needs the range path below */
+     if(WadCreated(vma) && (MemoryPageOffset(vma) + words <= MemoryPage_Size))
      {
        SetCreated(vma, VMCommandOperand(command), FALSE);
        vm->ExtentRegister = MemoryPage_Size;
@@ -1512,80 +1576,9 @@ void AdjustProtection(Integer vma, VMAttribute new_attr)
   }
 #endif
 
-#ifdef OS_OSF
-  if (mvalid((caddr_t)&TagSpace[vma-MemoryPageOffset(vma)],
-	     sizeof(Tag)*MemoryPage_Size, new)) {
-#ifdef DEBUGMPROTECT
-    fprintf(stderr,
-	    "Attribute/mprotect skew at %lx (ATTRIBUTES=0%o->0%o)\n",
-	    (uint64_t)vma, oa, new_attr);
-#endif
-  } else
-#endif
-    *attr = new_attr;
+  *attr = new_attr;
   VM_PROTECTION_UNLOCK();
 }
-
-#ifndef OS_OSF
-/* Memory management interface not provided by modern UNIX and/or Linux */
-
-#define OK 0
-#define NO -1
-
-static jmp_buf trap_environment;
-
-/* Catch SEGV's when poking at memory */
-static void simple_segv_handler (int sigval, register siginfo_t *si, void *uc_p)
-{
-  _longjmp(trap_environment, -1);
-}
-
-static int mvalid (caddr_t address, size_t count, int access)
-{
-  struct sigaction action, oldaction_segv, oldaction_bus;
-  sigset_t oldmask;
-  size_t page_size = getpagesize();
-  caddr_t end = address + count;
-  caddr_t p=NULL;
-  int check_read  = access & PROT_READ;
-  int check_write = access & PROT_WRITE;
-  int result = OK, reading=TRUE;
-  char datum=0;
-
-  sigprocmask(SIG_SETMASK, NULL, &oldmask);
-
-  action.sa_sigaction = (sa_sigaction_t)simple_segv_handler;
-  action.sa_flags = SA_SIGINFO;
-  sigemptyset(&action.sa_mask);
-  sigaction(SIGSEGV, &action, &oldaction_segv);
-  sigaction(SIGBUS,   &action, &oldaction_bus);
-
-  if (_setjmp(trap_environment)) {
-    sigprocmask(SIG_SETMASK, &oldmask, NULL);
-    if (reading & !check_read) goto CONTINUE;
-    result = NO;
-    goto FINISH; 
-  }
-
-  for (p = address; p < end; p += page_size) {
-    reading = TRUE;
-    datum = *p;
-    if (access == PROT_NONE) {
-      result = NO;
-      goto FINISH;
-    }
-CONTINUE:
-    reading = FALSE;
-    if (check_write)
-      *p = datum;
-  }
-  
-FINISH:
-  sigaction(SIGSEGV, &oldaction_segv, NULL);
-  sigaction(SIGBUS,   &oldaction_bus,   NULL);
-  return(result);
-}
-#endif
 
 
 static caddr_t last_vma = NULL;

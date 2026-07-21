@@ -10,6 +10,7 @@
 #include "aihead.h"
 #include "ivoryrep.h"
 
+void ReserveIvoryAddressSpace (void);
 Integer EnsureVirtualAddress (Integer vma, Boolean faultp);
 Integer EnsureVirtualAddressRange (Integer vma, int count, Boolean faultp);
 void EnsureVirtualMemoryAccessible (Integer vma, int count);
