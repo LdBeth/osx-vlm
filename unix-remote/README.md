@@ -9,6 +9,8 @@ over the network:
   * `lpdd` — LPD print server that spools each hardcopy to a file; see below.
   * `org.genera.lpdd.plist` — launchd job for `lpdd`.
   * `psfix` — repairs font encodings (and optionally page order) in spooled Genera PostScript; see below.
+  * `genera-remote.ts` — telnet client + screen model that drives the Genera
+    Lisp Listener, exposed as an MCP server and a CLI; see below.
 
 ## Tape server (`rmtd`)
 
@@ -203,3 +205,238 @@ the spool dir; open it in Preview to confirm.
     do you need `psfix --reorder`, which reverses the pages safely despite the
     driver's incremental glyph download. Without `--reorder` the page order is
     left untouched.
+
+# Listener driver (`genera-remote.ts`)
+
+Where `rmtd`/`lpdd` impersonate Unix services the guest *dials out* to,
+`genera-remote.ts` goes the other way: it **telnets into** the guest's Lisp
+Listener and drives it programmatically. It renders Genera's X3.64/ANSI output
+into an in-memory screen grid and exposes read/type/wait/eval verbs — as an
+**MCP server** (for Claude Code and other MCP clients) and as a plain **CLI**.
+
+One Deno file, no `package.json`. The telnet client and screen model are
+dependency-free; only the MCP layer reaches for `npm:@modelcontextprotocol/sdk`
+(pinned to `1.29.0`, loaded from the local Deno npm cache via a `npm:`
+specifier and imported lazily, so `deno test` and the CLI never touch it).
+
+## Run
+
+    # MCP stdio server (default when no verb) — this is what Claude Code spawns
+    ./genera-remote.ts                    # connects on demand via genera_connect
+
+    # CLI: each verb connects, acts, disconnects (fresh Listener each time)
+    ./genera-remote.ts screen                         # print the screen
+    ./genera-remote.ts eval '(+ 1 2)'                 # eval a form, print output
+    ./genera-remote.ts type 'Show Herald'             # type literal text
+    ./genera-remote.ts key Abort                      # press a named key
+    ./genera-remote.ts wait --pattern 'Command: '     # wait for the prompt
+    ./genera-remote.ts keys                           # list the key table
+    ./genera-remote.ts repl                           # interactive, stays connected
+
+    # target + output
+    --host H   default 192.168.2.2 (the guest on the vmnet bridge; env GENERA_HOST)
+    --port N   default 23                             (env GENERA_PORT)
+    --json     machine-readable output where applicable
+
+The shebang is `deno run --allow-net --allow-env --allow-read`. `--allow-net`
+is for the telnet socket; `--allow-env` reads `GENERA_HOST`/`GENERA_PORT`;
+`--allow-read` lets the MCP SDK resolve itself from the Deno cache. The MCP
+server additionally needs `--allow-run` *only if* a client spawns it such that
+it re-execs Deno — the default stdio path does not, so the three flags above
+suffice. (The test suite uses `--allow-run` because it spawns the server as a
+child; see Testing.)
+
+`repl` holds one login open: blank line = Return, a Lisp form is typed and
+submitted, `/screen` reprints, `/key NAME` presses a key, `/wait` settles,
+`/quit` exits.
+
+### Per-invocation login
+
+Each CLI verb (except `repl`) opens a fresh telnet connection, and Genera's
+telnet server drops a trusted client **straight into a Lisp Listener with no
+username/password step** (`net:remote-login-on` gates it; the herald prints,
+then `SI:LISP-TOP-LEVEL1` runs — `network/network-terminal.lisp:161-205`). So
+per-command reconnect is cheap and needs no credential handling — it just
+means Listener state (variables, history) does not persist between commands.
+Use `repl`, or the MCP server's persistent session, when you need continuity.
+
+## MCP tools
+
+Registered on the stdio server (`McpServer` + `StdioServerTransport`):
+
+  * `genera_connect {host?, port?}` / `genera_disconnect`
+  * `genera_screen` → the character grid as text + cursor + connection state
+  * `genera_type {text}` → literal text, no newline appended
+  * `genera_key {name}` → a named Genera key (see the table below)
+  * `genera_wait {pattern?, stable_ms?, timeout_ms?}` → returns when a regex
+    appears **or** the screen is unchanged for `stable_ms`; always returns the
+    final screen; fails closed (error flag) on timeout. Stability is measured
+    from the moment the call begins, so an in-flight repaint always gets a
+    chance to land before the screen is declared settled.
+  * `genera_eval {form, timeout_ms?}` → types the form + Return, waits for the
+    next prompt, and returns **exactly** the text the Listener printed in
+    between (the echoed form and the trailing prompt are stripped).
+  * `genera_log {limit?}` → the in-memory action log
+
+Every tool result carries an `action` entry (ISO timestamp, intent, outcome),
+the current `state`, and (for most) the `screen` — so a caller always knows
+where the session stands. The session also keeps a rolling action log
+retrievable via `genera_log`.
+
+### Registering with Claude Code
+
+Add to a project `.mcp.json` (this repo does **not** commit one):
+
+```json
+{
+  "mcpServers": {
+    "genera": {
+      "command": "deno",
+      "args": [
+        "run", "--allow-net", "--allow-env", "--allow-read",
+        "/Users/ldbeth/Public/Projects/linux-vlm/unix-remote/genera-remote.ts"
+      ],
+      "env": { "GENERA_HOST": "192.168.2.2", "GENERA_PORT": "23" }
+    }
+  }
+}
+```
+
+## Terminal / key mapping — the one real unknown (now known)
+
+This mapping was reverse-engineered from the Genera 8.5 server sources
+(`network/network-terminal.lisp`, `network/remote-terminal.lisp`). The
+surprising part: **Genera's telnet server negotiates almost nothing.**
+
+  * **No TTYPE, no NAWS, no SGA.** On connect the server sends exactly one
+    thing — `IAC WILL ECHO` (`FF FB 01`, `network-terminal.lisp:255-258`) — and
+    then *silently ignores* every `DO`/`WILL`/`WONT`/`DONT` and every `SB` for
+    everything else (`network-terminal.lisp:286-296`). The only IAC it acts on
+    besides `IAC IAC` is `IAC DO LOGOUT`, which closes the connection. So there
+    is **no terminal-type negotiation on the wire** — a client's `WILL TTYPE` /
+    `WILL NAWS` / `DO SGA` go unanswered. `genera-remote.ts` offers them anyway
+    (harmless, and meaningful against the test server), but treats them as
+    best-effort and never blocks on a reply.
+  * **X3.64 is set out of band, not by TTYPE.** The `:TELNET` login server
+    starts in *printing* (glass-TTY) mode assuming a non-display terminal
+    (`network-terminal.lisp:321-322`); the `X3.64` flag defaults `NIL`
+    (`remote-terminal.lisp:1179`). A user turns cursor addressing on **after
+    login** with the CP command `Set Remote Terminal Options` → answer *yes* to
+    “Console supports X3.64 display codes” (`remote-terminal.lisp:1444-1445`).
+    The known-good `:x3.64` from the interactive recipe is *gtelnet's* own
+    emulator setting, not something the server reads. **Practical upshot:**
+    `genera_eval`/`genera_type`/`genera_screen` work fine in printing mode
+    (the Listener prints plain text with CR/LF either way); only full-screen
+    cursor addressing needs X3.64, so send
+    `type ":Set Remote Terminal Options"` + Return and confirm if you need it
+    (or bake the default into the world). Without NAWS, the server's own
+    `WIDTH` (default 79) / `HEIGHT` govern layout, also set via that command.
+
+### Keys the server understands (from the client)
+
+Two layers process each input byte: `CONVERT-ASCII-TO-LISPM`
+(`remote-terminal.lisp:1015-1034`) maps control codes, and
+`ASCII-TERMINAL-FILTER` + the `SPECIAL-KEYS` table
+(`remote-terminal.lisp:1048-1065`) handle the escape-prefix scheme. A special
+key is the prefix **`c-_` (0x1F)** followed by a letter (case-insensitive on
+the server). `genera-remote.ts` implements the full table (`./genera-remote.ts
+keys`):
+
+| Genera key | Bytes | Source |
+|---|---|---|
+| Return | `0D` | CR → `#\RETURN` |
+| Line | `0A` | LF → `#\LINE` (or `c-_ L`) |
+| Tab | `09` | HT → `#\TAB` |
+| Rubout | `7F` | DEL → `#\RUBOUT` (verified interactively) |
+| Abort | `1F 41` | `c-_ A` — the interrupt char (there is **no** telnet-IP path) |
+| Suspend | `1F 53` | `c-_ S` |
+| Resume | `1F 52` | `c-_ R` |
+| Clear-Input | `1F 49` | `c-_ I` |
+| End | `1F 45` | `c-_ E` |
+| Complete | `1F 43` | `c-_ C` |
+| Help | `1F 48` | `c-_ H` |
+| Page | `1F 50` | `c-_ P` |
+| Refresh | `1F 46` | `c-_ F` |
+| Escape (key) | `1F 58` | `c-_ X` (bare `1B` is the **Meta** prefix, not Escape) |
+| Backspace | `1F 42` | `c-_ B` — **bare `08` maps to End**, not Backspace |
+| Network | `1F 4E` | `c-_ N` |
+| Square/Circle/Triangle | `1F 31`/`32`/`33` | `c-_ 1`/`2`/`3` |
+
+Modifier prefixes toggle a Bucky bit for the **next** character:
+Meta `1B`, Control `1E`, Super `1D`, Hyper `1C`, Shift `00`
+(`remote-terminal.lisp:1041-1046`) — so `key Control` then `type "a"` yields
+Control-A. Genera's **`#\FUNCTION` and `#\SELECT` keys have no byte sequence**
+in the server's table and are deliberately absent. Client-side CSI/arrow
+sequences are **not** decoded by the server (a bare `ESC` is eaten as the Meta
+toggle), so there is no way to send an arrow key over this path.
+
+### Output the server emits (what the screen model parses)
+
+To an X3.64 terminal Genera emits, all via `ESC [` CSI
+(`remote-terminal.lisp:1263-1340`): CUP (`H`), HPA (`` ` ``), VPA (`d`),
+CUF (`C`), reverse-index (`ESC M`), ED (`J`), EL (`K`), ECH (`X`), ICH (`@`),
+DCH (`P`), IL (`L`), DL (`M`), SGR (`m`), plus raw CR/LF/BS/TAB/BEL. It never
+emits a scrolling-region (DECSTBM) sequence and never relies on auto-wrap
+(it addresses within `WIDTH-1` and wraps manually). The screen model
+implements this repertoire; anything unrecognised is logged to
+`unknownSequences` and ignored — a mis-parse never crashes a live session.
+
+### The prompt
+
+The Listener's default (command-preferred) prompt is the literal string
+`Command: ` at the start of a fresh line (`cp/defs.lisp:59,85-87`); there is no
+numbered `>` prompt on this path. `genera_eval` detects it to know a form has
+finished. (In form-only mode the prompt is empty — set the mode back to
+command-preferred if eval's prompt detection matters.)
+
+## Testing
+
+A fake Genera telnet server (`genera-remote-test.ts`) stands in for the VLM
+(which needs sudo to boot): it speaks the same negotiation, paints a herald
+with X3.64 sequences, echoes typed characters, and answers a small canned set
+of forms. The suite covers the negotiation transcript, screen-model rendering
+(golden screens as plain text), wait semantics, eval output extraction, the
+key table, and — over the **real** MCP SDK transport — the handshake plus a
+`tools/call` round trip:
+
+    deno test --allow-net --allow-env --allow-read --allow-run unix-remote/
+
+`--allow-run` is needed because the MCP round-trip test spawns the server as a
+child process; the other flags mirror the driver's own. The SDK must already
+be in the Deno npm cache (it is; the tests run fully offline). As of the last
+run: **23 passed, 0 failed** (`deno test` exit 0), `deno lint` and `deno check`
+clean.
+
+You can also drive the fake server by hand:
+
+    ./genera-remote-test.ts --port 2323 &
+    ./genera-remote.ts eval '(* 6 7)' --host 127.0.0.1 --port 2323   # -> 42
+
+## Live verification (against the real VLM)
+
+Once the VLM is booted (it binds `192.168.2.2:23` while running):
+
+  1. `./genera-remote.ts screen` — expect the Symbolics herald and, on a fresh
+     login, a `Command: ` prompt. If instead you see “Type :Set Remote Terminal
+     Options to set the terminal type”, you are in printing mode (fine for
+     eval; see below for X3.64).
+  2. `./genera-remote.ts eval '(+ 1 2)'` — expect `3`. Try
+     `'(lisp-implementation-version)'` and `'(machine-type)'`.
+  3. `./genera-remote.ts key Abort` after starting something — expect it to
+     interrupt back to a `Command: ` prompt (this exercises `c-_ A`, the one
+     path that reaches `#\ABORT`; telnet IP does nothing).
+  4. For full-screen apps: `./genera-remote.ts repl`, then type
+     `:Set Remote Terminal Options`, confirm X3.64, and run e.g.
+     `Show Directory` — the screen model should track cursor addressing.
+  5. Register the MCP server (snippet above) and, from Claude Code, call
+     `genera_connect` then `genera_eval` — confirm the JSON result carries the
+     output, the screen, and an action-log entry.
+
+## Security
+
+Plain telnet, no TLS, no auth beyond Genera's namespace trust. Like the
+`telnetd`/`lpdd` notes above: this only ever talks to the **bridge addresses**
+(`192.168.2.2` guest / `192.168.2.1` host), which exist only while the VLM
+runs. Never expose it on `0.0.0.0` or a routable interface — a trusted-host
+telnet login to Genera is an unauthenticated Lisp Listener, i.e. full control
+of the world. The driver connects out to a host you name; it never listens.
