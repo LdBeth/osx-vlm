@@ -1800,6 +1800,25 @@
 				 (fixarg (vm-access-base form arg2 arg3)))
 			 t))
 
+	;; Byte load from VM tag space with an explicit fault edge: the
+	;; Alpha LDQ_U+EXTBL pair collapsed to one ldrb at the unmasked
+	;; tag address.  Same 8-byte block, hence the same page, so fault
+	;; behavior is identical; %w zero-extends the byte to 64 bits just
+	;; as EXTBL did.  Aarch64 only (*explicit-fault-edges*).
+	(LDB-VM
+	 (check-comment arg4)
+	 (emit-vm-access destination "ldrb %w[val], [%[adr]]"
+			 (fixarg arg1)
+			 (fixarg (vm-access-base form arg2 arg3))
+			 t))
+
+	;; NB: merging a read's tag+data loads into one asm-goto block
+	;; (single "memory" clobber) was tried and REJECTED: the merged
+	;; block needs tag out (earlyclobber) + data out + both addresses
+	;; live at once, and measurably increased iInterpret spill
+	;; traffic (3862 -> 4947 sp-relative accesses).  Writes merge
+	;; profitably (STWB-VM below) because they are input-only.
+
 	(LDQ_L
 	 (check-comment arg4)
 	 (if (listp arg3)
@@ -2299,6 +2318,41 @@
 				 (fixarg (vm-access-base form arg2 arg3)))
 			 nil))
 
+	;; Byte store to VM tag space with an explicit fault edge: the
+	;; Alpha LDQ_U/INSBL/MSKBL/BIS/STQ_U read-modify-write collapsed
+	;; to one strb at the unmasked tag address (strb stores the low
+	;; byte, exactly what INSBL inserted).  Drops the RMW's faultable
+	;; tag load and three ALU ops, and one extable entry per write.
+	;; Aarch64 only (*explicit-fault-edges*).
+	(STB-VM
+	 (check-comment arg4)
+	 (emit-vm-access destination "strb %w[val], [%[adr]]"
+			 (fixarg arg1)
+			 (fixarg (vm-access-base form arg2 arg3))
+			 nil))
+
+	;; Paired data+tag VM write in ONE asm-goto block: str %w to
+	;; data space first (*data-store-first*: a trapped write must
+	;; reach the handler with the word intact), then strb to tag
+	;; space; one extable entry per instruction, one shared "memory"
+	;; clobber.  Inputs only, so no earlyclobber concerns.  Form:
+	;; (STWB-VM data (dataaddr) tag (tagaddr)).  Aarch64 only.
+	(STWB-VM
+	 (let ((datareg (fixarg arg1))
+	       (dataadr (fixarg (if (listp arg2) (car arg2) arg2)))
+	       (tagreg (fixarg arg3))
+	       (tagadr (fixarg (if (listp arg4) (car arg4) arg4))))
+	   (format destination "  asm goto (\"0:\\tstr %w[val], [%[adr]]\\n\\t\"~%")
+	   (format destination "    \"1:\\tstrb %w[tag], [%[tadr]]\\n\\t\"~%")
+	   (format destination "    \".pushsection __DATA,__vm_extable\\n\\t\"~%")
+	   (format destination "    \".p2align 3\\n\\t\"~%")
+	   (format destination "    \".quad 0b, %l[decodefault]\\n\\t\"~%")
+	   (format destination "    \".quad 1b, %l[decodefault]\\n\\t\"~%")
+	   (format destination "    \".popsection\"~%")
+	   (format destination "    : : [val] \"r\"(~A), [adr] \"r\"(~A), [tag] \"r\"(~A), [tadr] \"r\"(~A)~%"
+		   datareg dataadr tagreg tagadr)
+	   (format destination "    : \"memory\" : decodefault);~%")))
+
 	(TRAPB
 	 (check-comment arg1)
 	 (format destination "  /* trapb ~A */~%"
@@ -2676,10 +2730,19 @@
       (ADDQ ,vma Ivory ,temp2)
       (S4ADDQ ,temp2 zero ,data)
       ,@(when prefetchp `((FETCH 0 (,temp2))))	; load tag word
-      (VM-LDQ_U ,tag 0 (,temp2))
+      ;; Fused tag byte load on aarch64; LDQ_U+EXTBL elsewhere.  The
+      ;; tag access must stay first: memory.c attributes an unmapped
+      ;; wad's fault to the tag load.  (Kept as TWO asm blocks: a
+      ;; single merged block needs tag out + data out + both addresses
+      ;; live at once plus an earlyclobber, and measurably increases
+      ;; spill traffic across the 124 read sites.)
+      ,@(if *explicit-fault-edges*
+	    `((LDB-VM ,tag 0 (,temp2)))
+	    `((VM-LDQ_U ,tag 0 (,temp2))))
       ,@(when prefetchp `((FETCH 0 (,data))))
       (VM-LDL ,data 0 (,data))			; load data
-      (EXTBL ,tag ,temp2 ,tag)			; extract the correct tag
+      ,@(unless *explicit-fault-edges*
+	  `((EXTBL ,tag ,temp2 ,tag)))		; extract the correct tag
       )))
 
 ;; Raw write to emulated memory
@@ -2692,19 +2755,28 @@
       ,@(when prefetchp
 	  `((FETCH_M 0 (,temp))
 	    (force-alignment)))
-      (VM-LDQ_U ,temp3 0 (,temp))			; temp here is the tag address
-      (INSBL ,tag ,temp ,temp2)			; temp2 is the positioned tag
-      (MSKBL ,temp3 ,temp ,temp3)		; remove old byte
+      ;; Fused tag byte store on aarch64 (STB-VM below); the packed-tag
+      ;; read-modify-write only elsewhere.
+      ,@(unless *explicit-fault-edges*
+	  `((VM-LDQ_U ,temp3 0 (,temp))		; temp here is the tag address
+	    (INSBL ,tag ,temp ,temp2)		; temp2 is the positioned tag
+	    (MSKBL ,temp3 ,temp ,temp3)))	; remove old byte
       ,@(if prefetchp
 	    `((FETCH_M 0 (,temp4)))
 	    `((force-alignment)))
-      (BIS ,temp3 ,temp2 ,temp3)		; add new byte
+      ,@(unless *explicit-fault-edges*
+	  `((BIS ,temp3 ,temp2 ,temp3)))	; add new byte
       ;; The protected space's store must happen first, so a write fault
       ;; arrives with the word intact (see *data-store-first*)
       ,@(if *data-store-first*
-	    `((VM-STL ,data 0 (,temp4))		; store data
-	      (VM-STQ_U ,temp3 0 (,temp)))
-	    `((VM-STQ_U ,temp3 0 (,temp))
+	    (if *explicit-fault-edges*
+		;; Paired single-block data str + tag strb
+		`((STWB-VM ,data (,temp4) ,tag (,temp)))
+		`((VM-STL ,data 0 (,temp4))	; store data
+		  (VM-STQ_U ,temp3 0 (,temp))))
+	    `(,@(if *explicit-fault-edges*
+		    `((STB-VM ,tag 0 (,temp)))
+		    `((VM-STQ_U ,temp3 0 (,temp))))
 	      ;; Must happen last, in case of write-first fault
 	      (VM-STL ,data 0 (,temp4))))		; store data
       )))
@@ -2797,7 +2869,12 @@
 	       ,@(if (lisp:and (eq cycle :general) (or temp4 *cant-be-in-cache-p*))
 		     `((S4ADDQ ,cycle-number zero ,action "Cycle-number -> table offset"))
 		     `((S4ADDQ ,temp3 zero ,data)))
-	       (VM-LDQ_U ,tag 0 (,temp3))
+	       ;; Fused tag byte load on aarch64 (no EXTBL below); the
+	       ;; tag access must stay first for fault attribution.
+	       ;; (Kept as two asm blocks -- see VM-read.)
+	       ,@(if *explicit-fault-edges*
+		     `((LDB-VM ,tag 0 (,temp3)))
+		     `((VM-LDQ_U ,tag 0 (,temp3))))
 	       ,@(if (lisp:and (eq cycle :general) (or temp4 *cant-be-in-cache-p*))
 		     `((S4ADDQ ,action Ivory ,action))
 		     (unless *cant-be-in-cache-p*
@@ -2815,7 +2892,8 @@
 	       ,@(unless *cant-be-in-cache-p*
 		   `((CMPULT ,temp1 ,(or *memoized-limit* temp2) ,temp2 "In range?")))
 	       (VM-LDL ,data 0 (,data))
-	       (EXTBL ,tag ,temp3 ,tag)
+	       ,@(unless *explicit-fault-edges*
+		   `((EXTBL ,tag ,temp3 ,tag)))
 	       ,@(unless *cant-be-in-cache-p*
 		   `((branch-true ,temp2 ,incache)))
 	       (unlikely-label ,wasincache)
@@ -3003,22 +3081,32 @@
       ,@(unless (or *cant-be-in-cache-p* *memoized-limit* (null temp5))
 	  `((LDL ,temp5 PROCESSORSTATE_SCOVLIMIT (ivory))))
       (S4ADDQ ,temp zero ,temp4)
-      (VM-LDQ_U ,temp3 0 (,temp))
+      ;; Fused tag byte store on aarch64 (STB-VM below); the packed-tag
+      ;; read-modify-write only elsewhere.
+      ,@(unless *explicit-fault-edges*
+	  `((VM-LDQ_U ,temp3 0 (,temp))))
       ,@(unless (or *cant-be-in-cache-p* (null temp5))
 	  `((SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset")
 	    (CMPULT ,temp2 ,(or *memoized-limit* temp5) ,temp5 "In range?")))
-      (INSBL ,tag ,temp ,temp2)
-      (MSKBL ,temp3 ,temp ,temp3)
+      ,@(unless *explicit-fault-edges*
+	  `((INSBL ,tag ,temp ,temp2)
+	    (MSKBL ,temp3 ,temp ,temp3)))
       (force-alignment)
-      (BIS ,temp3 ,temp2 ,temp3)
+      ,@(unless *explicit-fault-edges*
+	  `((BIS ,temp3 ,temp2 ,temp3)))
       ,@(unless (or *cant-be-in-cache-p* *memoized-base* temp5)
 	  `((LDQ ,temp2 PROCESSORSTATE_STACKCACHEBASEVMA (ivory))))
       ;; The protected space's store must happen first, so a write fault
       ;; arrives with the word intact (see *data-store-first*)
       ,@(if *data-store-first*
-	    `((VM-STL ,data 0 (,temp4))		; store data
-	      (VM-STQ_U ,temp3 0 (,temp)))
-	    `((VM-STQ_U ,temp3 0 (,temp))))
+	    (if *explicit-fault-edges*
+		;; Paired single-block data str + tag strb
+		`((STWB-VM ,data (,temp4) ,tag (,temp)))
+		`((VM-STL ,data 0 (,temp4))	; store data
+		  (VM-STQ_U ,temp3 0 (,temp))))
+	    (if *explicit-fault-edges*
+		`((STB-VM ,tag 0 (,temp)))
+		`((VM-STQ_U ,temp3 0 (,temp)))))
       ,@(unless (or *cant-be-in-cache-p* temp5)
 	  `((LDL ,temp PROCESSORSTATE_SCOVLIMIT (ivory))
 	    (SUBQ ,vma ,(or *memoized-base* temp2) ,temp2 "Stack cache offset")
@@ -3067,11 +3155,14 @@
       (SUBQ ,count 1 ,count)
       (LDL ,temp 4 (,sca) "Get tag word")
       (ADDQ ,sca 8 ,sca "Advance SCA position")
-      (VM-LDQ_U ,temp2 0 (,vma) "Get packed tags word")
-      (INSBL ,temp ,vma ,temp "Position the new tag")
-      (MSKBL ,temp2 ,vma ,temp2 "Remove old tag")
-      (BIS ,temp ,temp2 ,temp2 "Put in new byte")
-      (VM-STQ_U ,temp2 0 (,vma) "Save packed tags word")
+      ;; Fused tag byte store on aarch64; packed-tag RMW elsewhere.
+      ,@(if *explicit-fault-edges*
+	    `((STB-VM ,temp 0 (,vma) "Save tag byte"))
+	    `((VM-LDQ_U ,temp2 0 (,vma) "Get packed tags word")
+	      (INSBL ,temp ,vma ,temp "Position the new tag")
+	      (MSKBL ,temp2 ,vma ,temp2 "Remove old tag")
+	      (BIS ,temp ,temp2 ,temp2 "Put in new byte")
+	      (VM-STQ_U ,temp2 0 (,vma) "Save packed tags word")))
       (ADDQ ,vma 1 ,vma "Advance VMA position")
       (unlikely-label ,tagl1)
       (BGT ,count ,tagl2)

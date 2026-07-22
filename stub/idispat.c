@@ -20,12 +20,12 @@ memoryreaddata:
 g6022:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->dataread_mask);
@@ -37,7 +37,6 @@ g6022:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6024;
 
@@ -147,12 +146,12 @@ g6033:
   t7 = arg2 + ivory;
   /* Cycle-number -> table offset */
   t8 = (arg3 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   t8 = (t8 * 4) + ivory;
   arg6 = (t7 * 4);
   /* Stack cache offset */
@@ -166,7 +165,6 @@ g6033:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6035;
 
@@ -278,12 +276,12 @@ memoryreadheader:
 g6044:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->header_mask);
@@ -295,7 +293,6 @@ g6044:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6046;
 
@@ -359,12 +356,12 @@ memoryreadcdr:
 g6053:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->cdr_mask);
@@ -376,7 +373,6 @@ g6053:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6055;
 
@@ -476,19 +472,18 @@ ICACHEMISS:
   count = zero + 20;
   t11 = instn + ivory;
   iword = (t11 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg4) : [adr] "r"(t11 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg4) : [adr] "r"(t11) : "memory" : decodefault);
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(iword) : [adr] "r"(iword) : "memory" : decodefault);
-  arg4 = (u8)(arg4 >> ((t11&7)*8));
   goto fillicacheprefetched;
 
 pcbackone:
@@ -524,19 +519,18 @@ pcadvone:
 fillicache:
   t11 = instn + ivory;
   iword = (t11 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg4) : [adr] "r"(t11 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg4) : [adr] "r"(t11) : "memory" : decodefault);
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(iword) : [adr] "r"(iword) : "memory" : decodefault);
-  arg4 = (u8)(arg4 >> ((t11&7)*8));
 
 fillicacheprefetched:
 #ifdef CACHEMETERING

@@ -136,12 +136,12 @@ settocdrpushcarlocative:
 g6959:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->dataread_mask);
@@ -153,7 +153,6 @@ g6959:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6961;
 
@@ -287,12 +286,12 @@ g6991:
 g6976:
   t7 = arg2 + ivory;
   arg6 = (t7 * 4);
-  asm goto ("0:\tldr %[val], [%[adr]]\n\t"
+  asm goto ("0:\tldrb %w[val], [%[adr]]\n\t"
     ".pushsection __DATA,__vm_extable\n\t"
     ".p2align 3\n\t"
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
-    : [val] "=r"(arg5) : [adr] "r"(t7 & ~7L) : "memory" : decodefault);
+    : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
   t8 = *(u64 *)&(processor->dataread_mask);
@@ -304,7 +303,6 @@ g6976:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  arg5 = (u8)(arg5 >> ((t7&7)*8));
   if (t6 != 0)
     goto g6978;
 
