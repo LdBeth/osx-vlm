@@ -49,12 +49,12 @@ begindounaryminus:
   t4 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g7264:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7260;
   /* Here if argument TypeFixnum */
   t2 = (s32)((u32)arg6 - (u32)t2);
   arg2 = (s32)((u32)zero - (u32)arg6);
-  if (t2 == 0)
+  if ((t2 == 0))
     goto unaryminusexc;
   iPC = t6;
   /* Semi-cheat, we know t5 has CDRNext/TypeFixnum */
@@ -69,7 +69,7 @@ g7260:
   t4 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g7265:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7261;
   /* Here if argument TypeSingleFloat */
   /* NIL */
@@ -130,7 +130,7 @@ domultiply:
 DoMultiplySP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindomultiply;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -171,13 +171,13 @@ begindomultiply:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7305:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7276;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7282:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7278;
   /* Here if argument TypeFixnum */
   t6 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -202,7 +202,7 @@ g7278:
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7283:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7279;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -213,7 +213,7 @@ g7279:
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7284:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7273;
   /* Here if argument TypeDoubleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -226,13 +226,13 @@ g7276:
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7306:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7285;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7291:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7287;
   /* Here if argument TypeSingleFloat */
 
@@ -252,7 +252,7 @@ g7287:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7292:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7288;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
@@ -263,7 +263,7 @@ g7288:
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7293:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7273;
   /* Here if argument TypeDoubleFloat */
 
@@ -279,13 +279,13 @@ g7285:
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
 g7307:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7294;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7300:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7296;
   /* Here if argument TypeDoubleFloat */
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -322,7 +322,7 @@ g7296:
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7301:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7297;
   /* Here if argument TypeSingleFloat */
 
@@ -341,7 +341,7 @@ g7297:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7302:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7273;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
@@ -389,7 +389,7 @@ DoMultiplyIM:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7312:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7309;
   /* Here if argument TypeFixnum */
   /* compute 64-bit result */
@@ -401,7 +401,7 @@ g7312:
   /* is it the same as the 64-bit result? */
   t10 = (t3 == t10) ? 1 : 0;
   /* if not, we overflowed */
-  if (t10 == 0)
+  if ((t10 == 0))
     goto domulovfl;
   /* Semi-cheat, we know temp2 has CDRNext/TypeFixnum */
   *(u32 *)(iSP + 4) = t11;
@@ -443,13 +443,13 @@ binaryarithmeticdivisionprelude:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7350:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7323;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7329:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7325;
   /* Here if argument TypeFixnum */
   CVTLQ(1, f1, f31, 1, f1);
@@ -469,20 +469,20 @@ g7323:
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7351:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7330;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7336:
-  if (t12 != 0)
+  if ((t12 != 0))
     goto g7313;
 
 g7332:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7337:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7333;
   /* Here if argument TypeFixnum */
   /* contagion */
@@ -495,7 +495,7 @@ g7333:
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7338:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7320;
   /* Here if argument TypeDoubleFloat */
 
@@ -511,13 +511,13 @@ g7330:
   t10 = (t9 == Type_DoubleFloat) ? 1 : 0;
 
 g7352:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7339;
   /* Here if argument TypeDoubleFloat */
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7345:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7341;
   /* Here if argument TypeDoubleFloat */
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -545,7 +545,7 @@ g7341:
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7346:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7342;
   /* Here if argument TypeSingleFloat */
 
@@ -568,7 +568,7 @@ g7342:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7347:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7320;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
@@ -604,7 +604,7 @@ g7325:
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7353:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7326;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -615,7 +615,7 @@ g7326:
   t12 = (t11 == Type_DoubleFloat) ? 1 : 0;
 
 g7354:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7320;
   /* Here if argument TypeDoubleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -649,7 +649,7 @@ DoQuotientIM:
 DoQuotientSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindoquotient;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -680,7 +680,7 @@ return0056:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7360:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7356;
   /* Here if argument TypeFixnum */
   DIVT(0, f0, 1, f1, 2, f2);
@@ -702,7 +702,7 @@ g7356:
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7361:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7357;
   /* Here if argument TypeSingleFloat */
   DIVS(0, f0, 1, f1, 2, f2); /* divs */
@@ -718,7 +718,7 @@ g7357:
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7362:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7355;
   /* Here if argument TypeDoubleFloat */
   DIVT(0, f0, 1, f1, 2, f2);
@@ -760,7 +760,7 @@ DoRationalQuotientIM:
 DoRationalQuotientSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindorationalquotient;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -791,7 +791,7 @@ return0058:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7368:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7364;
   /* Here if argument TypeFixnum */
   /* portable signed fixnum quotient.  x86 idivl raised #DE (SIGFPE ->
@@ -819,7 +819,7 @@ g7364:
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7369:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7365;
   /* Here if argument TypeSingleFloat */
   DIVS(0, f0, 1, f1, 2, f2); /* divs */
@@ -835,7 +835,7 @@ g7365:
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7370:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7363;
   /* Here if argument TypeDoubleFloat */
   DIVT(0, f0, 1, f1, 2, f2);
@@ -877,7 +877,7 @@ DoFloorIM:
 DoFloorSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindofloor;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -916,7 +916,7 @@ return0060:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7376:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7372;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
@@ -942,7 +942,7 @@ g7372:
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7377:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7373;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
@@ -963,7 +963,7 @@ g7373:
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7378:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7371;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
@@ -1011,7 +1011,7 @@ DoCeilingIM:
 DoCeilingSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindoceiling;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -1050,7 +1050,7 @@ return0062:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7384:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7380;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
@@ -1076,7 +1076,7 @@ g7380:
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7385:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7381;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
@@ -1097,7 +1097,7 @@ g7381:
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7386:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7379;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
@@ -1145,7 +1145,7 @@ DoTruncateIM:
 DoTruncateSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindotruncate;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -1184,7 +1184,7 @@ return0064:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7392:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7388;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
@@ -1210,7 +1210,7 @@ g7388:
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7393:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7389;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
@@ -1231,7 +1231,7 @@ g7389:
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7394:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7387;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
@@ -1279,7 +1279,7 @@ DoRoundIM:
 DoRoundSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindoround;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -1318,7 +1318,7 @@ return0066:
   t9 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7400:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7396;
   /* Here if argument TypeFixnum */
   CVTTQ(3, f3, f31, 3, f3);
@@ -1344,7 +1344,7 @@ g7396:
   t9 = (t8 == Type_SingleFloat) ? 1 : 0;
 
 g7401:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7397;
   /* Here if argument TypeSingleFloat */
   CVTTS(3, f3, f31, 3, f3);
@@ -1365,7 +1365,7 @@ g7397:
   t9 = (t8 == Type_DoubleFloat) ? 1 : 0;
 
 g7402:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7395;
   /* Here if argument TypeDoubleFloat */
   /* Force the trap to occur here */
@@ -1414,7 +1414,7 @@ DoMaxIM:
 DoMaxSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindomax;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -1454,13 +1454,13 @@ begindomax:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7426:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7410;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7415:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7412;
   /* Here if argument TypeFixnum */
   t5 = t2 - t4;
@@ -1478,7 +1478,7 @@ g7412:
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7416:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7407;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -1491,13 +1491,13 @@ g7410:
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7427:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7417;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7422:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7419;
   /* Here if argument TypeSingleFloat */
 
@@ -1520,7 +1520,7 @@ g7419:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7423:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7407;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
@@ -1582,7 +1582,7 @@ DoMinIM:
 DoMinSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindomin;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -1622,13 +1622,13 @@ begindomin:
   t10 = (t9 == Type_Fixnum) ? 1 : 0;
 
 g7451:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7435;
   /* Here if argument TypeFixnum */
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7440:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7437;
   /* Here if argument TypeFixnum */
   t5 = t2 - t4;
@@ -1646,7 +1646,7 @@ g7437:
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7441:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7432;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -1659,13 +1659,13 @@ g7435:
   t10 = (t9 == Type_SingleFloat) ? 1 : 0;
 
 g7452:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7442;
   /* Here if argument TypeSingleFloat */
   t12 = (t11 == Type_SingleFloat) ? 1 : 0;
 
 g7447:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7444;
   /* Here if argument TypeSingleFloat */
 
@@ -1688,7 +1688,7 @@ g7444:
   t12 = (t11 == Type_Fixnum) ? 1 : 0;
 
 g7448:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7432;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
@@ -1793,9 +1793,9 @@ begindomultiplydouble:
   /* Perform the 63 bit multiply. */
   t5 = t3 * t4;
   t2 = t2 - Type_Fixnum;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto muldexc;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto muldexc;
   /* Get the low 32 bit half. */
   t6 = (u32)t5;

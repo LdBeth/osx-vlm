@@ -42,7 +42,7 @@ DoCharLdbFP:
   /* Clear sign extension now */
   arg4 = (u32)arg4;
   /* Not a character */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto charldbexc;
   /* T4= shifted value if PP==0 */
   t4 = arg4 << (arg2 & 63);
@@ -97,7 +97,7 @@ DoPLdbFP:
   t2 = (u32)t2;
   t3 = t1 - Type_PhysicalAddress;
   t3 = t3 & 63;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto pldbillop;
   /* Memory Read Internal */
 
@@ -123,7 +123,7 @@ g7972:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg4) : [adr] "r"(arg4) : "memory" : decodefault);
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g7974;
 
 g7973:
@@ -207,7 +207,7 @@ DoPTagLdbFP:
   t2 = (u32)t2;
   t3 = t1 - Type_PhysicalAddress;
   t3 = t3 & 63;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto ptagldbillop;
   /* Memory Read Internal */
 
@@ -233,7 +233,7 @@ g7981:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg4) : [adr] "r"(arg4) : "memory" : decodefault);
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g7983;
 
 g7982:
@@ -328,13 +328,13 @@ DoDpbFP:
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8002:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g7995;
   /* Here if argument TypeFixnum */
   arg5 = (arg6 == Type_Fixnum) ? 1 : 0;
 
 g7999:
-  if (arg5 == 0)
+  if ((arg5 == 0))
     goto g7992;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
@@ -436,13 +436,13 @@ DoCharDpbFP:
   t2 = (t1 == Type_Character) ? 1 : 0;
 
 g8015:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g8008;
   /* Here if argument TypeCharacter */
   arg5 = (arg6 == Type_Fixnum) ? 1 : 0;
 
 g8012:
-  if (arg5 == 0)
+  if ((arg5 == 0))
     goto g8005;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
@@ -531,7 +531,7 @@ DoPDpbFP:
   t2 = (u32)t2;
   t3 = t1 - Type_PhysicalAddress;
   t3 = t3 & 63;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto pdpbillop;
   /* get arg1 tag/data */
   arg4 = *(s32 *)iSP;
@@ -564,7 +564,7 @@ g8016:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t6) : [adr] "r"(t6) : "memory" : decodefault);
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8018;
 
 g8017:
@@ -577,7 +577,7 @@ g8024:
   t10 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8031:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g8026;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
@@ -616,7 +616,7 @@ g8028:
     : : [val] "r"(t6), [adr] "r"(t5), [tag] "r"(t8), [tadr] "r"(t3)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8027;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -701,7 +701,7 @@ DoPTagDpbFP:
   t2 = (u32)t2;
   t3 = t1 - Type_PhysicalAddress;
   t3 = t3 & 63;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto ptagdpbillop;
   /* get arg1 tag/data */
   arg4 = *(s32 *)iSP;
@@ -734,7 +734,7 @@ g8033:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t8) : [adr] "r"(t8) : "memory" : decodefault);
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8035;
 
 g8034:
@@ -745,7 +745,7 @@ g8041:
   t10 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8048:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g8043;
   /* Here if argument TypeFixnum */
   /* t7= -2 */
@@ -784,7 +784,7 @@ g8045:
     : : [val] "r"(t8), [adr] "r"(t5), [tag] "r"(t6), [tadr] "r"(t3)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8044;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;

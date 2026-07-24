@@ -62,22 +62,22 @@ begindodereference:
   t2 = (t1 == Type_OneQForward) ? 1 : 0;
 
 g8697:
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g8693;
   t2 = (t1 == Type_ElementForward) ? 1 : 0;
 
 g8698:
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g8693;
   t2 = (t1 == Type_HeaderForward) ? 1 : 0;
 
 g8699:
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g8693;
   t2 = (t1 == Type_ExternalValueCellPointer) ? 1 : 0;
 
 g8700:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g8680;
 
 g8693:
@@ -98,7 +98,7 @@ g8681:
     : [val] "=r"(t4) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg1 - t5;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -107,15 +107,15 @@ g8681:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8683;
 
 g8682:
   t7 = zero + 240;
   t8 = t8 >> (t4 & 63);
   t7 = t7 >> (t4 & 63);
-  if (t8 & 1)
-    goto g8685;
+  if (((t8 & 1) != 0))
+    goto coldl8685;
 
 g8692:
   /* set CDR-NEXT */
@@ -130,7 +130,7 @@ g8680:
   t2 = (t1 == Type_LogicVariable) ? 1 : 0;
 
 g8701:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g8694;
   /* Here if argument TypeLogicVariable */
   t5 = Type_ExternalValueCellPointer;
@@ -161,8 +161,8 @@ g8683:
   t4 = *(s32 *)(t5 + 4);
   goto g8682;
 
-g8685:
-  if ((t7 & 1) == 0)
+coldl8685:
+  if (((t7 & 1) == 0))
     goto g8684;
   /* Do the indirect thing */
   arg1 = (u32)t3;
@@ -183,7 +183,7 @@ g8684:
 
 g8689:
   t7 = t8 & MemoryActionTransform;
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g8688;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -197,7 +197,7 @@ g8688:
 g8688:
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g8687;
   t5 = arg1 << 1;
   t7 = *(u64 *)&(processor->dbcbase);
@@ -216,13 +216,13 @@ g8688:
   /* Compare */
   t7 = (s32)((u32)arg1 - (u32)t5);
   /* Trap on miss */
-  if (t7 != 0)
-    goto g8691;
+  if ((t7 != 0))
+    goto coldl8691;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t3;
   goto g8681;
 
-g8691:
+coldl8691:
   goto dbcachemisstrap;
 #endif
 
@@ -344,7 +344,7 @@ begindopushlocallogicvariables:
   t2 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t2 = t2 & 63;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto pllvillop;
   /* Current stack cache limit (words) */
   t4 = *(s32 *)&processor->scovlimit;
@@ -359,7 +359,7 @@ begindopushlocallogicvariables:
   t2 = (t4 * 8) + t2;
   t4 = ((s64)t1 <= (s64)t2) ? 1 : 0;
   /* We're done if new SCA is within bounds */
-  if (t4 == 0)
+  if ((t4 == 0))
     goto stackcacheoverflowhandler;
   goto pllvloopend;
 
@@ -372,7 +372,7 @@ pllvlooptop:
 pllvloopend:
   arg2 = arg2 - 1;
   /* J. If iterations to go. */
-  if ((s64)arg2 >= 0)
+  if (((s64)arg2 >= 0))
     goto pllvlooptop;
   goto NEXTINSTRUCTION;
 
@@ -457,7 +457,7 @@ g8705:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = t1 - t6;
-  t9 = *(u64 *)&(processor->datawrite_mask);
+  t9 = cached_datawrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)t7) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -466,15 +466,15 @@ g8705:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g8707;
 
 g8706:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t9 & 1)
-    goto g8709;
+  if (((t9 & 1) != 0))
+    goto coldl8709;
 
 g8715:
   /* Merge cdr-code */
@@ -501,7 +501,7 @@ g8718:
     : : [val] "r"(t1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8717;
 
 g8716:
@@ -535,8 +535,8 @@ g8707:
   t4 = *(s32 *)(t6 + 4);
   goto g8706;
 
-g8709:
-  if ((t8 & 1) == 0)
+coldl8709:
+  if (((t8 & 1) == 0))
     goto g8708;
   /* Do the indirect thing */
   t1 = (u32)t5;
@@ -563,7 +563,7 @@ g8712:
 g8712:
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g8711;
   t6 = t1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
@@ -582,13 +582,13 @@ g8712:
   /* Compare */
   t8 = (s32)((u32)t1 - (u32)t6);
   /* Trap on miss */
-  if (t8 != 0)
-    goto g8714;
+  if ((t8 != 0))
+    goto coldl8714;
   /* Extract the pointer, and indirect */
   t1 = (u32)t5;
   goto g8705;
 
-g8714:
+coldl8714:
   goto dbcachemisstrap;
 #endif
 
@@ -657,10 +657,10 @@ begindologictailtest:
   t2 = (t1 == Type_List) ? 1 : 0;
 
 g8727:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g8722;
   /* Here if argument TypeList */
-  t3 = *(u64 *)&(processor->niladdress);
+  t3 = cached_niladdress;
   /* push the data */
   *(u64 *)(iSP + 8) = t3;
   iSP = iSP + 8;
@@ -670,10 +670,10 @@ g8722:
   t2 = (t1 == Type_ExternalValueCellPointer) ? 1 : 0;
 
 g8728:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g8723;
   /* Here if argument TypeExternalValueCellPointer */
-  t3 = *(u64 *)&(processor->taddress);
+  t3 = cached_taddress;
   /* push the data */
   *(u64 *)(iSP + 8) = t3;
   iSP = iSP + 8;
@@ -683,10 +683,10 @@ g8723:
   t2 = (t1 == Type_ListInstance) ? 1 : 0;
 
 g8729:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g8724;
   /* Here if argument TypeListInstance */
-  t3 = *(u64 *)&(processor->niladdress);
+  t3 = cached_niladdress;
   /* push the data */
   *(u64 *)(iSP + 8) = t3;
   iSP = iSP + 8;

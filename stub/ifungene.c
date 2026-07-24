@@ -48,7 +48,7 @@ begindomessagedispatch:
   arg4 = *(s32 *)(iFP + 16);
   /* done if 2 or more arguments (plus 2 extra words) */
   arg5 = arg5 - 4;
-  if ((s64)arg5 < 0)
+  if (((s64)arg5 < 0))
     goto verifygenericarity;
   t1 = (u32)t1;
   arg4 = (u32)arg4;
@@ -60,12 +60,12 @@ return0035:
   t3 = t4 - Type_EvenPC;
   /* Strip CDR code, low bits */
   t3 = t3 & 62;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g6742;
   /* Strip CDR code */
   t3 = t6 & 63;
   t3 = t3 - Type_NIL;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g6740;
   *(u32 *)(iFP + 16) = t7;
   /* write the stack cache */

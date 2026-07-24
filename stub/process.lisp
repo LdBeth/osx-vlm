@@ -1106,6 +1106,63 @@
       str
     (lc str)))
 
+;;; PROCESSORSTATE fields written exactly once by processor
+;;; initialization (interfac.c InitializeIvoryProcessor) before
+;;; iInterpret can run, and never stored to by emulated code: hot
+;;; memory-action cycle masks plus the NIL/T address constants.  LDQs
+;;; of these through (ivory) are emitted as reads of C locals loaded by
+;;; the RELOAD-PROMOTED-CONSTANTS op inside cache-ivory-state
+;;; (intrpmac.lisp), which the per-VM-access asm "memory" clobbers
+;;; cannot invalidate.  The locals (cached_<field>) are declared in
+;;; stub.c.  Static effect on Darwin/arm64 -O3: insns 26572->25816,
+;;; sp-accesses 5068->4770, stores 3155->2554, loads flat.
+;;
+;; __builtin_expect cold-branch hints stay DISABLED: static A/B on
+;; Darwin/arm64 -O3 showed they only add code and spill traffic, both
+;; alone (insns 26572->27109) and on top of field promotion
+;; (insns 25816->26596, sp-accesses 4770->5464, stores 2554->3324).
+;; Flip to nil only with a dynamic benchmark to justify it.
+(defparameter *ab-disable-hints* t)
+(defparameter *promoted-processorstate-members*
+	      '(PROCESSORSTATE_NILADDRESS
+		PROCESSORSTATE_TADDRESS
+		PROCESSORSTATE_DATAREAD_MASK
+		PROCESSORSTATE_DATAWRITE_MASK
+		PROCESSORSTATE_BINDREAD_MASK
+		PROCESSORSTATE_BINDWRITE_MASK
+		PROCESSORSTATE_HEADER_MASK
+		PROCESSORSTATE_CDR_MASK))
+
+(defun promoted-member-p (member base)
+  (lisp:and (eq base 'ivory)
+	    (member member *promoted-processorstate-members*)))
+
+;;; Conditional branches whose target names a trap/exception/miss path
+;;; are statically cold: wrap the condition in __builtin_expect so the
+;;; compiler lays the target out of line and optimizes the fall-through.
+;;; Generator-internal cold labels are gensymmed with the COLDL prefix
+;;; to be caught here.  "extrapop" is stripped before matching: the hot
+;;; DoBranch...ExtraPop handler family contains "trap" as a substring.
+(defun cold-branch-target-p (label)
+  (when *ab-disable-hints* (return-from cold-branch-target-p nil))
+  (let* ((name (string-downcase (string label)))
+	 (xp (search "extrapop" name))
+	 (name (if xp
+		   (concatenate 'string (subseq name 0 xp) (subseq name (+ xp 8)))
+		 name)))
+    (some #'(lambda (pat) (search pat name))
+	  '("exc" "trap" "miss" "illegal" "halt" "overflow"
+	    "suspend" "error" "coldl"))))
+
+;;; Emit a conditional branch; CONDITION is a parenthesized boolean C
+;;; expression.
+(defun emit-branch (destination condition label)
+  (if (cold-branch-target-p label)
+      (format destination "  if (__builtin_expect(~A, 0))~%    goto ~A;~%"
+	      condition (gotolabel label))
+    (format destination "  if (~A)~%    goto ~A;~%"
+	    condition (gotolabel label))))
+
 ; if number, return number+L, else return string
 (defun longnum (str)
   (if (numberp str)
@@ -1243,6 +1300,16 @@
 	 (format destination "  iFP = processor->fp;~%")
 	 (format destination "  iLP = processor->lp;~%"))
 
+	;; Expanded by the cache-ivory-state macro (intrpmac.lisp): load
+	;; the promoted init-constant PROCESSORSTATE fields into their C
+	;; locals.  Must run before any promoted LDQ site is reachable.
+	(RELOAD-PROMOTED-CONSTANTS
+	 (format destination "  /* reload promoted init-constant fields */~%")
+	 (dolist (m *promoted-processorstate-members*)
+	   (let ((f (fixarg m)))
+	     (format destination "  cached_~A = *(u64 *)&(processor->~A);~%"
+		     f f))))
+
 	(ADDL
 	 (check-comment arg4)
 	 (cond
@@ -1352,43 +1419,43 @@
 
 	(BEQ
 	 (check-comment arg3)
-	 (format destination "  if (~A == 0)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "(~A == 0)" (fixarg arg1)) arg2))
 
 	(BLE
 	 (check-comment arg3)
-	 (format destination "  if ((s64)~A <= 0)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "((s64)~A <= 0)" (fixarg arg1)) arg2))
 
 	(BLT
 	 (check-comment arg3)
-	 (format destination "  if ((s64)~A < 0)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "((s64)~A < 0)" (fixarg arg1)) arg2))
 
 	(BLBC
 	 (check-comment arg3)
-	 (format destination "  if ((~A & 1) == 0)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "((~A & 1) == 0)" (fixarg arg1)) arg2))
 
 	(BLBS
 	 (check-comment arg3)
-	 (format destination "  if (~A & 1)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "((~A & 1) != 0)" (fixarg arg1)) arg2))
 
 	(BGE
 	 (check-comment arg3)
-	 (format destination "  if ((s64)~A >= 0)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "((s64)~A >= 0)" (fixarg arg1)) arg2))
 
 	(BGT
 	 (check-comment arg3)
-	 (format destination "  if ((s64)~A > 0)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "((s64)~A > 0)" (fixarg arg1)) arg2))
 
 	(BNE
 	 (check-comment arg3)
-	 (format destination "  if (~A != 0)~%    goto ~A;~%"
-		 (fixarg arg1) (gotolabel arg2)))
+	 (emit-branch destination
+		      (format nil "(~A != 0)" (fixarg arg1)) arg2))
 
 	(BR
 	 (check-comment arg4)
@@ -1755,6 +1822,9 @@
 	 (check-comment arg4)
 	 (if (listp arg3)
 	     (setq arg3 (car arg3)))
+	 (if (promoted-member-p arg2 arg3)
+	     (format destination "  ~A = cached_~A;~%"
+		     (fixarg arg1) (fixarg arg2))
 	 (if (or (numberp arg2) (isconstant arg2))
 	     (if (eq arg2 0)
 		 (format destination "  ~A = *(u64 *)~A;~%"
@@ -1777,7 +1847,7 @@
 			   (fixarg arg1) (fixarg arg3) asmoffset))
 	       ;; normal case
 	       (format destination "  ~A = *(u64 *)&(~A->~A);~%"
-		       (fixarg arg1) ptr (fixarg arg2))))))
+		       (fixarg arg1) ptr (fixarg arg2)))))))
 
 	(LDQ_U
 	 (check-comment arg4)
@@ -2837,7 +2907,9 @@
 	 (wasincache (gensym))
 	 (incache (gensym))
 	 (notindirect (gensym))
-	 (decodeaction (gensym))
+	 ;; COLDL prefix: caught by cold-branch-target-p, so the hot-path
+	 ;; BLBS to the action-decode (trap) tail carries a cold hint
+	 (decodeaction (gensym "COLDL"))
 	 (decodecommontail (if #-memory-inline inlinep #+memory-inline nil
 			       (intern (concatenate 'string (string *function-being-processed*)
 						    "DECODE"))
@@ -2846,7 +2918,7 @@
 	 (checklookup (if canlookup (gensym) doaction))
 	 (checktransform (if cantransform (gensym) checklookup))
 	 (checkindirect (if canindirect (gensym) checktransform))
-	 (dbcachemiss (gensym))
+	 (dbcachemiss (gensym "COLDL"))
 	 (done (or done-label (gensym)))
 	 ;; readability
 	 (temp1 temp)

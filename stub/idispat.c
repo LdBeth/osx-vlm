@@ -28,7 +28,7 @@ g6022:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -37,7 +37,7 @@ g6022:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6024;
 
 g6023:
@@ -45,14 +45,14 @@ g6023:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6026;
+  if (((t8 & 1) != 0))
+    goto coldl6026;
 
 g6032:
   goto *(void *)r0; /* ret */
 
 memoryreaddatadecode:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6025;
 
 g6024:
@@ -64,8 +64,8 @@ g6024:
   arg5 = *(s32 *)(t5 + 4);
   goto g6023;
 
-g6026:
-  if ((t7 & 1) == 0)
+coldl6026:
+  if (((t7 & 1) == 0))
     goto g6025;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -86,7 +86,7 @@ g6025:
 
 g6029:
   t7 = t8 & MemoryActionTransform;
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g6028;
   arg5 = arg5 & ~63L;
   arg5 = arg5 | Type_ExternalValueCellPointer;
@@ -100,7 +100,7 @@ g6028:
 g6028:
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g6027;
   t5 = arg2 << 1;
   t7 = *(u64 *)&(processor->dbcbase);
@@ -119,13 +119,13 @@ g6028:
   /* Compare */
   t7 = (s32)((u32)arg2 - (u32)t5);
   /* Trap on miss */
-  if (t7 != 0)
-    goto g6031;
+  if ((t7 != 0))
+    goto coldl6031;
   /* Extract the pointer, and indirect */
   arg2 = (u32)arg6;
   goto g6022;
 
-g6031:
+coldl6031:
   goto dbcachemisstrap;
 #endif
 
@@ -165,20 +165,20 @@ g6033:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6035;
 
 g6034:
   t8 = t8 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6037;
+  if (((t8 & 1) != 0))
+    goto coldl6037;
 
 g6043:
   goto *(void *)r0; /* ret */
 
 memoryreadgeneraldecode:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6036;
 
 g6035:
@@ -190,7 +190,7 @@ g6035:
   arg5 = *(s32 *)(t5 + 4);
   goto g6034;
 
-g6037:
+coldl6037:
 
 g6036:
   /* Cycle-number -> table offset */
@@ -209,7 +209,7 @@ g6036:
 
 g6041:
   t6 = t8 & MemoryActionIndirect;
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6040;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -217,7 +217,7 @@ g6041:
 
 g6040:
   t7 = t8 & MemoryActionTransform;
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g6039;
   arg5 = arg5 & ~63L;
   arg5 = arg5 | Type_ExternalValueCellPointer;
@@ -231,7 +231,7 @@ g6039:
 g6039:
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g6038;
   t5 = arg2 << 1;
   t7 = *(u64 *)&(processor->dbcbase);
@@ -250,13 +250,13 @@ g6039:
   /* Compare */
   t7 = (s32)((u32)arg2 - (u32)t5);
   /* Trap on miss */
-  if (t7 != 0)
-    goto g6042;
+  if ((t7 != 0))
+    goto coldl6042;
   /* Extract the pointer, and indirect */
   arg2 = (u32)arg6;
   goto g6033;
 
-g6042:
+coldl6042:
   goto dbcachemisstrap;
 #endif
 
@@ -284,7 +284,7 @@ g6044:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->header_mask);
+  t8 = cached_header_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -293,7 +293,7 @@ g6044:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6046;
 
 g6045:
@@ -301,14 +301,14 @@ g6045:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6048;
+  if (((t8 & 1) != 0))
+    goto coldl6048;
 
 g6052:
   goto *(void *)r0; /* ret */
 
 memoryreadheaderdecode:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6047;
 
 g6046:
@@ -320,8 +320,8 @@ g6046:
   arg5 = *(s32 *)(t5 + 4);
   goto g6045;
 
-g6048:
-  if ((t7 & 1) == 0)
+coldl6048:
+  if (((t7 & 1) == 0))
     goto g6047;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -364,7 +364,7 @@ g6053:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->cdr_mask);
+  t8 = cached_cdr_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -373,7 +373,7 @@ g6053:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6055;
 
 g6054:
@@ -381,14 +381,14 @@ g6054:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6057;
+  if (((t8 & 1) != 0))
+    goto coldl6057;
 
 g6061:
   goto *(void *)r0; /* ret */
 
 memoryreadcdrdecode:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6056;
 
 g6055:
@@ -400,8 +400,8 @@ g6055:
   arg5 = *(s32 *)(t5 + 4);
   goto g6054;
 
-g6057:
-  if ((t7 & 1) == 0)
+coldl6057:
+  if (((t7 & 1) == 0))
     goto g6056;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -560,15 +560,15 @@ g6062:
   /* ready to remerge */
   arg2 = arg4 << 32;
   /* Zerotag means advance one HW */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto pcadvone;
   /* 2<<6 */
   arg1 = arg1 - 128;
   /* Tag=2 means backup one HW */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto pcbackone;
   /* Tag=1 means end of compiled function */
-  if ((s64)arg1 < 0)
+  if (((s64)arg1 < 0))
     goto pcendcf;
 
 pcadvtwo:
@@ -608,7 +608,7 @@ decodepackedword:
   /* Position for new data. */
   t11 = *(s32 *)&processor->meterpos;
   *(u32 *)&processor->metervalue = arg1;
-  if (arg4 != 0)
+  if ((arg4 != 0))
     goto g6063;
   arg2 = *(s32 *)&processor->metermask;
   /* position of the current data item */
@@ -702,7 +702,7 @@ maybeunpack:
   /* Position for new data. */
   arg1 = *(s32 *)&processor->meterpos;
   *(u32 *)&processor->metervalue = epc;
-  if (t12 != 0)
+  if ((t12 != 0))
     goto g6064;
   arg2 = *(s32 *)&processor->metermask;
   /* position of the current data item */
@@ -725,7 +725,7 @@ g6064:
   *(u32 *)&processor->metercount = t12;
 #endif
   /* B. if a packed instruction */
-  if ((s64)t10 >= 0)
+  if (((s64)t10 >= 0))
     goto decodepackedword;
   /* t11 is the fwdispatch index */
   t11 = (arg4 * 8) + fwdispatch;
@@ -745,7 +745,7 @@ enddecode:
   /* instruction interpretation stream, or whether to fill further */
   instn = instn + 1;
   /* If count is zero, resume */
-  if ((s64)count <= 0)
+  if (((s64)count <= 0))
     goto cachevalid;
   epc = instn << 1;
   /* decrement count */
@@ -757,7 +757,7 @@ enddecode:
   ecp = ecp + TWOCACHELINESIZE;
   t10 = ocp - t10;
   /* Still room for more */
-  if ((s64)t10 <= 0)
+  if (((s64)t10 <= 0))
     goto fillicache;
   goto cachevalid;
 
@@ -799,8 +799,17 @@ iinterpret:
   iSP = *(u64 *)&(processor->sp);
   iFP = *(u64 *)&(processor->fp);
   iLP = *(u64 *)&(processor->lp);
+  /* reload promoted init-constant fields */
+  cached_niladdress = *(u64 *)&(processor->niladdress);
+  cached_taddress = *(u64 *)&(processor->taddress);
+  cached_dataread_mask = *(u64 *)&(processor->dataread_mask);
+  cached_datawrite_mask = *(u64 *)&(processor->datawrite_mask);
+  cached_bindread_mask = *(u64 *)&(processor->bindread_mask);
+  cached_bindwrite_mask = *(u64 *)&(processor->bindwrite_mask);
+  cached_header_mask = *(u64 *)&(processor->header_mask);
+  cached_cdr_mask = *(u64 *)&(processor->cdr_mask);
   /* First time in iCP will be zero. */
-  if (iCP != 0)
+  if ((iCP != 0))
     goto INTERPRETINSTRUCTION;
   goto ICACHEMISS;
 
@@ -816,11 +825,11 @@ interpretinstructionpredicted:
   /* Grab the instruction/operand while stalled */
   arg3 = *(u64 *)&(((CACHELINEP)arg2)->instruction);
   t1 = iPC - t2;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto interpretinstructionforbranch;
   iCP = arg2;
   /* Stop the world! someone wants out. */
-  if (r0 != 0)
+  if ((r0 != 0))
     goto traporsuspendmachine;
   goto continuecurrentinstruction;
 
@@ -864,7 +873,7 @@ INTERPRETINSTRUCTION:
   /* Get the PC to check cache hit. */
   t2 = *(u64 *)&(((CACHELINEP)iCP)->pcdata);
   /* Stop the world! someone wants out. */
-  if (r0 != 0)
+  if ((r0 != 0))
     goto traporsuspendmachine;
   goto continuecurrentinstruction;
 

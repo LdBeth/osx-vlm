@@ -33,7 +33,7 @@ DoPopInstanceVariableFP:
   t4 = t1 - Type_Array;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto ivbadmap;
   /* Memory Read Internal */
 
@@ -48,7 +48,7 @@ g7002:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->header_mask);
+  t10 = cached_header_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -57,21 +57,21 @@ g7002:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7004;
 
 g7003:
   t9 = zero + 64;
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
-  if (t10 & 1)
-    goto g7006;
+  if (((t10 & 1) != 0))
+    goto coldl7006;
 
 g7011:
   t2 = t2 & Array_LengthMask;
   t5 = t2 - arg2;
   /* J. if mapping-table-index-out-of-bounds */
-  if ((s64)t5 <= 0)
+  if (((s64)t5 <= 0))
     goto ivbadindex;
   arg1 = arg1 + arg2;
   arg1 = arg1 + 1;
@@ -88,7 +88,7 @@ g7012:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->dataread_mask);
+  t10 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -97,7 +97,7 @@ g7012:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7014;
 
 g7013:
@@ -105,15 +105,15 @@ g7013:
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
   t2 = (u32)t2;
-  if (t10 & 1)
-    goto g7016;
+  if (((t10 & 1) != 0))
+    goto coldl7016;
 
 g7023:
   t3 = t2;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto popiviex;
   /* Self */
   arg1 = *(s32 *)(iFP + 24);
@@ -122,14 +122,14 @@ g7023:
   t5 = t6 - Type_Instance;
   /* Strip CDR code, low bits */
   t5 = t5 & 60;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto ivbadinst;
   /* Unshifted cdr code */
   t5 = t6 & 192;
   /* Check for CDR code 1 */
   t5 = t5 - 64;
   /* J. if CDR code is not 1 */
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7001;
 
 g7000:
@@ -157,7 +157,7 @@ g7024:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = arg1 - arg5;
-  t9 = *(u64 *)&(processor->datawrite_mask);
+  t9 = cached_datawrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -166,15 +166,15 @@ g7024:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g7026;
 
 g7025:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t9 & 1)
-    goto g7028;
+  if (((t9 & 1) != 0))
+    goto coldl7028;
 
 g7034:
   /* Merge cdr-code */
@@ -199,7 +199,7 @@ g7036:
     : : [val] "r"(t1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g7035;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -240,8 +240,8 @@ g7026:
   t4 = *(s32 *)(t6 + 4);
   goto g7025;
 
-g7028:
-  if ((t8 & 1) == 0)
+coldl7028:
+  if (((t8 & 1) == 0))
     goto g7027;
   /* Do the indirect thing */
   arg1 = (u32)t5;
@@ -268,7 +268,7 @@ g7031:
 g7031:
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g7030;
   t6 = arg1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
@@ -287,13 +287,13 @@ g7031:
   /* Compare */
   t8 = (s32)((u32)arg1 - (u32)t6);
   /* Trap on miss */
-  if (t8 != 0)
-    goto g7033;
+  if ((t8 != 0))
+    goto coldl7033;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t5;
   goto g7024;
 
-g7033:
+coldl7033:
   goto dbcachemisstrap;
 #endif
 
@@ -312,8 +312,8 @@ g7014:
   t1 = *(s32 *)(t7 + 4);
   goto g7013;
 
-g7016:
-  if ((t9 & 1) == 0)
+coldl7016:
+  if (((t9 & 1) == 0))
     goto g7015;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -334,7 +334,7 @@ g7015:
 
 g7020:
   t9 = t10 & MemoryActionTransform;
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7019;
   t1 = t1 & ~63L;
   t1 = t1 | Type_ExternalValueCellPointer;
@@ -348,7 +348,7 @@ g7019:
 g7019:
   t9 = t10 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7018;
   t7 = arg1 << 1;
   t9 = *(u64 *)&(processor->dbcbase);
@@ -367,13 +367,13 @@ g7019:
   /* Compare */
   t9 = (s32)((u32)arg1 - (u32)t7);
   /* Trap on miss */
-  if (t9 != 0)
-    goto g7022;
+  if ((t9 != 0))
+    goto coldl7022;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t2;
   goto g7012;
 
-g7022:
+coldl7022:
   goto dbcachemisstrap;
 #endif
 
@@ -392,8 +392,8 @@ g7004:
   t1 = *(s32 *)(t7 + 4);
   goto g7003;
 
-g7006:
-  if ((t9 & 1) == 0)
+coldl7006:
+  if (((t9 & 1) == 0))
     goto g7005;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -433,7 +433,7 @@ g7037:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->header_mask);
+  t10 = cached_header_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -442,7 +442,7 @@ g7037:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7039;
 
 g7038:
@@ -450,12 +450,12 @@ g7038:
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
   t2 = (u32)t2;
-  if (t10 & 1)
-    goto g7041;
+  if (((t10 & 1) != 0))
+    goto coldl7041;
 
 g7046:
   t5 = t5 - arg1;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7000;
   /* TagType. */
   t6 = t6 & 63;
@@ -476,8 +476,8 @@ g7039:
   t1 = *(s32 *)(t7 + 4);
   goto g7038;
 
-g7041:
-  if ((t9 & 1) == 0)
+coldl7041:
+  if (((t9 & 1) == 0))
     goto g7040;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -533,7 +533,7 @@ DoMovemInstanceVariableFP:
   t4 = t1 - Type_Array;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto ivbadmap;
   /* Memory Read Internal */
 
@@ -548,7 +548,7 @@ g7050:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->header_mask);
+  t10 = cached_header_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -557,21 +557,21 @@ g7050:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7052;
 
 g7051:
   t9 = zero + 64;
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
-  if (t10 & 1)
-    goto g7054;
+  if (((t10 & 1) != 0))
+    goto coldl7054;
 
 g7059:
   t2 = t2 & Array_LengthMask;
   t5 = t2 - arg2;
   /* J. if mapping-table-index-out-of-bounds */
-  if ((s64)t5 <= 0)
+  if (((s64)t5 <= 0))
     goto ivbadindex;
   arg1 = arg1 + arg2;
   arg1 = arg1 + 1;
@@ -588,7 +588,7 @@ g7060:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->dataread_mask);
+  t10 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -597,7 +597,7 @@ g7060:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7062;
 
 g7061:
@@ -605,15 +605,15 @@ g7061:
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
   t2 = (u32)t2;
-  if (t10 & 1)
-    goto g7064;
+  if (((t10 & 1) != 0))
+    goto coldl7064;
 
 g7071:
   t3 = t2;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto movemiviex;
   /* Self */
   arg1 = *(s32 *)(iFP + 24);
@@ -622,14 +622,14 @@ g7071:
   t5 = t6 - Type_Instance;
   /* Strip CDR code, low bits */
   t5 = t5 & 60;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto ivbadinst;
   /* Unshifted cdr code */
   t5 = t6 & 192;
   /* Check for CDR code 1 */
   t5 = t5 - 64;
   /* J. if CDR code is not 1 */
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7049;
 
 g7048:
@@ -655,7 +655,7 @@ g7072:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = arg1 - arg5;
-  t9 = *(u64 *)&(processor->datawrite_mask);
+  t9 = cached_datawrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -664,15 +664,15 @@ g7072:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g7074;
 
 g7073:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t9 & 1)
-    goto g7076;
+  if (((t9 & 1) != 0))
+    goto coldl7076;
 
 g7082:
   /* Merge cdr-code */
@@ -697,7 +697,7 @@ g7084:
     : : [val] "r"(t1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g7083;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -738,8 +738,8 @@ g7074:
   t4 = *(s32 *)(t6 + 4);
   goto g7073;
 
-g7076:
-  if ((t8 & 1) == 0)
+coldl7076:
+  if (((t8 & 1) == 0))
     goto g7075;
   /* Do the indirect thing */
   arg1 = (u32)t5;
@@ -766,7 +766,7 @@ g7079:
 g7079:
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g7078;
   t6 = arg1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
@@ -785,13 +785,13 @@ g7079:
   /* Compare */
   t8 = (s32)((u32)arg1 - (u32)t6);
   /* Trap on miss */
-  if (t8 != 0)
-    goto g7081;
+  if ((t8 != 0))
+    goto coldl7081;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t5;
   goto g7072;
 
-g7081:
+coldl7081:
   goto dbcachemisstrap;
 #endif
 
@@ -810,8 +810,8 @@ g7062:
   t1 = *(s32 *)(t7 + 4);
   goto g7061;
 
-g7064:
-  if ((t9 & 1) == 0)
+coldl7064:
+  if (((t9 & 1) == 0))
     goto g7063;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -832,7 +832,7 @@ g7063:
 
 g7068:
   t9 = t10 & MemoryActionTransform;
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7067;
   t1 = t1 & ~63L;
   t1 = t1 | Type_ExternalValueCellPointer;
@@ -846,7 +846,7 @@ g7067:
 g7067:
   t9 = t10 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7066;
   t7 = arg1 << 1;
   t9 = *(u64 *)&(processor->dbcbase);
@@ -865,13 +865,13 @@ g7067:
   /* Compare */
   t9 = (s32)((u32)arg1 - (u32)t7);
   /* Trap on miss */
-  if (t9 != 0)
-    goto g7070;
+  if ((t9 != 0))
+    goto coldl7070;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t2;
   goto g7060;
 
-g7070:
+coldl7070:
   goto dbcachemisstrap;
 #endif
 
@@ -890,8 +890,8 @@ g7052:
   t1 = *(s32 *)(t7 + 4);
   goto g7051;
 
-g7054:
-  if ((t9 & 1) == 0)
+coldl7054:
+  if (((t9 & 1) == 0))
     goto g7053;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -931,7 +931,7 @@ g7085:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->header_mask);
+  t10 = cached_header_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -940,7 +940,7 @@ g7085:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7087;
 
 g7086:
@@ -948,12 +948,12 @@ g7086:
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
   t2 = (u32)t2;
-  if (t10 & 1)
-    goto g7089;
+  if (((t10 & 1) != 0))
+    goto coldl7089;
 
 g7094:
   t5 = t5 - arg1;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7048;
   /* TagType. */
   t6 = t6 & 63;
@@ -974,8 +974,8 @@ g7087:
   t1 = *(s32 *)(t7 + 4);
   goto g7086;
 
-g7089:
-  if ((t9 & 1) == 0)
+coldl7089:
+  if (((t9 & 1) == 0))
     goto g7088;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -1031,7 +1031,7 @@ DoPushAddressInstanceVariableFP:
   t4 = t1 - Type_Array;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto ivbadmap;
   /* Memory Read Internal */
 
@@ -1046,7 +1046,7 @@ g7098:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->header_mask);
+  t10 = cached_header_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1055,21 +1055,21 @@ g7098:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7100;
 
 g7099:
   t9 = zero + 64;
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
-  if (t10 & 1)
-    goto g7102;
+  if (((t10 & 1) != 0))
+    goto coldl7102;
 
 g7107:
   t2 = t2 & Array_LengthMask;
   t5 = t2 - arg2;
   /* J. if mapping-table-index-out-of-bounds */
-  if ((s64)t5 <= 0)
+  if (((s64)t5 <= 0))
     goto ivbadindex;
   arg1 = arg1 + arg2;
   arg1 = arg1 + 1;
@@ -1086,7 +1086,7 @@ g7108:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->dataread_mask);
+  t10 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1095,7 +1095,7 @@ g7108:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7110;
 
 g7109:
@@ -1103,15 +1103,15 @@ g7109:
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
   t2 = (u32)t2;
-  if (t10 & 1)
-    goto g7112;
+  if (((t10 & 1) != 0))
+    goto coldl7112;
 
 g7119:
   t3 = t2;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto pushadiviex;
   /* Self */
   arg1 = *(s32 *)(iFP + 24);
@@ -1120,14 +1120,14 @@ g7119:
   t5 = t6 - Type_Instance;
   /* Strip CDR code, low bits */
   t5 = t5 & 60;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto ivbadinst;
   /* Unshifted cdr code */
   t5 = t6 & 192;
   /* Check for CDR code 1 */
   t5 = t5 - 64;
   /* J. if CDR code is not 1 */
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7097;
 
 g7096:
@@ -1165,8 +1165,8 @@ g7110:
   t1 = *(s32 *)(t7 + 4);
   goto g7109;
 
-g7112:
-  if ((t9 & 1) == 0)
+coldl7112:
+  if (((t9 & 1) == 0))
     goto g7111;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -1187,7 +1187,7 @@ g7111:
 
 g7116:
   t9 = t10 & MemoryActionTransform;
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7115;
   t1 = t1 & ~63L;
   t1 = t1 | Type_ExternalValueCellPointer;
@@ -1201,7 +1201,7 @@ g7115:
 g7115:
   t9 = t10 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g7114;
   t7 = arg1 << 1;
   t9 = *(u64 *)&(processor->dbcbase);
@@ -1220,13 +1220,13 @@ g7115:
   /* Compare */
   t9 = (s32)((u32)arg1 - (u32)t7);
   /* Trap on miss */
-  if (t9 != 0)
-    goto g7118;
+  if ((t9 != 0))
+    goto coldl7118;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t2;
   goto g7108;
 
-g7118:
+coldl7118:
   goto dbcachemisstrap;
 #endif
 
@@ -1245,8 +1245,8 @@ g7100:
   t1 = *(s32 *)(t7 + 4);
   goto g7099;
 
-g7102:
-  if ((t9 & 1) == 0)
+coldl7102:
+  if (((t9 & 1) == 0))
     goto g7101;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -1286,7 +1286,7 @@ g7120:
     : [val] "=r"(t1) : [adr] "r"(t9) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = arg1 - arg5;
-  t10 = *(u64 *)&(processor->header_mask);
+  t10 = cached_header_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1295,7 +1295,7 @@ g7120:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7122;
 
 g7121:
@@ -1303,12 +1303,12 @@ g7121:
   t10 = t10 >> (t1 & 63);
   t9 = t9 >> (t1 & 63);
   t2 = (u32)t2;
-  if (t10 & 1)
-    goto g7124;
+  if (((t10 & 1) != 0))
+    goto coldl7124;
 
 g7129:
   t5 = t5 - arg1;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7096;
   /* TagType. */
   t6 = t6 & 63;
@@ -1329,8 +1329,8 @@ g7122:
   t1 = *(s32 *)(t7 + 4);
   goto g7121;
 
-g7124:
-  if ((t9 & 1) == 0)
+coldl7124:
+  if (((t9 & 1) == 0))
     goto g7123;
   /* Do the indirect thing */
   arg1 = (u32)t2;
@@ -1386,7 +1386,7 @@ DoPushInstanceVariableOrderedFP:
   t3 = t1 - Type_Instance;
   /* Strip CDR code, low bits */
   t3 = t3 & 60;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto ivbadinst;
   arg1 = t2 + arg2;
   /* Memory Read Internal */
@@ -1402,7 +1402,7 @@ g7130:
     : [val] "=r"(t2) : [adr] "r"(t6) : "memory" : decodefault);
   /* Stack cache offset */
   t4 = arg1 - arg5;
-  t7 = *(u64 *)&(processor->dataread_mask);
+  t7 = cached_dataread_mask;
   /* In range? */
   t5 = ((u64)t4 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1411,15 +1411,15 @@ g7130:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t1) : [adr] "r"(t1) : "memory" : decodefault);
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7132;
 
 g7131:
   t6 = zero + 240;
   t7 = t7 >> (t2 & 63);
   t6 = t6 >> (t2 & 63);
-  if (t7 & 1)
-    goto g7134;
+  if (((t7 & 1) != 0))
+    goto coldl7134;
 
 g7141:
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1441,8 +1441,8 @@ g7132:
   t2 = *(s32 *)(t4 + 4);
   goto g7131;
 
-g7134:
-  if ((t6 & 1) == 0)
+coldl7134:
+  if (((t6 & 1) == 0))
     goto g7133;
   /* Do the indirect thing */
   arg1 = (u32)t1;
@@ -1463,7 +1463,7 @@ g7133:
 
 g7138:
   t6 = t7 & MemoryActionTransform;
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7137;
   t2 = t2 & ~63L;
   t2 = t2 | Type_ExternalValueCellPointer;
@@ -1477,7 +1477,7 @@ g7137:
 g7137:
   t6 = t7 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7136;
   t4 = arg1 << 1;
   t6 = *(u64 *)&(processor->dbcbase);
@@ -1496,13 +1496,13 @@ g7137:
   /* Compare */
   t6 = (s32)((u32)arg1 - (u32)t4);
   /* Trap on miss */
-  if (t6 != 0)
-    goto g7140;
+  if ((t6 != 0))
+    goto coldl7140;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t1;
   goto g7130;
 
-g7140:
+coldl7140:
   goto dbcachemisstrap;
 #endif
 
@@ -1543,7 +1543,7 @@ DoPopInstanceVariableOrderedFP:
   t3 = t1 - Type_Instance;
   /* Strip CDR code, low bits */
   t3 = t3 & 60;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto ivbadinst;
   arg1 = t2 + arg2;
   t1 = *(s32 *)iSP;
@@ -1564,7 +1564,7 @@ g7142:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = arg1 - arg5;
-  t9 = *(u64 *)&(processor->datawrite_mask);
+  t9 = cached_datawrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1573,15 +1573,15 @@ g7142:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g7144;
 
 g7143:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t9 & 1)
-    goto g7146;
+  if (((t9 & 1) != 0))
+    goto coldl7146;
 
 g7152:
   /* Merge cdr-code */
@@ -1606,7 +1606,7 @@ g7154:
     : : [val] "r"(t1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g7153;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -1632,8 +1632,8 @@ g7144:
   t4 = *(s32 *)(t6 + 4);
   goto g7143;
 
-g7146:
-  if ((t8 & 1) == 0)
+coldl7146:
+  if (((t8 & 1) == 0))
     goto g7145;
   /* Do the indirect thing */
   arg1 = (u32)t5;
@@ -1660,7 +1660,7 @@ g7149:
 g7149:
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g7148;
   t6 = arg1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
@@ -1679,13 +1679,13 @@ g7149:
   /* Compare */
   t8 = (s32)((u32)arg1 - (u32)t6);
   /* Trap on miss */
-  if (t8 != 0)
-    goto g7151;
+  if ((t8 != 0))
+    goto coldl7151;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t5;
   goto g7142;
 
-g7151:
+coldl7151:
   goto dbcachemisstrap;
 #endif
 
@@ -1726,7 +1726,7 @@ DoMovemInstanceVariableOrderedFP:
   t3 = t1 - Type_Instance;
   /* Strip CDR code, low bits */
   t3 = t3 & 60;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto ivbadinst;
   arg1 = t2 + arg2;
   t1 = *(s32 *)iSP;
@@ -1745,7 +1745,7 @@ g7155:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = arg1 - arg5;
-  t9 = *(u64 *)&(processor->datawrite_mask);
+  t9 = cached_datawrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1754,15 +1754,15 @@ g7155:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g7157;
 
 g7156:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t9 & 1)
-    goto g7159;
+  if (((t9 & 1) != 0))
+    goto coldl7159;
 
 g7165:
   /* Merge cdr-code */
@@ -1787,7 +1787,7 @@ g7167:
     : : [val] "r"(t1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g7166;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -1813,8 +1813,8 @@ g7157:
   t4 = *(s32 *)(t6 + 4);
   goto g7156;
 
-g7159:
-  if ((t8 & 1) == 0)
+coldl7159:
+  if (((t8 & 1) == 0))
     goto g7158;
   /* Do the indirect thing */
   arg1 = (u32)t5;
@@ -1841,7 +1841,7 @@ g7162:
 g7162:
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g7161;
   t6 = arg1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
@@ -1860,13 +1860,13 @@ g7162:
   /* Compare */
   t8 = (s32)((u32)arg1 - (u32)t6);
   /* Trap on miss */
-  if (t8 != 0)
-    goto g7164;
+  if ((t8 != 0))
+    goto coldl7164;
   /* Extract the pointer, and indirect */
   arg1 = (u32)t5;
   goto g7155;
 
-g7164:
+coldl7164:
   goto dbcachemisstrap;
 #endif
 
@@ -1904,7 +1904,7 @@ DoPushAddressInstanceVariableOrderedFP:
   t3 = t1 - Type_Instance;
   /* Strip CDR code, low bits */
   t3 = t3 & 60;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto ivbadinst;
   arg1 = t2 + arg2;
   t7 = Type_Locative;
@@ -1988,12 +1988,12 @@ begindoinstanceref:
   t1 = arg3 - Type_Instance;
   /* Strip CDR code, low bits */
   t1 = t1 & 60;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto ivrefbadinst;
   t1 = arg2 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto ivrefbadoffset;
   /* Memory Read Internal */
 
@@ -2008,7 +2008,7 @@ g7168:
     : [val] "=r"(t2) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg4 - t11;
-  t8 = *(u64 *)&(processor->header_mask);
+  t8 = cached_header_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2017,7 +2017,7 @@ g7168:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t1) : [adr] "r"(t1) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7170;
 
 g7169:
@@ -2025,8 +2025,8 @@ g7169:
   t8 = t8 >> (t2 & 63);
   t7 = t7 >> (t2 & 63);
   t1 = (u32)t1;
-  if (t8 & 1)
-    goto g7172;
+  if (((t8 & 1) != 0))
+    goto coldl7172;
 
 g7177:
   t1 = t1 - 1;
@@ -2043,7 +2043,7 @@ g7178:
     : [val] "=r"(t4) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = t1 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2052,28 +2052,28 @@ g7178:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7180;
 
 g7179:
   t7 = zero + 240;
   t8 = t8 >> (t4 & 63);
   t7 = t7 >> (t4 & 63);
-  if (t8 & 1)
-    goto g7182;
+  if (((t8 & 1) != 0))
+    goto coldl7182;
 
 g7189:
   t5 = t4 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto ivrefbadoffset;
   /* J. if offset <0 */
-  if ((s64)arg1 < 0)
+  if (((s64)arg1 < 0))
     goto ivrefbadoffset;
   t4 = arg1 - t2;
   /* J. if offset out of bounds */
-  if ((s64)t4 >= 0)
+  if (((s64)t4 >= 0))
     goto ivrefbadoffset;
   arg5 = arg1 + arg4;
   /* Memory Read Internal */
@@ -2092,7 +2092,7 @@ g7190:
     : [val] "=r"(t2) : [adr] "r"(t6) : "memory" : decodefault);
   /* Stack cache offset */
   t4 = arg5 - t4;
-  t7 = *(u64 *)&(processor->dataread_mask);
+  t7 = cached_dataread_mask;
   /* In range? */
   t5 = ((u64)t4 < (u64)t5) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2101,15 +2101,15 @@ g7190:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t1) : [adr] "r"(t1) : "memory" : decodefault);
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7192;
 
 g7191:
   t6 = zero + 240;
   t7 = t7 >> (t2 & 63);
   t6 = t6 >> (t2 & 63);
-  if (t7 & 1)
-    goto g7194;
+  if (((t7 & 1) != 0))
+    goto coldl7194;
 
 g7201:
   /* set CDR-NEXT */
@@ -2130,8 +2130,8 @@ g7192:
   t2 = *(s32 *)(t4 + 4);
   goto g7191;
 
-g7194:
-  if ((t6 & 1) == 0)
+coldl7194:
+  if (((t6 & 1) == 0))
     goto g7193;
   /* Do the indirect thing */
   arg5 = (u32)t1;
@@ -2152,7 +2152,7 @@ g7193:
 
 g7198:
   t6 = t7 & MemoryActionTransform;
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7197;
   t2 = t2 & ~63L;
   t2 = t2 | Type_ExternalValueCellPointer;
@@ -2166,7 +2166,7 @@ g7197:
 g7197:
   t6 = t7 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7196;
   t4 = arg5 << 1;
   t6 = *(u64 *)&(processor->dbcbase);
@@ -2185,13 +2185,13 @@ g7197:
   /* Compare */
   t6 = (s32)((u32)arg5 - (u32)t4);
   /* Trap on miss */
-  if (t6 != 0)
-    goto g7200;
+  if ((t6 != 0))
+    goto coldl7200;
   /* Extract the pointer, and indirect */
   arg5 = (u32)t1;
   goto g7190;
 
-g7200:
+coldl7200:
   goto dbcachemisstrap;
 #endif
 
@@ -2210,8 +2210,8 @@ g7180:
   t4 = *(s32 *)(t5 + 4);
   goto g7179;
 
-g7182:
-  if ((t7 & 1) == 0)
+coldl7182:
+  if (((t7 & 1) == 0))
     goto g7181;
   /* Do the indirect thing */
   t1 = (u32)t2;
@@ -2232,7 +2232,7 @@ g7181:
 
 g7186:
   t7 = t8 & MemoryActionTransform;
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g7185;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -2246,7 +2246,7 @@ g7185:
 g7185:
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g7184;
   t5 = t1 << 1;
   t7 = *(u64 *)&(processor->dbcbase);
@@ -2265,13 +2265,13 @@ g7185:
   /* Compare */
   t7 = (s32)((u32)t1 - (u32)t5);
   /* Trap on miss */
-  if (t7 != 0)
-    goto g7188;
+  if ((t7 != 0))
+    goto coldl7188;
   /* Extract the pointer, and indirect */
   t1 = (u32)t2;
   goto g7178;
 
-g7188:
+coldl7188:
   goto dbcachemisstrap;
 #endif
 
@@ -2290,8 +2290,8 @@ g7170:
   t2 = *(s32 *)(t5 + 4);
   goto g7169;
 
-g7172:
-  if ((t7 & 1) == 0)
+coldl7172:
+  if (((t7 & 1) == 0))
     goto g7171;
   /* Do the indirect thing */
   arg4 = (u32)t1;
@@ -2377,12 +2377,12 @@ begindoinstanceset:
   t1 = arg3 - Type_Instance;
   /* Strip CDR code, low bits */
   t1 = t1 & 60;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto ivrefbadinst3;
   t1 = arg2 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto ivrefbadoffset;
   /* Memory Read Internal */
 
@@ -2397,7 +2397,7 @@ g7202:
     : [val] "=r"(t2) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg4 - t11;
-  t8 = *(u64 *)&(processor->header_mask);
+  t8 = cached_header_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2406,7 +2406,7 @@ g7202:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t1) : [adr] "r"(t1) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7204;
 
 g7203:
@@ -2414,8 +2414,8 @@ g7203:
   t8 = t8 >> (t2 & 63);
   t7 = t7 >> (t2 & 63);
   t1 = (u32)t1;
-  if (t8 & 1)
-    goto g7206;
+  if (((t8 & 1) != 0))
+    goto coldl7206;
 
 g7211:
   t1 = t1 - 1;
@@ -2432,7 +2432,7 @@ g7212:
     : [val] "=r"(t4) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = t1 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2441,28 +2441,28 @@ g7212:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7214;
 
 g7213:
   t7 = zero + 240;
   t8 = t8 >> (t4 & 63);
   t7 = t7 >> (t4 & 63);
-  if (t8 & 1)
-    goto g7216;
+  if (((t8 & 1) != 0))
+    goto coldl7216;
 
 g7223:
   t5 = t4 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto ivrefbadoffset;
   /* J. if offset <0 */
-  if ((s64)arg1 < 0)
+  if (((s64)arg1 < 0))
     goto ivrefbadoffset;
   t4 = arg1 - t2;
   /* J. if offset out of bounds */
-  if ((s64)t4 >= 0)
+  if (((s64)t4 >= 0))
     goto ivrefbadoffset;
   arg5 = arg1 + arg4;
   t1 = *(s32 *)iSP;
@@ -2486,7 +2486,7 @@ g7224:
     : [val] "=r"(t3) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg5 - t11;
-  t8 = *(u64 *)&(processor->datawrite_mask);
+  t8 = cached_datawrite_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2495,15 +2495,15 @@ g7224:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t4) : [adr] "r"(t4) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7226;
 
 g7225:
   t7 = zero + 240;
   t8 = t8 >> (t3 & 63);
   t7 = t7 >> (t3 & 63);
-  if (t8 & 1)
-    goto g7228;
+  if (((t8 & 1) != 0))
+    goto coldl7228;
 
 g7234:
   /* Merge cdr-code */
@@ -2528,7 +2528,7 @@ g7236:
     : : [val] "r"(t1), [adr] "r"(t4), [tag] "r"(t3), [tadr] "r"(t5)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7235;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -2559,8 +2559,8 @@ g7226:
   t3 = *(s32 *)(t5 + 4);
   goto g7225;
 
-g7228:
-  if ((t7 & 1) == 0)
+coldl7228:
+  if (((t7 & 1) == 0))
     goto g7227;
   /* Do the indirect thing */
   arg5 = (u32)t4;
@@ -2587,7 +2587,7 @@ g7231:
 g7231:
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g7230;
   t5 = arg5 << 1;
   t7 = *(u64 *)&(processor->dbcbase);
@@ -2606,13 +2606,13 @@ g7231:
   /* Compare */
   t7 = (s32)((u32)arg5 - (u32)t5);
   /* Trap on miss */
-  if (t7 != 0)
-    goto g7233;
+  if ((t7 != 0))
+    goto coldl7233;
   /* Extract the pointer, and indirect */
   arg5 = (u32)t4;
   goto g7224;
 
-g7233:
+coldl7233:
   goto dbcachemisstrap;
 #endif
 
@@ -2631,8 +2631,8 @@ g7214:
   t4 = *(s32 *)(t5 + 4);
   goto g7213;
 
-g7216:
-  if ((t7 & 1) == 0)
+coldl7216:
+  if (((t7 & 1) == 0))
     goto g7215;
   /* Do the indirect thing */
   t1 = (u32)t2;
@@ -2653,7 +2653,7 @@ g7215:
 
 g7220:
   t7 = t8 & MemoryActionTransform;
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g7219;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -2667,7 +2667,7 @@ g7219:
 g7219:
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g7218;
   t5 = t1 << 1;
   t7 = *(u64 *)&(processor->dbcbase);
@@ -2686,13 +2686,13 @@ g7219:
   /* Compare */
   t7 = (s32)((u32)t1 - (u32)t5);
   /* Trap on miss */
-  if (t7 != 0)
-    goto g7222;
+  if ((t7 != 0))
+    goto coldl7222;
   /* Extract the pointer, and indirect */
   t1 = (u32)t2;
   goto g7212;
 
-g7222:
+coldl7222:
   goto dbcachemisstrap;
 #endif
 
@@ -2711,8 +2711,8 @@ g7204:
   t2 = *(s32 *)(t5 + 4);
   goto g7203;
 
-g7206:
-  if ((t7 & 1) == 0)
+coldl7206:
+  if (((t7 & 1) == 0))
     goto g7205;
   /* Do the indirect thing */
   arg4 = (u32)t1;
@@ -2796,12 +2796,12 @@ begindoinstanceloc:
   t1 = arg3 - Type_Instance;
   /* Strip CDR code, low bits */
   t1 = t1 & 60;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto ivrefbadinst;
   t1 = arg2 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto ivrefbadoffset;
   /* Memory Read Internal */
 
@@ -2816,7 +2816,7 @@ g7237:
     : [val] "=r"(t2) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg4 - t11;
-  t8 = *(u64 *)&(processor->header_mask);
+  t8 = cached_header_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2825,7 +2825,7 @@ g7237:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t1) : [adr] "r"(t1) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7239;
 
 g7238:
@@ -2833,8 +2833,8 @@ g7238:
   t8 = t8 >> (t2 & 63);
   t7 = t7 >> (t2 & 63);
   t1 = (u32)t1;
-  if (t8 & 1)
-    goto g7241;
+  if (((t8 & 1) != 0))
+    goto coldl7241;
 
 g7246:
   t1 = t1 - 1;
@@ -2851,7 +2851,7 @@ g7247:
     : [val] "=r"(t4) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = t1 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2860,28 +2860,28 @@ g7247:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7249;
 
 g7248:
   t7 = zero + 240;
   t8 = t8 >> (t4 & 63);
   t7 = t7 >> (t4 & 63);
-  if (t8 & 1)
-    goto g7251;
+  if (((t8 & 1) != 0))
+    goto coldl7251;
 
 g7258:
   t5 = t4 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto ivrefbadoffset;
   /* J. if offset <0 */
-  if ((s64)arg1 < 0)
+  if (((s64)arg1 < 0))
     goto ivrefbadoffset;
   t4 = arg1 - t2;
   /* J. if offset out of bounds */
-  if ((s64)t4 >= 0)
+  if (((s64)t4 >= 0))
     goto ivrefbadoffset;
   arg5 = arg1 + arg4;
   t7 = Type_Locative;
@@ -2909,8 +2909,8 @@ g7249:
   t4 = *(s32 *)(t5 + 4);
   goto g7248;
 
-g7251:
-  if ((t7 & 1) == 0)
+coldl7251:
+  if (((t7 & 1) == 0))
     goto g7250;
   /* Do the indirect thing */
   t1 = (u32)t2;
@@ -2931,7 +2931,7 @@ g7250:
 
 g7255:
   t7 = t8 & MemoryActionTransform;
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g7254;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -2945,7 +2945,7 @@ g7254:
 g7254:
   t7 = t8 & MemoryActionBinding;
   t6 = *(u64 *)&(processor->dbcmask);
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g7253;
   t5 = t1 << 1;
   t7 = *(u64 *)&(processor->dbcbase);
@@ -2964,13 +2964,13 @@ g7254:
   /* Compare */
   t7 = (s32)((u32)t1 - (u32)t5);
   /* Trap on miss */
-  if (t7 != 0)
-    goto g7257;
+  if ((t7 != 0))
+    goto coldl7257;
   /* Extract the pointer, and indirect */
   t1 = (u32)t2;
   goto g7247;
 
-g7257:
+coldl7257:
   goto dbcachemisstrap;
 #endif
 
@@ -2989,8 +2989,8 @@ g7239:
   t2 = *(s32 *)(t5 + 4);
   goto g7238;
 
-g7241:
-  if ((t7 & 1) == 0)
+coldl7241:
+  if (((t7 & 1) == 0))
     goto g7240;
   /* Do the indirect thing */
   arg4 = (u32)t1;

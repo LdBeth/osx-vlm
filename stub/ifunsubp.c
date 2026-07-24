@@ -68,19 +68,19 @@ begindoephemeralp:
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* J. if zone not ephemeral */
-  if (arg1 != 0)
+  if ((arg1 != 0))
     goto nonephem;
   /* J. if not a pointer */
-  if (t3 == 0)
+  if ((t3 == 0))
     goto nonephem;
-  t6 = *(u64 *)&(processor->taddress);
+  t6 = cached_taddress;
   /* push the data */
   *(u64 *)(iSP + 8) = t6;
   iSP = iSP + 8;
   goto cachevalid;
 
 nonephem:
-  t6 = *(u64 *)&(processor->niladdress);
+  t6 = cached_niladdress;
   /* push the data */
   *(u64 *)(iSP + 8) = t6;
   iSP = iSP + 8;
@@ -128,10 +128,10 @@ begindounsignedlessp:
   /* Get data from arg1 */
   t2 = *(s32 *)iSP;
   arg3 = arg3 >> 12;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   /* Get unsigned data from arg2 */
   t4 = (u32)arg1;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   /* 1 if no-pop, 0 if pop */
   arg3 = arg3 & 1;
   /* Unsigned arg1 */
@@ -154,10 +154,10 @@ DoUnsignedLesspIM:
   /* Get data from arg1 */
   t2 = *(s32 *)iSP;
   arg3 = arg3 >> 12;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   /* ... */
   t2 = (u32)t2;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   /* 1 if no-pop, 0 if pop */
   arg3 = arg3 & 1;
   /* t6:=arg2-arg1 unsigned */
@@ -225,17 +225,17 @@ begindoallocatelistblock:
   t5 = arg2 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7856;
   t4 = *(s32 *)&processor->lclength;
   t2 = (arg3 == t1) ? 1 : 0;
   /* Wrong area */
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g7857;
   /* Effectively an unsigned 32-bit compare */
   t2 = t4 - arg1;
   /* Insufficient cache */
-  if ((s64)t2 < 0)
+  if (((s64)t2 < 0))
     goto g7857;
   /* Fetch address */
   t1 = *(u64 *)&(processor->lcaddress);
@@ -256,7 +256,7 @@ begindoallocatelistblock:
   *(u32 *)&processor->lcaddress = t1;
   t3 = t3 & t4;
   /* Already above emulator mode */
-  if (t3 != 0)
+  if ((t3 != 0))
     goto NEXTINSTRUCTION;
   t3 = (u64)(16384) << 16;
   t4 = t4 | t3;
@@ -334,17 +334,17 @@ begindoallocatestructureblock:
   t5 = arg2 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7858;
   t4 = *(s32 *)&processor->sclength;
   t2 = (arg3 == t1) ? 1 : 0;
   /* Wrong area */
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g7859;
   /* Effectively an unsigned 32-bit compare */
   t2 = t4 - arg1;
   /* Insufficient cache */
-  if ((s64)t2 < 0)
+  if (((s64)t2 < 0))
     goto g7859;
   /* Fetch address */
   t1 = *(u64 *)&(processor->scaddress);
@@ -365,7 +365,7 @@ begindoallocatestructureblock:
   *(u32 *)&processor->scaddress = t1;
   t3 = t3 & t4;
   /* Already above emulator mode */
-  if (t3 != 0)
+  if ((t3 != 0))
     goto NEXTINSTRUCTION;
   t3 = (u64)(16384) << 16;
   t4 = t4 | t3;
@@ -586,7 +586,7 @@ begindostoreconditional:
   t2 = t1 - Type_Locative;
   /* Strip CDR code */
   t2 = t2 & 63;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto storecondiop;
   /* Read the location, checking write access */
   /* Memory Read Internal */
@@ -613,16 +613,16 @@ g7860:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7862;
 
 g7861:
-  t1 = *(u64 *)&(processor->dataread_mask);
+  t1 = cached_dataread_mask;
   t3 = zero + 240;
   t1 = t1 >> (t4 & 63);
   t3 = t3 >> (t4 & 63);
-  if (t1 & 1)
-    goto g7864;
+  if (((t1 & 1) != 0))
+    goto coldl7864;
 
 g7871:
   /* Check for data match - NOT */
@@ -630,13 +630,13 @@ g7871:
   /* Zero if tags match */
   t2 = arg3 ^ t4;
   /* Jump if data didn't match */
-  if (t1 != 0)
+  if ((t1 != 0))
     goto storecondnil;
   /* TagType. */
   /* Stip result of comparing CDR-CODEs */
   t2 = t2 & 63;
   /* Jump if tags don't match */
-  if (t2 != 0)
+  if ((t2 != 0))
     goto storecondnil;
   /* Strip CDR-CODE */
   t1 = arg2 & 63;
@@ -664,13 +664,13 @@ g7874:
     : : [val] "r"(arg1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t1)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7873;
 
 g7872:
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
-  t6 = *(u64 *)&(processor->taddress);
+  t6 = cached_taddress;
   /* push the data */
   *(u64 *)(iSP + 8) = t6;
   iSP = iSP + 8;
@@ -679,7 +679,7 @@ g7872:
 storecondnil:
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
-  t6 = *(u64 *)&(processor->niladdress);
+  t6 = cached_niladdress;
   /* push the data */
   *(u64 *)(iSP + 8) = t6;
   iSP = iSP + 8;
@@ -714,8 +714,8 @@ g7862:
   t4 = *(s32 *)(t1 + 4);
   goto g7861;
 
-g7864:
-  if ((t3 & 1) == 0)
+coldl7864:
+  if (((t3 & 1) == 0))
     goto g7863;
   /* Do the indirect thing */
   arg6 = (u32)t5;
@@ -736,7 +736,7 @@ g7863:
 
 g7868:
   t3 = t1 & MemoryActionTransform;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7867;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -750,7 +750,7 @@ g7867:
 g7867:
   t3 = t1 & MemoryActionBinding;
   t2 = *(u64 *)&(processor->dbcmask);
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7866;
   t1 = arg6 << 1;
   t3 = *(u64 *)&(processor->dbcbase);
@@ -769,13 +769,13 @@ g7867:
   /* Compare */
   t3 = (s32)((u32)arg6 - (u32)t1);
   /* Trap on miss */
-  if (t3 != 0)
-    goto g7870;
+  if ((t3 != 0))
+    goto coldl7870;
   /* Extract the pointer, and indirect */
   arg6 = (u32)t5;
   goto g7860;
 
-g7870:
+coldl7870:
   goto dbcachemisstrap;
 #endif
 
@@ -865,7 +865,7 @@ g7878:
     : : [val] "r"(arg1), [adr] "r"(t4), [tag] "r"(arg2), [tadr] "r"(t1)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7877;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -971,7 +971,7 @@ g7881:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g7883;
 
 g7882:
@@ -1001,7 +1001,7 @@ g7891:
     : : [val] "r"(arg1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g7890;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -1176,13 +1176,13 @@ begindojump:
   t5 = t3 - Type_EvenPC;
   /* Strip CDR code, low bits */
   t5 = t5 & 62;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto jexc;
   t4 = t4 << 1;
   iPC = t3 & 1;
   iPC = iPC + t4;
   t5 = t3 & 128;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto interpretinstructionforjump;
   /* Bit 39=1 indicates we need to update control reg */
   /* Get the cleanup bit */
@@ -1238,7 +1238,7 @@ DoCheckPreemptRequestFP:
   t2 = (t2 == 2) ? 1 : 0;
   t1 = t1 | t2;
   *(u32 *)&processor->interruptreg = t1;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto NEXTINSTRUCTION;
   *(u64 *)&processor->stop_interpreter = t1;
   goto NEXTINSTRUCTION;
@@ -1268,7 +1268,7 @@ DoHaltFP:
   t1 = t1 >> 30;
   /* t1 is zero iff we're in trap mode FEP */
   t1 = (s32)((u32)t1 + (u32)1);
-  if (t1 != 0)
+  if ((t1 != 0))
     goto haltexc;
   goto haltmachine;
 
@@ -1367,12 +1367,12 @@ begindoalu:
   t1 = arg2 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aluexc;
   t1 = arg3 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aluexc;
   arg5 = *(u64 *)&(processor->aluop);
   *(u64 *)&processor->aluoverflow = zero;
@@ -1380,7 +1380,7 @@ begindoalu:
   t1 = (arg5 == ALUFunction_Boolean) ? 1 : 0;
 
 g7954:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7895;
   /* Here if argument ALUFunctionBoolean */
   t10 = arg6 >> 10;
@@ -1389,14 +1389,14 @@ g7954:
   t1 = (t10 == Boole_Clear) ? 1 : 0;
 
 g7914:
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7896;
 
 g7897:
   t1 = (t10 == Boole_And) ? 1 : 0;
 
 g7915:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7898;
   /* Here if argument BooleAnd */
   t10 = arg4 & arg1;
@@ -1406,7 +1406,7 @@ g7898:
   t1 = (t10 == Boole_AndC1) ? 1 : 0;
 
 g7916:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7899;
   /* Here if argument BooleAndC1 */
   t10 = arg1 & ~arg4;
@@ -1416,7 +1416,7 @@ g7899:
   t1 = (t10 == Boole_2) ? 1 : 0;
 
 g7917:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7900;
   /* Here if argument Boole2 */
   t10 = arg1;
@@ -1426,7 +1426,7 @@ g7900:
   t1 = (t10 == Boole_AndC2) ? 1 : 0;
 
 g7918:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7901;
   /* Here if argument BooleAndC2 */
   t10 = arg4 & ~arg1;
@@ -1436,7 +1436,7 @@ g7901:
   t1 = (t10 == Boole_1) ? 1 : 0;
 
 g7919:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7902;
   /* Here if argument Boole1 */
   t10 = arg4;
@@ -1446,7 +1446,7 @@ g7902:
   t1 = (t10 == Boole_Xor) ? 1 : 0;
 
 g7920:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7903;
   /* Here if argument BooleXor */
   t10 = arg4 ^ arg1;
@@ -1456,7 +1456,7 @@ g7903:
   t1 = (t10 == Boole_Ior) ? 1 : 0;
 
 g7921:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7904;
   /* Here if argument BooleIor */
   t10 = arg4 | arg1;
@@ -1466,7 +1466,7 @@ g7904:
   t1 = (t10 == Boole_Nor) ? 1 : 0;
 
 g7922:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7905;
   /* Here if argument BooleNor */
   t10 = arg4 | arg1;
@@ -1477,7 +1477,7 @@ g7905:
   t1 = (t10 == Boole_Equiv) ? 1 : 0;
 
 g7923:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7906;
   /* Here if argument BooleEquiv */
   t10 = arg4 ^ arg1;
@@ -1488,7 +1488,7 @@ g7906:
   t1 = (t10 == Boole_C1) ? 1 : 0;
 
 g7924:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7907;
   /* Here if argument BooleC1 */
   t10 = ~arg4;
@@ -1498,7 +1498,7 @@ g7907:
   t1 = (t10 == Boole_OrC1) ? 1 : 0;
 
 g7925:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7908;
   /* Here if argument BooleOrC1 */
   t10 = arg1 | ~(arg4);
@@ -1508,7 +1508,7 @@ g7908:
   t1 = (t10 == Boole_C2) ? 1 : 0;
 
 g7926:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7909;
   /* Here if argument BooleC2 */
   t10 = ~arg1;
@@ -1518,7 +1518,7 @@ g7909:
   t1 = (t10 == Boole_OrC2) ? 1 : 0;
 
 g7927:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7910;
   /* Here if argument BooleOrC2 */
   t10 = arg4 & ~arg1;
@@ -1528,7 +1528,7 @@ g7910:
   t1 = (t10 == Boole_Nand) ? 1 : 0;
 
 g7928:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7911;
   /* Here if argument BooleNand */
   t10 = arg4 & arg1;
@@ -1538,7 +1538,7 @@ g7911:
   t1 = (t10 == Boole_Set) ? 1 : 0;
 
 g7929:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7896;
   /* Here if argument BooleSet */
   t10 = ~zero;
@@ -1551,7 +1551,7 @@ g7895:
   t1 = (arg5 == ALUFunction_Byte) ? 1 : 0;
 
 g7955:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7930;
   /* Here if argument ALUFunctionByte */
   /* Get rotate */
@@ -1565,7 +1565,7 @@ g7955:
   t4 = (t1 == ALUByteBackground_Op1) ? 1 : 0;
 
 g7937:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7933;
   /* Here if argument ALUByteBackgroundOp1 */
   t1 = arg4;
@@ -1580,7 +1580,7 @@ g7932:
   /* OP2 rotated */
   t10 = t10 | t4;
   /* Don't update rotate latch if not requested */
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g7931;
   *(u64 *)&processor->rotatelatch = t10;
 
@@ -1595,7 +1595,7 @@ g7931:
   t3 = (t4 == ALUByteFunction_Dpb) ? 1 : 0;
 
 g7942:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7939;
   /* Here if argument ALUByteFunctionDpb */
   /* Position mask */
@@ -1614,7 +1614,7 @@ g7930:
   t1 = (arg5 == ALUFunction_Adder) ? 1 : 0;
 
 g7956:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7943;
   /* Here if argument ALUFunctionAdder */
   t3 = arg6 >> 11;
@@ -1626,7 +1626,7 @@ g7956:
   t4 = (t3 == ALUAdderOp2_Op2) ? 1 : 0;
 
 g7951:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7946;
   /* Here if argument ALUAdderOp2Op2 */
   t1 = arg1;
@@ -1643,7 +1643,7 @@ g7945:
   /* Get the load-carry-in bit */
   t4 = arg6 >> 24;
   *(u64 *)&processor->aluoverflow = t3;
-  if ((t4 & 1) == 0)
+  if (((t4 & 1) == 0))
     goto g7944;
   /* Get the carry */
   t3 = (u32)(t10 >> ((4&7)*8));
@@ -1669,7 +1669,7 @@ g7943:
   t1 = (arg5 == ALUFunction_MultiplyDivide) ? 1 : 0;
 
 g7957:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7894;
   /* Here if argument ALUFunctionMultiplyDivide */
   /* This instruction has not been written yet. */
@@ -1690,7 +1690,7 @@ g7946:
   t4 = (t3 == ALUAdderOp2_Zero) ? 1 : 0;
 
 g7958:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7947;
   /* Here if argument ALUAdderOp2Zero */
   t1 = zero;
@@ -1700,7 +1700,7 @@ g7947:
   t4 = (t3 == ALUAdderOp2_Invert) ? 1 : 0;
 
 g7959:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7948;
   /* Here if argument ALUAdderOp2Invert */
   t1 = (s32)arg1;
@@ -1712,7 +1712,7 @@ g7948:
   t4 = (t3 == ALUAdderOp2_MinusOne) ? 1 : 0;
 
 g7960:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7945;
   /* Here if argument ALUAdderOp2MinusOne */
   t1 = ~zero;
@@ -1723,7 +1723,7 @@ g7939:
   t3 = (t4 == ALUByteFunction_Ldb) ? 1 : 0;
 
 g7961:
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g7938;
   goto g7938;
 
@@ -1731,7 +1731,7 @@ g7933:
   t4 = (t1 == ALUByteBackground_RotateLatch) ? 1 : 0;
 
 g7962:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7934;
   /* Here if argument ALUByteBackgroundRotateLatch */
   t1 = *(u64 *)&(processor->rotatelatch);
@@ -1741,7 +1741,7 @@ g7934:
   t4 = (t1 == ALUByteBackground_Zero) ? 1 : 0;
 
 g7963:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7932;
   /* Here if argument ALUByteBackgroundZero */
   t1 = zero;
@@ -2366,7 +2366,7 @@ ReadRegisterStackCacheDumpQuantum:
 
 
 ReadRegisterConstantNIL:
-  t5 = *(u64 *)&(processor->taddress);
+  t5 = cached_taddress;
   /* push the data */
   *(u64 *)(iSP + 8) = t5;
   iSP = iSP + 8;
@@ -2377,7 +2377,7 @@ ReadRegisterConstantNIL:
 
 
 ReadRegisterConstantT:
-  t5 = *(u64 *)&(processor->niladdress);
+  t5 = cached_niladdress;
   /* push the data */
   *(u64 *)(iSP + 8) = t5;
   iSP = iSP + 8;
@@ -2408,7 +2408,7 @@ WriteRegisterFP:
   t3 = ((u64)t2 < (u64)t1) ? 1 : 0;
   t1 = *(u64 *)&(processor->stackcachedata);
   /* J. if not in cache */
-  if (t3 == 0)
+  if ((t3 == 0))
     goto badregister;
   /* reconstruct SCA */
   t1 = (t2 * 8) + t1;
@@ -2435,7 +2435,7 @@ WriteRegisterLP:
   t3 = ((u64)t2 < (u64)t1) ? 1 : 0;
   t1 = *(u64 *)&(processor->stackcachedata);
   /* J. if not in cache */
-  if (t3 == 0)
+  if ((t3 == 0))
     goto badregister;
   /* reconstruct SCA */
   t1 = (t2 * 8) + t1;
@@ -2462,7 +2462,7 @@ WriteRegisterSP:
   t3 = ((u64)t2 < (u64)t1) ? 1 : 0;
   t1 = *(u64 *)&(processor->stackcachedata);
   /* J. if not in cache */
-  if (t3 == 0)
+  if ((t3 == 0))
     goto badregister;
   /* reconstruct SCA */
   t1 = (t2 * 8) + t1;
@@ -2568,7 +2568,7 @@ WriteRegisterPreemptRegister:
   arg3 = arg3 & 3;
   t3 = t3 | arg3;
   *(u32 *)&processor->interruptreg = t3;
-  if ((t3 & 1) == 0)
+  if (((t3 & 1) == 0))
     goto NEXTINSTRUCTION;
   *(u64 *)&processor->stop_interpreter = t3;
   goto NEXTINSTRUCTION;
@@ -2820,11 +2820,20 @@ DoCoprocessorReadFP:
   iSP = *(u64 *)&(processor->sp);
   iFP = *(u64 *)&(processor->fp);
   iLP = *(u64 *)&(processor->lp);
+  /* reload promoted init-constant fields */
+  cached_niladdress = *(u64 *)&(processor->niladdress);
+  cached_taddress = *(u64 *)&(processor->taddress);
+  cached_dataread_mask = *(u64 *)&(processor->dataread_mask);
+  cached_datawrite_mask = *(u64 *)&(processor->datawrite_mask);
+  cached_bindread_mask = *(u64 *)&(processor->bindread_mask);
+  cached_bindwrite_mask = *(u64 *)&(processor->bindwrite_mask);
+  cached_header_mask = *(u64 *)&(processor->header_mask);
+  cached_cdr_mask = *(u64 *)&(processor->cdr_mask);
   /* Long -1 is never a valid LISP value */
   t1 = zero + -1;
   t1 = (r0 == t1) ? 1 : 0;
   /* J. if CoprocessorRead exception return */
-  if (t1 != 0)
+  if ((t1 != 0))
     goto cpreadexc;
   iSP = iSP + 8;
   t1 = r0 << 26;
@@ -2864,7 +2873,7 @@ DoCoprocessorWriteFP:
   iSP = iSP - 8;
   t2 = zero + CoprocessorRegister_UnwindStackForRestartOrApply;
   t2 = arg1 - t2;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7966;
   /* Here if argument CoprocessorRegisterUnwindStackForRestartOrApply */
   /* peek at new continuation to look at tag */
@@ -2874,7 +2883,7 @@ DoCoprocessorWriteFP:
   t3 = t2 - Type_EvenPC;
   /* Strip CDR code, low bits */
   t3 = t3 & 62;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto unwindillegalcontinuation;
   /* Get new continuation */
   t1 = *(u64 *)iSP;
@@ -2893,7 +2902,7 @@ DoCoprocessorWriteFP:
   t3 = t2 - Type_Locative;
   /* Strip CDR code */
   t3 = t3 & 63;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto unwindillegalfp;
   /* Convert VMA to stack cache address */
   t2 = *(u64 *)&(processor->stackcachebasevma);
@@ -2912,7 +2921,7 @@ DoCoprocessorWriteFP:
   t3 = t2 - Type_Locative;
   /* Strip CDR code */
   t3 = t3 & 63;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto unwindillegallp;
   /* Convert VMA to stack cache address */
   t2 = *(u64 *)&(processor->stackcachebasevma);
@@ -2957,7 +2966,7 @@ DoCoprocessorWriteFP:
   t3 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t3 = t3 & 63;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto unwindillegalcontrol;
   /* Get new control register */
   t1 = *(s32 *)iSP;
@@ -2970,7 +2979,7 @@ DoCoprocessorWriteFP:
 g7966:
   t2 = zero + CoprocessorRegister_FlushIDCaches;
   t2 = arg1 - t2;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7967;
   /* Here if argument CoprocessorRegisterFlushIDCaches */
   /* We're about to flush the instruction cache so we can't rely */
@@ -3006,6 +3015,15 @@ g7966:
   iSP = *(u64 *)&(processor->sp);
   iFP = *(u64 *)&(processor->fp);
   iLP = *(u64 *)&(processor->lp);
+  /* reload promoted init-constant fields */
+  cached_niladdress = *(u64 *)&(processor->niladdress);
+  cached_taddress = *(u64 *)&(processor->taddress);
+  cached_dataread_mask = *(u64 *)&(processor->dataread_mask);
+  cached_datawrite_mask = *(u64 *)&(processor->datawrite_mask);
+  cached_bindread_mask = *(u64 *)&(processor->bindread_mask);
+  cached_bindwrite_mask = *(u64 *)&(processor->bindwrite_mask);
+  cached_header_mask = *(u64 *)&(processor->header_mask);
+  cached_cdr_mask = *(u64 *)&(processor->cdr_mask);
   /* Compute proper iCP after FlushCaches resets it. */
   goto ICACHEMISS;
   goto g7965;
@@ -3013,7 +3031,7 @@ g7966:
 g7967:
   t2 = zero + CoprocessorRegister_FlushCachesForVMA;
   t2 = arg1 - t2;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7968;
   /* Here if argument CoprocessorRegisterFlushCachesForVMA */
   /* Extract the VMA */
@@ -3043,7 +3061,7 @@ g7967:
   /* Is this VMA in the cache? */
   t3 = (t1 == t3) ? 1 : 0;
   /* No. */
-  if (t3 == 0)
+  if ((t3 == 0))
     goto dcwnotincache;
   /* Yes, flush it */
   *(u64 *)&((CACHELINEP)t2)->pcdata = zero;
@@ -3055,7 +3073,7 @@ dcwnotincache:
 g7968:
   t2 = zero + CoprocessorRegister_FlushHiddenArrayRegisters;
   t2 = arg1 - t2;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7969;
   /* Here if argument CoprocessorRegisterFlushHiddenArrayRegisters */
   /* Get the VMA of the new stack array */
@@ -3069,7 +3087,7 @@ g7968:
   t8 = *(u64 *)&(((ARRAYCACHEP)t7)->array);
   /* t8==1 iff cached array is ours */
   t8 = (arg2 == t8) ? 1 : 0;
-  if (t8 == 0)
+  if ((t8 == 0))
     goto arraynotincache;
   /* Flush it */
   *(u64 *)&((ARRAYCACHEP)t7)->array = zero;
@@ -3109,8 +3127,17 @@ g7969:
   iSP = *(u64 *)&(processor->sp);
   iFP = *(u64 *)&(processor->fp);
   iLP = *(u64 *)&(processor->lp);
+  /* reload promoted init-constant fields */
+  cached_niladdress = *(u64 *)&(processor->niladdress);
+  cached_taddress = *(u64 *)&(processor->taddress);
+  cached_dataread_mask = *(u64 *)&(processor->dataread_mask);
+  cached_datawrite_mask = *(u64 *)&(processor->datawrite_mask);
+  cached_bindread_mask = *(u64 *)&(processor->bindread_mask);
+  cached_bindwrite_mask = *(u64 *)&(processor->bindwrite_mask);
+  cached_header_mask = *(u64 *)&(processor->header_mask);
+  cached_cdr_mask = *(u64 *)&(processor->cdr_mask);
   /* J. if CoprocessorWrite exception return */
-  if (r0 == 0)
+  if ((r0 == 0))
     goto cpreadexc;
   goto g7965;
 
@@ -3162,7 +3189,7 @@ spinwheels:
 
 spinwheelaxis:
   arg1 = arg1 + -1;
-  if ((s64)arg1 > 0)
+  if (((s64)arg1 > 0))
     goto spinwheelaxis;
   goto *(void *)ra; /* ret */
 

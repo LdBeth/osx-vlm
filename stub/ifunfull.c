@@ -223,7 +223,7 @@ resumeemulated:
   iPC = (ivory * 4) - arg1;
   iPC = zero - iPC;
   iPC = iPC >> 1;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
   goto interpretinstructionforbranch;
 

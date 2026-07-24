@@ -144,7 +144,7 @@ g6959:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -153,15 +153,15 @@ g6959:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6961;
 
 g6960:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6963;
+  if (((t8 & 1) != 0))
+    goto coldl6963;
 
 g6970:
   /* TagType. */
@@ -177,8 +177,8 @@ g6970:
   *(u32 *)(arg1 + 4) = arg5;
   goto NEXTINSTRUCTION;
 
-g6963:
-  if ((t7 & 1) == 0)
+coldl6963:
+  if (((t7 & 1) == 0))
     goto g6962;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -205,7 +205,7 @@ doassoc:
 DoAssocSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindoassoc;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -247,7 +247,7 @@ begindoassoc:
   t1 = t1 & 63;
   /* Remove sign-extension */
   t2 = (u32)t2;
-  if (t5 & 1)
+  if (((t5 & 1) != 0))
     goto assocexc;
   t6 = zero;
   goto g6972;
@@ -263,9 +263,9 @@ assoccdr:
 g6972:
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6971;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6973;
   r0 = (u64)&&return0043;
   goto carcdrinternal;
@@ -275,7 +275,7 @@ return0043:
   t8 = (t7 == Type_List) ? 1 : 0;
 
 g6991:
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g6975;
   /* Here if argument TypeList */
   arg2 = t2;
@@ -294,7 +294,7 @@ g6976:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -303,15 +303,15 @@ g6976:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6978;
 
 g6977:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6980;
+  if (((t8 & 1) != 0))
+    goto coldl6980;
 
 g6987:
   /* TagType. */
@@ -321,12 +321,12 @@ g6987:
   t6 = (s32)((u32)arg4 - (u32)arg6);
   arg6 = arg1;
   /* J. if different */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto assoccdr;
   /* t5 zero if same tag */
   t5 = arg3 - t5;
   /* J. if tags different */
-  if (t5 != 0)
+  if ((t5 != 0))
     goto assoccdr;
   /* we found a match! */
   /* TagType. */
@@ -340,7 +340,7 @@ g6975:
   t8 = (t7 == Type_NIL) ? 1 : 0;
 
 g6992:
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g6988;
   /* Here if argument TypeNIL */
   goto assoccdr;
@@ -358,7 +358,7 @@ g6974:
 
 g6973:
   /* Return NIL */
-  t1 = *(u64 *)&(processor->niladdress);
+  t1 = cached_niladdress;
   /* push the data */
   *(u64 *)iSP = t1;
   goto NEXTINSTRUCTION;
@@ -372,8 +372,8 @@ assocexc:
   arg4 = 0;
   goto exception;
 
-g6980:
-  if ((t7 & 1) == 0)
+coldl6980:
+  if (((t7 & 1) == 0))
     goto g6979;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -410,7 +410,7 @@ domember:
 DoMemberSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindomember;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -452,7 +452,7 @@ begindomember:
   t1 = t1 & 63;
   /* Remove sign-extension */
   t2 = (u32)t2;
-  if (t5 & 1)
+  if (((t5 & 1) != 0))
     goto memberexc;
   t6 = zero;
   goto g6994;
@@ -471,9 +471,9 @@ g6994:
   arg1 = t2;
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6993;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6995;
   r0 = (u64)&&return0045;
   goto carcdrinternal;
@@ -483,12 +483,12 @@ return0045:
   /* t7=0 if data same */
   t7 = arg4 - t2;
   /* J. if different */
-  if (t7 != 0)
+  if ((t7 != 0))
     goto membercdr;
   /* t6 zero if same tag */
   t6 = arg3 - t5;
   /* J. if tags different */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto membercdr;
   /* we found a match! */
   *(u32 *)iSP = arg1;
@@ -498,7 +498,7 @@ return0045:
 
 g6995:
   /* Return NIL */
-  t1 = *(u64 *)&(processor->niladdress);
+  t1 = cached_niladdress;
   /* push the data */
   *(u64 *)iSP = t1;
   goto NEXTINSTRUCTION;
@@ -535,7 +535,7 @@ dorgetf:
 DoRgetfSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindorgetf;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -577,7 +577,7 @@ begindorgetf:
   t1 = t1 & 63;
   /* Remove sign-extension */
   t2 = (u32)t2;
-  if (t5 & 1)
+  if (((t5 & 1) != 0))
     goto rgetfexc;
   t6 = zero;
   goto g6997;
@@ -596,9 +596,9 @@ return0046:
 g6997:
   t5 = t1 - Type_NIL;
   /* Asked to stop, check for sequence break */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6996;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6998;
   r0 = (u64)&&return0047;
   goto carcdrinternal;
@@ -608,12 +608,12 @@ return0047:
   /* t7=0 if data same */
   t7 = arg4 - t2;
   /* J. if different */
-  if (t7 != 0)
+  if ((t7 != 0))
     goto rgetfcdr;
   /* t6 zero if same tag */
   t6 = arg3 - t5;
   /* J. if tags different */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto rgetfcdr;
   /* we found a match! */
   /* TagType. */
@@ -622,7 +622,7 @@ return0047:
   /* t5=0 if end of list */
   t5 = t1 - Type_NIL;
   /* after all this effort we lose! */
-  if (t5 == 0)
+  if ((t5 == 0))
     goto rgetfexc;
   t2 = arg6;
   r0 = (u64)&&return0048;
@@ -645,7 +645,7 @@ return0048:
 
 g6998:
   /* Return NIL */
-  arg2 = *(u64 *)&(processor->niladdress);
+  arg2 = cached_niladdress;
   *(u64 *)iSP = arg2;
   /* push the data */
   *(u64 *)(iSP + 8) = arg2;

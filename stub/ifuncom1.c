@@ -87,7 +87,7 @@ continuecurrentinstruction:
   /* Extract (8-bit, unsigned) operand */
   arg2 = (u8)(arg3 >> ((4&7)*8));
   /* PC didn't match, take a cache miss */
-  if (t2 != 0)
+  if ((t2 != 0))
     goto takeicachemiss;
   /* LP or Immediate mode */
   if (t4 & 1)
@@ -98,7 +98,7 @@ continuecurrentinstruction:
   /* Decrement the instruction count. */
   t4 = t4 - 1;
   /* J. if not reached stop point. */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g6080;
   /* put a breakpoint here to catch stops */
   zero = zero;
@@ -108,19 +108,19 @@ g6080:
   /* Trace instructions if requested. */
   t4 = *(u64 *)&(processor->trace_hook);
   /* J. if not tracing. */
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g6085;
   /* Record an instruction trace entry */
   t5 = *(s32 *)&t4->tracedata_recording_p;
   t6 = *(u64 *)&(t4->tracedata_start_pc);
   /* Jump if recording is on */
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6081;
   /* Turn recording on if at the start PC */
   t6 = (t6 == iPC) ? 1 : 0;
   *(u32 *)&t4->tracedata_recording_p = t6;
   /* Jump if not at the start PC */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6085;
 
 g6081:
@@ -163,7 +163,7 @@ g6081:
   /* Save trap indiciator */
   *(u32 *)&t5->tracerecord_trap_p = t6;
   /* Jump if didn't trap */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6082;
   t6 = *(u64 *)(iFP + 16);
   /* Zero flag to avoid false trap entries */
@@ -199,7 +199,7 @@ g6082:
   if (t7 == 0)
     t8 = zero;
   /* Jump if we don't need to print */
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g6083;
   *(u64 *)&processor->cp = iCP;
   *(u64 *)&processor->epc = iPC;
@@ -247,6 +247,15 @@ g6082:
   iSP = *(u64 *)&(processor->sp);
   iFP = *(u64 *)&(processor->fp);
   iLP = *(u64 *)&(processor->lp);
+  /* reload promoted init-constant fields */
+  cached_niladdress = *(u64 *)&(processor->niladdress);
+  cached_taddress = *(u64 *)&(processor->taddress);
+  cached_dataread_mask = *(u64 *)&(processor->dataread_mask);
+  cached_datawrite_mask = *(u64 *)&(processor->datawrite_mask);
+  cached_bindread_mask = *(u64 *)&(processor->bindread_mask);
+  cached_bindwrite_mask = *(u64 *)&(processor->bindwrite_mask);
+  cached_header_mask = *(u64 *)&(processor->header_mask);
+  cached_cdr_mask = *(u64 *)&(processor->cdr_mask);
   /* Claim we didn't wrap */
   t7 = zero;
 
@@ -254,7 +263,7 @@ g6083:
   /* Save next record pointer */
   *(u64 *)&t4->tracedata_current_entry = t5;
   /* Jump if we didn't wrap */
-  if (t7 == 0)
+  if ((t7 == 0))
     goto g6084;
   /* Set flag indicating that we wrapped */
   *(u32 *)&t4->tracedata_wrap_p = t7;
@@ -307,7 +316,7 @@ g6085:
   t7 = *(s32 *)&processor->meterpos;
   /* record a cache hit */
   t5 = t5 - 1;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6086;
   t8 = *(s32 *)&processor->metermask;
   /* position of the current data item */
@@ -332,7 +341,7 @@ g6086:
 #endif
 #ifdef DEBUGGING
   /* Just in case... */
-  if (t3 == 0)
+  if ((t3 == 0))
     goto haltmachine;
 #endif
   /* Jump to the handler */
@@ -401,7 +410,7 @@ DoBranchTrueFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto dobrpopelsepop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -411,13 +420,13 @@ DoBranchTrueFP:
 
 dobrpopelsepop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 8;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -453,7 +462,7 @@ DoBranchFalseFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto dobrnpopelsepop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -463,13 +472,13 @@ DoBranchFalseFP:
 
 dobrnpopelsepop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 8;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -498,10 +507,10 @@ DoReturnSingleFP:
   /* Clear cdr */
   arg3 = arg6 << 26;
   t3 = (u64)(12) << 16;
-  t1 = *(u64 *)&(processor->niladdress);
+  t1 = cached_niladdress;
   /* Clear cdr */
   arg3 = arg3 >> 26;
-  t2 = *(u64 *)&(processor->taddress);
+  t2 = cached_taddress;
   /* mask disposition bits */
   t3 = t3 & arg5;
   /* shift disposition bits into place */
@@ -525,7 +534,7 @@ returncommontail:
   t2 = *(s32 *)(iFP + 4);
   t7 = iCP;
   /* Need to cleanup frame first */
-  if (t1 != 0)
+  if ((t1 != 0))
     goto returnsinglecleanup;
   t3 = (u32)t3;
   t4 = *((s32 *)(&processor->continuation)+1);
@@ -534,7 +543,7 @@ returncommontail:
   /* check for instruction verification suite end-of-test */
   /* check for end of run */
   t6 = (s32)((u32)t2 - (u32)Type_NIL);
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6087;
 #endif
   /* Get saved control register */
@@ -542,7 +551,7 @@ returncommontail:
   /* TagType. */
   t2 = t2 & 63;
   /* Restore the PC. */
-  if (arg4 == 0)
+  if ((arg4 == 0))
     goto g6089;
   /* Assume even PC */
   iPC = t5 << 1;
@@ -587,22 +596,22 @@ g6090:
   /* ARG6 = stack-cache underflow */
   arg6 = ((u64)iFP < (u64)arg6) ? 1 : 0;
   /* arg4 -2=effect -1=value 0=return 1=multiple */
-  if (arg4 == 0)
+  if ((arg4 == 0))
     goto returnsinglereturn;
-  if ((arg4 & 1) == 0)
+  if (((arg4 & 1) == 0))
     goto returnsingleeffect;
   *(u64 *)(iSP + 8) = arg3;
   iSP = iSP + 8;
-  if ((s64)arg4 > 0)
+  if (((s64)arg4 > 0))
     goto returnsinglemultiple;
 
 returnsingleeffect:
 
 returnsingledone:
-  if (arg6 != 0)
+  if ((arg6 != 0))
     goto returnsingleunderflow;
   /* No prediction, validate cache */
-  if (t7 == 0)
+  if ((t7 == 0))
     goto interpretinstructionforbranch;
   iCP = t7;
   goto INTERPRETINSTRUCTION;
@@ -618,7 +627,7 @@ returnsinglemultiple:
   goto returnsingledone;
 
 returnsinglereturn:
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto returnsingledone;
   *(u64 *)(iSP + 8) = arg3;
   iSP = iSP + 8;
@@ -661,7 +670,7 @@ g6091:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -670,21 +679,21 @@ g6091:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6093;
 
 g6092:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6095;
+  if (((t8 & 1) != 0))
+    goto coldl6095;
 
 g6102:
   t5 = arg5 - Type_CompiledFunction;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto startcallagain;
   arg5 = Type_EvenPC;
   t7 = *((s32 *)(&processor->continuation)+1);
@@ -717,7 +726,7 @@ g6102:
   *(u32 *)&processor->continuation = arg6;
   *((u32 *)(&processor->continuation)+1) = arg5;
   *(u64 *)&processor->continuationcp = zero;
-  if (arg3 != 0)
+  if ((arg3 != 0))
     goto callindirectextra;
   goto cachevalid;
 
@@ -737,8 +746,8 @@ callindirectextra:
   *(u32 *)&processor->control = t1;
   goto cachevalid;
 
-g6095:
-  if ((t7 & 1) == 0)
+coldl6095:
+  if (((t7 & 1) == 0))
     goto g6094;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -790,7 +799,7 @@ finishcallmerge:
   t4 = (t6 * 8) + t4;
   t6 = ((s64)t3 <= (s64)t4) ? 1 : 0;
   /* We're done if new SCA is within bounds */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6103;
   /* 0 if not apply, 8 if apply */
   arg3 = arg3 & 8;
@@ -894,9 +903,9 @@ finishcallmerge:
   /* Check for overflow */
   t4 = ((s64)t1 < (s64)t3) ? 1 : 0;
   /* Jump if overflow */
-  if (t4 == 0)
+  if ((t4 == 0))
     goto stackoverflow;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
   /* Begin execution at the computed address */
   goto interpretinstructionforbranch;
@@ -935,7 +944,7 @@ DoEntryRestNotAcceptedFP:
   t2 = arg5 >> 27;
   /* The supplied args */
   t1 = arg5 & 255;
-  if (t2 & 1)
+  if (((t2 & 1) != 0))
     goto tracetrap;
   t3 = arg5 >> 17;
   /* Get the tag of the stack top. */
@@ -943,19 +952,19 @@ DoEntryRestNotAcceptedFP:
 
 g6106:
   /* J. if apply args */
-  if (t3 & 1)
+  if (((t3 & 1) != 0))
     goto g6104;
 
 g6105:
   /* t2=supplied-minimum */
   t2 = t1 - arg2;
   /* B. if too few args. */
-  if ((s64)t2 < 0)
+  if (((s64)t2 < 0))
     goto retryernatoofew;
   /* maximum-supplied */
   arg1 = arg4 - t1;
   /* B. if too many args. */
-  if ((s64)arg1 < 0)
+  if (((s64)arg1 < 0))
     goto retryernatoomany;
   /* Compute entry position and advance PC/CP accordingly. */
   /* get the next PC */
@@ -964,7 +973,7 @@ g6105:
   t3 = t2 << 1;
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* J. if index zero, no adjustment. */
-  if (t2 == 0)
+  if ((t2 == 0))
     goto INTERPRETINSTRUCTION;
   /* Compute the new address */
   iPC = iPC + t3;
@@ -975,7 +984,7 @@ g6105:
 applysupprna:
   arg1 = arg4 - t1;
   /* B. if too many args. */
-  if ((s64)arg1 <= 0)
+  if (((s64)arg1 <= 0))
     goto retryernatoomany;
   goto pullapplyargs;
 
@@ -993,7 +1002,7 @@ g6104:
   t4 = t4 & 63;
   t4 = t4 - Type_NIL;
   /* J. if apply args supplied not nil. */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto applysupprna;
   /* keep just the apply bit! */
   t3 = t3 & 1;
@@ -1016,7 +1025,7 @@ verifygenericarity:
   t11 = (u64)(2) << 16;
   t11 = t11 & arg2;
   /* not applying */
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g6107;
   /* 4 - argsize */
   arg1 = zero - arg5;
@@ -1043,7 +1052,7 @@ pullapplyargs:
   t5 = (t4 == Type_List) ? 1 : 0;
 
 g6136:
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6110;
   /* Here if argument TypeList */
   /* Stack cache offset */
@@ -1052,7 +1061,7 @@ g6136:
   t6 = ((u64)t5 < (u64)arg6) ? 1 : 0;
   t4 = *(u64 *)&(processor->stackcachedata);
   /* J. if not in cache */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6108;
   /* reconstruct SCA */
   t4 = (t5 * 8) + t4;
@@ -1068,7 +1077,7 @@ g6136:
   t6 = (arg6 * 8) + t6;
   t10 = ((s64)t5 <= (s64)t6) ? 1 : 0;
   /* We're done if new SCA is within bounds */
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g6117;
   /* Pop Stack. */
   iSP = iSP - 8;
@@ -1082,7 +1091,7 @@ g6111:
   t4 = t4 + 8;
   /* Extract CDR code. */
   t5 = t8 & 192;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6119;
   /* Here if argument 0 */
   /* set CDR-NEXT */
@@ -1092,7 +1101,7 @@ g6111:
   *(u32 *)(iSP + 12) = t5;
   iSP = iSP + 8;
   t5 = (t7 == arg1) ? 1 : 0;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6111;
   goto g6112;
 
@@ -1100,7 +1109,7 @@ g6119:
   t6 = (t5 == 64) ? 1 : 0;
 
 g6131:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6120;
   /* Here if argument 64 */
   /* set CDR-NEXT */
@@ -1129,7 +1138,7 @@ g6120:
   t6 = (t5 == 128) ? 1 : 0;
 
 g6132:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6121;
   /* Here if argument 128 */
   /* set CDR-NEXT */
@@ -1146,7 +1155,7 @@ g6132:
   t6 = (t5 == Type_List) ? 1 : 0;
 
 g6127:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6123;
   /* Here if argument TypeList */
   /* Stack cache offset */
@@ -1155,7 +1164,7 @@ g6127:
   t6 = ((u64)t5 < (u64)arg6) ? 1 : 0;
   t4 = *(u64 *)&(processor->stackcachedata);
   /* J. if not in cache */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6113;
   /* reconstruct SCA */
   t4 = (t5 * 8) + t4;
@@ -1165,7 +1174,7 @@ g6123:
   t6 = (t5 == Type_NIL) ? 1 : 0;
 
 g6128:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6124;
   /* Here if argument TypeNIL */
   goto g6114;
@@ -1194,7 +1203,7 @@ g6118:
 
 g6116:
   t5 = (t7 == arg1) ? 1 : 0;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6111;
 
 g6112:
@@ -1224,7 +1233,7 @@ g6115:
   *(u32 *)&processor->control = t5;
   iLP = (t7 * 8) + iLP;
   arg1 = arg1 - t7;
-  if ((s64)arg1 <= 0)
+  if (((s64)arg1 <= 0))
     goto INTERPRETINSTRUCTION;
   goto pullapplyargsslowly;
 
@@ -1232,7 +1241,7 @@ g6110:
   t5 = (t4 == Type_NIL) ? 1 : 0;
 
 g6137:
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6133;
   /* Here if argument TypeNIL */
   /* Get the control register */
@@ -1287,7 +1296,7 @@ g6138:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1296,15 +1305,15 @@ g6138:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6140;
 
 g6139:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6142;
+  if (((t8 & 1) != 0))
+    goto coldl6142;
 
 g6149:
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1318,8 +1327,8 @@ g6149:
   iSP = iSP + 8;
   goto cachevalid;
 
-g6142:
-  if ((t7 & 1) == 0)
+coldl6142:
+  if (((t7 & 1) == 0))
     goto g6141;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -1383,10 +1392,10 @@ begindozerop:
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   t6 = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   t1 = *(s32 *)(arg1 + 4);
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   t2 = *(s32 *)arg1;
   LDS(1, f1, *(u32 *)arg1 );
   /* Strip off any CDR code bits. */
@@ -1394,7 +1403,7 @@ begindozerop:
   t5 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g6155:
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6151;
   /* Here if argument TypeFixnum */
   iPC = t6;
@@ -1410,7 +1419,7 @@ g6151:
   t5 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g6156:
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6152;
   /* Here if argument TypeSingleFloat */
   iPC = t6;
@@ -1441,9 +1450,9 @@ g6150:
 #endif
 
 DoZeropIM:
-  t2 = *(u64 *)&(processor->taddress);
+  t2 = cached_taddress;
   iSP = iSP + 8;
-  t1 = *(u64 *)&(processor->niladdress);
+  t1 = cached_niladdress;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
   iCP = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   if (arg2 == 0)
@@ -1512,7 +1521,7 @@ doeq:
 DoEqSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindoeq;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -1535,9 +1544,9 @@ begindoeq:
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   arg3 = arg3 >> 12;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   /* load op2 */
   arg1 = *(u64 *)arg1;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -1570,7 +1579,7 @@ doaref1:
 DoAref1SP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto headdoaref1;
   /* SP-pop mode, TOS->arg1 */
   arg1 = arg6;
@@ -1613,23 +1622,23 @@ begindoaref1:
   t1 = arg1 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aref1illegal;
 
 aref1merge:
-  if (arg4 == 0)
+  if ((arg4 == 0))
     goto aref1regset;
   /* Cached array object. */
   t8 = *(u64 *)&(((ARRAYCACHEP)t7)->array);
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto reallyaref1exc;
   /* t8==1 iff cached array is ours. */
   t8 = (arg4 == t8) ? 1 : 0;
   /* Go and setup the array register. */
-  if (t8 == 0)
+  if ((t8 == 0))
     goto aref1regset;
 #ifdef SLOWARRAYS
   goto aref1regset;
@@ -1645,9 +1654,9 @@ aref1merge:
   t2 = ((u64)arg2 < (u64)t3) ? 1 : 0;
   t6 = t4 - t5;
   /* J. if event count ticked. */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto aref1regset;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto aref1bounds;
   arg5 = arg6 >> (Array_RegisterBytePackingPos & 63);
   arg4 = arg6 >> (Array_RegisterByteOffsetPos & 63);
@@ -1657,7 +1666,7 @@ aref1merge:
   arg6 = t8 & Array_RegisterElementTypeMask;
 
 aref1restart:
-  if (arg5 != 0)
+  if ((arg5 != 0))
     goto g6157;
   t1 = t9 + arg2;
 
@@ -1678,7 +1687,7 @@ g6165:
     : [val] "=r"(arg3) : [adr] "r"(t5) : "memory" : decodefault);
   /* Stack cache offset */
   t2 = t1 - t2;
-  t6 = *(u64 *)&(processor->dataread_mask);
+  t6 = cached_dataread_mask;
   /* In range? */
   t3 = ((u64)t2 < (u64)t3) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1687,7 +1696,7 @@ g6165:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t9) : [adr] "r"(t9) : "memory" : decodefault);
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g6167;
 
 g6166:
@@ -1695,17 +1704,17 @@ g6166:
   t6 = t6 >> (arg3 & 63);
   t5 = t5 >> (arg3 & 63);
   t9 = (u32)t9;
-  if (t6 & 1)
-    goto g6169;
+  if (((t6 & 1) != 0))
+    goto coldl6169;
 
 g6176:
-  if (arg5 != 0)
+  if ((arg5 != 0))
     goto g6159;
 
 g6160:
   r31 = r31 | r31;
   t1 = arg6 - 2;
-  if ((s64)t1 <= 0)
+  if (((s64)t1 <= 0))
     goto g6161;
   /* TagType. */
   arg3 = arg3 & 63;
@@ -1713,12 +1722,12 @@ g6160:
 g6162:
   *(u32 *)(iSP + 4) = arg3;
   t5 = (arg5 == 0) ? 1 : 0;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto case_others_7;
 
 case_0_1:
   r31 = r31 | r31;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g6163;
   *(u32 *)iSP = t9;
   goto NEXTINSTRUCTION;
@@ -1728,7 +1737,7 @@ case_2_2:
   r31 = r31 | r31;
   t5 = arg2 & 3;
   t6 = (u8)(t9 >> ((t5&7)*8));
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g6163;
   *(u32 *)iSP = t6;
   goto NEXTINSTRUCTION;
@@ -1744,7 +1753,7 @@ case_3_3:
   t6 = t9 >> (t5 & 63);
   /* byte masked */
   t6 = t6 & 15;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g6163;
   *(u32 *)iSP = t6;
   goto NEXTINSTRUCTION;
@@ -1759,7 +1768,7 @@ case_5_4:
   t6 = t9 >> (t5 & 63);
   /* byte masked */
   t6 = t6 & 1;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g6163;
   *(u32 *)iSP = t6;
   goto NEXTINSTRUCTION;
@@ -1770,7 +1779,7 @@ case_1_5:
   /* Bletch, it's a byte ref */
   t5 = t5 + t5;
   t6 = (u16)(t9 >> ((t5&7)*8));
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g6163;
   *(u32 *)iSP = t6;
   goto NEXTINSTRUCTION;
@@ -1779,15 +1788,15 @@ case_others_7:
   r31 = r31 | r31;
   t5 = (arg5 == 2) ? 1 : 0;
   t6 = (arg5 == 3) ? 1 : 0;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto case_2_2;
   t5 = (arg5 == 5) ? 1 : 0;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto case_3_3;
   t6 = (arg5 == 1) ? 1 : 0;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto case_5_4;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto case_1_5;
 
 case_4_6:
@@ -1801,7 +1810,7 @@ case_4_6:
   t6 = t9 >> (t5 & 63);
   /* byte masked */
   t6 = t6 & 3;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g6163;
   *(u32 *)iSP = t6;
   goto NEXTINSTRUCTION;
@@ -1818,19 +1827,19 @@ g6159:
   t1 = arg3 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g6164;
   goto g6160;
 
 g6161:
   arg3 = Type_Character;
-  if (arg6 & 1)
+  if (((arg6 & 1) != 0))
     goto g6162;
   arg3 = Type_Fixnum;
-  if (arg6 == 0)
+  if ((arg6 == 0))
     goto g6162;
-  t2 = *(u64 *)&(processor->niladdress);
-  t3 = *(u64 *)&(processor->taddress);
+  t2 = cached_niladdress;
+  t3 = cached_taddress;
   goto g6162;
 
 g6163:
@@ -1868,8 +1877,8 @@ g6167:
   arg3 = *(s32 *)(t2 + 4);
   goto g6166;
 
-g6169:
-  if ((t5 & 1) == 0)
+coldl6169:
+  if (((t5 & 1) == 0))
     goto g6168;
   /* Do the indirect thing */
   t1 = (u32)t9;
@@ -1890,7 +1899,7 @@ g6168:
 
 g6173:
   t5 = t6 & MemoryActionTransform;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6172;
   arg3 = arg3 & ~63L;
   arg3 = arg3 | Type_ExternalValueCellPointer;
@@ -1904,7 +1913,7 @@ g6172:
 g6172:
   t5 = t6 & MemoryActionBinding;
   t3 = *(u64 *)&(processor->dbcmask);
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6171;
   t2 = t1 << 1;
   t5 = *(u64 *)&(processor->dbcbase);
@@ -1923,13 +1932,13 @@ g6172:
   /* Compare */
   t5 = (s32)((u32)t1 - (u32)t2);
   /* Trap on miss */
-  if (t5 != 0)
-    goto g6175;
+  if ((t5 != 0))
+    goto coldl6175;
   /* Extract the pointer, and indirect */
   t1 = (u32)t9;
   goto g6165;
 
-g6175:
+coldl6175:
   goto dbcachemisstrap;
 #endif
 
@@ -1960,11 +1969,11 @@ DoTypeMemberFP:
   /* arg1 has operand preloaded. */
   /* Position the opcode */
   t6 = arg3 >> 6;
-  t4 = *(u64 *)&(processor->taddress);
+  t4 = cached_taddress;
   /* get op1's tag */
   arg4 = *(s32 *)(iSP + 4);
   t1 = 1;
-  t5 = *(u64 *)&(processor->niladdress);
+  t5 = cached_niladdress;
   /* Get pop-bit while stalled */
   t7 = arg3 >> 12;
   /* Get field-number*4 from the opcode */
@@ -2004,7 +2013,7 @@ dopointerplus:
 DoPointerPlusSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindopointerplus;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -2087,7 +2096,7 @@ DoLdbFP:
   /* Shift ARG1 left to get new high bits */
   t3 = arg4 << (arg2 & 63);
   /* Not a fixnum */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto ldbexception;
   t7 = zero + -2;
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -2119,7 +2128,7 @@ dosetsptoaddresssavetos:
 DoSetSpToAddressSaveTosSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindosetsptoaddresssavetos;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -2169,7 +2178,7 @@ dopop:
 DoPopSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindopop;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -2219,7 +2228,7 @@ domovem:
 DoMovemSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindomovem;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -2370,22 +2379,22 @@ g6179:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6181;
 
 g6180:
   t8 = t8 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6183;
+  if (((t8 & 1) != 0))
+    goto coldl6183;
 
 g6190:
   /* J. if no check for fixnum. */
-  if (t2 == 0)
+  if ((t2 == 0))
     goto mrdataok;
   t5 = arg5 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto mrnotfixnum;
 
 mrdataok:
@@ -2394,7 +2403,7 @@ mrdataok:
   if (t1 & 1)
    arg5 = arg1;
   /* J. if no reset CDR code */
-  if (t3 == 0)
+  if ((t3 == 0))
     goto mrcdrunch;
   /* TagType. */
   arg5 = arg5 & 63;
@@ -2414,7 +2423,7 @@ mrnotfixnum:
   arg2 = 5;
   goto illegaloperand;
 
-g6183:
+coldl6183:
 
 g6181:
   r0 = (u64)&&return0003;
@@ -2448,7 +2457,7 @@ DoBranchFP:
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -2499,7 +2508,7 @@ begindogenericdispatch:
   arg4 = *(s32 *)(iFP + 24);
   /* done if 2 or more arguments (plus 2 extra words) */
   arg5 = arg5 - 4;
-  if ((s64)arg5 < 0)
+  if (((s64)arg5 < 0))
     goto verifygenericarity;
   t1 = (u32)t1;
   arg4 = (u32)arg4;
@@ -2509,12 +2518,12 @@ return0004:
   t3 = t4 - Type_EvenPC;
   /* Strip CDR code, low bits */
   t3 = t3 & 62;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g6192;
   /* Strip CDR code */
   t3 = t6 & 63;
   t3 = t3 - Type_NIL;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g6191;
   *(u32 *)(iFP + 16) = t7;
   /* write the stack cache */
@@ -2559,7 +2568,7 @@ lookuphandler:
   t5 = arg3 - Type_Instance;
   /* Strip CDR code, low bits */
   t5 = t5 & 60;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6196;
   /* Don't clobber instance if it's forwarded */
   arg2 = arg4;
@@ -2576,7 +2585,7 @@ g6197:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->header_mask);
+  t8 = cached_header_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2585,7 +2594,7 @@ g6197:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6199;
 
 g6198:
@@ -2593,8 +2602,8 @@ g6198:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6201;
+  if (((t8 & 1) != 0))
+    goto coldl6201;
 
 g6206:
 
@@ -2613,7 +2622,7 @@ g6207:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2622,7 +2631,7 @@ g6207:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6209;
 
 g6208:
@@ -2630,15 +2639,15 @@ g6208:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6211;
+  if (((t8 & 1) != 0))
+    goto coldl6211;
 
 g6218:
   t2 = arg6;
   t5 = arg5 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6193;
   arg2 = arg2 + 1;
   /* Memory Read Internal */
@@ -2654,7 +2663,7 @@ g6219:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2663,7 +2672,7 @@ g6219:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6221;
 
 g6220:
@@ -2671,15 +2680,15 @@ g6220:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6223;
+  if (((t8 & 1) != 0))
+    goto coldl6223;
 
 g6230:
   t3 = arg6;
   t5 = arg5 - Type_Locative;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6194;
   arg2 = t2 & t1;
   t5 = arg2 << 1;
@@ -2705,7 +2714,7 @@ g6233:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2714,27 +2723,27 @@ g6233:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6235;
 
 g6234:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6237;
+  if (((t8 & 1) != 0))
+    goto coldl6237;
 
 g6244:
   /* TagType. */
   arg5 = arg5 & 63;
   t5 = (arg5 == Type_NIL) ? 1 : 0;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6231;
   t5 = (arg1 == arg5) ? 1 : 0;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g6232;
   t5 = (s32)((u32)t1 - (u32)arg6);
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6232;
 
 g6231:
@@ -2753,7 +2762,7 @@ g6245:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2762,7 +2771,7 @@ g6245:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6247;
 
 g6246:
@@ -2770,8 +2779,8 @@ g6246:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6249;
+  if (((t8 & 1) != 0))
+    goto coldl6249;
 
 g6256:
   t4 = arg5;
@@ -2791,7 +2800,7 @@ g6257:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2800,7 +2809,7 @@ g6257:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6259;
 
 g6258:
@@ -2808,8 +2817,8 @@ g6258:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6261;
+  if (((t8 & 1) != 0))
+    goto coldl6261;
 
 g6268:
   t6 = arg5;
@@ -2818,8 +2827,8 @@ g6268:
   sp = sp + 8;
   goto *(void *)r0; /* ret */
 
-g6261:
-  if ((t7 & 1) == 0)
+coldl6261:
+  if (((t7 & 1) == 0))
     goto g6260;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -2835,8 +2844,8 @@ return0005:
   r0 = *(u64 *)sp;
   goto g6268;
 
-g6249:
-  if ((t7 & 1) == 0)
+coldl6249:
+  if (((t7 & 1) == 0))
     goto g6248;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -2852,8 +2861,8 @@ return0006:
   r0 = *(u64 *)sp;
   goto g6256;
 
-g6237:
-  if ((t7 & 1) == 0)
+coldl6237:
+  if (((t7 & 1) == 0))
     goto g6236;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -2869,8 +2878,8 @@ return0007:
   r0 = *(u64 *)sp;
   goto g6244;
 
-g6223:
-  if ((t7 & 1) == 0)
+coldl6223:
+  if (((t7 & 1) == 0))
     goto g6222;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -2886,8 +2895,8 @@ return0008:
   r0 = *(u64 *)sp;
   goto g6230;
 
-g6211:
-  if ((t7 & 1) == 0)
+coldl6211:
+  if (((t7 & 1) == 0))
     goto g6210;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -2903,8 +2912,8 @@ return0009:
   r0 = *(u64 *)sp;
   goto g6218;
 
-g6201:
-  if ((t7 & 1) == 0)
+coldl6201:
+  if (((t7 & 1) == 0))
     goto g6200;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -2940,7 +2949,7 @@ g6269:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2949,7 +2958,7 @@ g6269:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6271;
 
 g6270:
@@ -2957,8 +2966,8 @@ g6270:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6273;
+  if (((t8 & 1) != 0))
+    goto coldl6273;
   goto g6195;
 
 g6193:
@@ -2971,8 +2980,8 @@ g6194:
   arg2 = 35;
   goto illegaloperand;
 
-g6273:
-  if ((t7 & 1) == 0)
+coldl6273:
+  if (((t7 & 1) == 0))
     goto g6272;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -3028,7 +3037,7 @@ begindosettag:
   t3 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t3 = t3 & 63;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto settagexc;
 #ifdef TRACING
   goto DoSetTagIM;
@@ -3116,7 +3125,7 @@ carinternal:
   t6 = (t5 == Type_List) ? 1 : 0;
 
 g6300:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6283;
   /* Here if argument TypeList */
 
@@ -3134,7 +3143,7 @@ g6284:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3143,7 +3152,7 @@ g6284:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6286;
 
 g6285:
@@ -3151,8 +3160,8 @@ g6285:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6288;
+  if (((t8 & 1) != 0))
+    goto coldl6288;
 
 g6295:
 
@@ -3166,14 +3175,14 @@ g6283:
   t6 = (t5 == Type_NIL) ? 1 : 0;
 
 g6301:
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6282;
 
 g6296:
   t6 = (t5 == Type_Locative) ? 1 : 0;
 
 g6302:
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6280;
 
 g6297:
@@ -3188,8 +3197,8 @@ g6297:
   arg4 = 0;
   goto listexception;
 
-g6288:
-  if ((t7 & 1) == 0)
+coldl6288:
+  if (((t7 & 1) == 0))
     goto g6287;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -3274,7 +3283,7 @@ cdrinternal:
   t6 = (t5 == Type_List) ? 1 : 0;
 
 g6338:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6306;
   /* Here if argument TypeList */
   /* Memory Read Internal */
@@ -3290,7 +3299,7 @@ g6307:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->cdr_mask);
+  t8 = cached_cdr_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3299,20 +3308,20 @@ g6307:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6309;
 
 g6308:
   t7 = zero + 192;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6311;
+  if (((t8 & 1) != 0))
+    goto coldl6311;
 
 g6316:
   /* Extract CDR code. */
   t5 = arg5 & 192;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6318;
   /* Here if argument 0 */
   /* Address of next position is CDR */
@@ -3331,14 +3340,14 @@ g6306:
   t6 = (t5 == Type_NIL) ? 1 : 0;
 
 g6339:
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6305;
 
 g6334:
   t6 = (t5 == Type_Locative) ? 1 : 0;
 
 g6340:
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6303;
 
 g6335:
@@ -3357,7 +3366,7 @@ g6318:
   t6 = (t5 == 128) ? 1 : 0;
 
 g6341:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6319;
   /* Here if argument 128 */
   arg2 = arg2 + 1;
@@ -3376,7 +3385,7 @@ g6320:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3385,7 +3394,7 @@ g6320:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6322;
 
 g6321:
@@ -3393,15 +3402,15 @@ g6321:
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t8 & 1)
-    goto g6324;
+  if (((t8 & 1) != 0))
+    goto coldl6324;
   goto g6304;
 
 g6319:
   t6 = (t5 == 64) ? 1 : 0;
 
 g6342:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6331;
   /* Here if argument 64 */
   arg6 = *(s32 *)&processor->niladdress;
@@ -3415,8 +3424,8 @@ g6331:
   arg2 = 15;
   goto illegaloperand;
 
-g6324:
-  if ((t7 & 1) == 0)
+coldl6324:
+  if (((t7 & 1) == 0))
     goto g6323;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -3432,8 +3441,8 @@ return0015:
   r0 = *(u64 *)sp;
   goto g6304;
 
-g6311:
-  if ((t7 & 1) == 0)
+coldl6311:
+  if (((t7 & 1) == 0))
     goto g6310;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -3472,14 +3481,14 @@ DoReadInternalRegisterFP:
   t3 = (s32)((u32)arg1 - (u32)512);
   t1 = *(u64 *)&(processor->internalregisterread1);
   /* We're in the 1000's */
-  if ((s64)t3 >= 0)
+  if (((s64)t3 >= 0))
     goto g6343;
   /* Keep only six bits */
   t3 = arg1 & 63;
   /* In range for the low registers? */
   t2 = ((s64)t3 <= (s64)42) ? 1 : 0;
   t3 = (t3 * 8) + t1;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto ReadRegisterError;
   t3 = *(u64 *)t3;
   /* Jump to the handler */
@@ -3489,7 +3498,7 @@ g6343:
   /* In range for the high registers? */
   t1 = ((s64)t3 <= (s64)33) ? 1 : 0;
   t3 = (t3 * 8) + t2;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto ReadRegisterError;
   t3 = *(u64 *)t3;
   /* Jump to the handler */
@@ -3524,14 +3533,14 @@ DoWriteInternalRegisterFP:
   t3 = (s32)((u32)arg1 - (u32)512);
   t1 = *(u64 *)&(processor->internalregisterwrite1);
   /* We're in the 1000's */
-  if ((s64)t3 >= 0)
+  if (((s64)t3 >= 0))
     goto g6344;
   /* Keep only six bits */
   t3 = arg1 & 63;
   /* In range for the low registers? */
   t2 = ((s64)t3 <= (s64)42) ? 1 : 0;
   t3 = (t3 * 8) + t1;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto WriteRegisterError;
   t3 = *(u64 *)t3;
   /* Jump to the handler */
@@ -3541,7 +3550,7 @@ g6344:
   /* In range for the high registers? */
   t1 = ((s64)t3 <= (s64)33) ? 1 : 0;
   t3 = (t3 * 8) + t2;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto WriteRegisterError;
   t3 = *(u64 *)t3;
   /* Jump to the handler */
@@ -3675,17 +3684,17 @@ g6348:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6350;
 
 g6349:
   t8 = t8 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6352;
+  if (((t8 & 1) != 0))
+    goto coldl6352;
 
 g6359:
   /* J. if we have to test for fixnump. */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g6345;
 
 g6346:
@@ -3716,7 +3725,7 @@ g6347:
   arg2 = 23;
   goto illegaloperand;
 
-g6352:
+coldl6352:
 
 g6350:
   r0 = (u64)&&return0017;
@@ -3728,7 +3737,7 @@ g6345:
   t5 = arg5 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6347;
   goto g6346;
 
@@ -3873,7 +3882,7 @@ g6364:
     : : [val] "r"(t3), [adr] "r"(t6), [tag] "r"(t2), [tadr] "r"(t8)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g6363;
 
 g6362:
@@ -3928,15 +3937,15 @@ DoBranchTrueNoPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto NEXTINSTRUCTION;
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -3972,15 +3981,15 @@ DoBranchFalseNoPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto NEXTINSTRUCTION;
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -4072,7 +4081,7 @@ g6368:
   t3 = (t2 == Type_CompiledFunction) ? 1 : 0;
 
 g6417:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g6374;
   /* Here if argument TypeCompiledFunction */
 
@@ -4114,7 +4123,7 @@ startcallcompiledmerge:
   *(u32 *)&processor->continuation = arg6;
   *((u32 *)(&processor->continuation)+1) = arg5;
   *(u64 *)&processor->continuationcp = zero;
-  if (arg3 != 0)
+  if ((arg3 != 0))
     goto g6371;
   goto cachevalid;
 
@@ -4138,7 +4147,7 @@ g6374:
   t3 = (t2 == Type_GenericFunction) ? 1 : 0;
 
 g6418:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g6375;
   /* Here if argument TypeGenericFunction */
   arg3 = arg5;
@@ -4150,7 +4159,7 @@ g6375:
   t3 = (t2 == Type_Instance) ? 1 : 0;
 
 g6419:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g6376;
   /* Here if argument TypeInstance */
   arg3 = arg5;
@@ -4162,7 +4171,7 @@ g6376:
   t3 = (t2 == Type_Symbol) ? 1 : 0;
 
 g6420:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g6377;
   /* Here if argument TypeSymbol */
   arg6 = (u32)arg6;
@@ -4176,7 +4185,7 @@ g6377:
   t3 = (t2 == Type_LexicalClosure) ? 1 : 0;
 
 g6421:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g6378;
   /* Here if argument TypeLexicalClosure */
   arg2 = (u32)arg6;
@@ -4193,7 +4202,7 @@ g6379:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -4202,15 +4211,15 @@ g6379:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6381;
 
 g6380:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6383;
+  if (((t8 & 1) != 0))
+    goto coldl6383;
 
 g6390:
   arg3 = arg5;
@@ -4231,7 +4240,7 @@ g6391:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -4240,21 +4249,21 @@ g6391:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6393;
 
 g6392:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6395;
+  if (((t8 & 1) != 0))
+    goto coldl6395;
 
 g6402:
   t5 = arg5 - Type_CompiledFunction;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6368;
   goto g6370;
 
@@ -4281,7 +4290,7 @@ g6404:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -4290,21 +4299,21 @@ g6404:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g6406;
 
 g6405:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g6408;
+  if (((t8 & 1) != 0))
+    goto coldl6408;
 
 g6415:
   t3 = arg5 - Type_EvenPC;
   /* Strip CDR code, low bits */
   t3 = t3 & 63;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g6367;
   goto g6370;
 
@@ -4315,8 +4324,8 @@ g6367:
   arg2 = 51;
   goto illegaloperand;
 
-g6408:
-  if ((t7 & 1) == 0)
+coldl6408:
+  if (((t7 & 1) == 0))
     goto g6407;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -4330,8 +4339,8 @@ g6406:
 return0018:
   goto g6415;
 
-g6395:
-  if ((t7 & 1) == 0)
+coldl6395:
+  if (((t7 & 1) == 0))
     goto g6394;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -4345,8 +4354,8 @@ g6393:
 return0019:
   goto g6402;
 
-g6383:
-  if ((t7 & 1) == 0)
+coldl6383:
+  if (((t7 & 1) == 0))
     goto g6382;
   /* Do the indirect thing */
   arg2 = (u32)arg6;

@@ -1292,11 +1292,15 @@
 ;;; Macros to save and restore the cached state of the machine in the ivory object.
 
 (defmacro cache-ivory-state ()
+  ;; RELOAD-PROMOTED-CONSTANTS expands in emit-operation to the
+  ;; cached_<field> C local loads (see
+  ;; *promoted-processorstate-members* in process.lisp).
   `((LDQ iCP PROCESSORSTATE_CP (ivory))
     (LDQ iPC PROCESSORSTATE_EPC (ivory))
     (LDQ iSP PROCESSORSTATE_SP (ivory))
     (LDQ iFP PROCESSORSTATE_FP (ivory))
-    (LDQ iLP PROCESSORSTATE_LP (ivory))))
+    (LDQ iLP PROCESSORSTATE_LP (ivory))
+    (RELOAD-PROMOTED-CONSTANTS)))
 
 (defmacro decache-ivory-state ()
   `((STQ iCP PROCESSORSTATE_CP (ivory))

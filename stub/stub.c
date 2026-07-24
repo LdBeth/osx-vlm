@@ -576,6 +576,17 @@ int iInterpret (PROCESSORSTATEP ivoryp) {
   u64 VMSTATE_VOLATILE r20, r21, r22, r23, r24, r25, r26, r27=0, r29=0;
   u64 sp;
   u64 r31 = 0;
+
+  /* Init-constant PROCESSORSTATE fields promoted to locals (see
+     *promoted-processorstate-members* in stub/process.lisp): written
+     once by InitializeIvoryProcessor before iInterpret can run and
+     never stored to by emulated code, so the per-VM-access asm
+     "memory" clobbers cannot invalidate them.  Loaded by the
+     cache-ivory-state prologue below. */
+  u64 cached_niladdress = 0, cached_taddress = 0;
+  u64 cached_dataread_mask = 0, cached_datawrite_mask = 0,
+      cached_bindread_mask = 0, cached_bindwrite_mask = 0,
+      cached_header_mask = 0, cached_cdr_mask = 0;
   // 
   // jj
   //

@@ -18,14 +18,14 @@ traporsuspendmachine:
   t5 = zero;
   *(u64 *)&processor->please_stop = t5; /* lock */
   t5 = 1;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto collision;
   *(u64 *)&processor->stop_interpreter = zero;
 
 collision:
   /* t3<0>=1 if we've been asked to stop */
   t3 = CMPBGE(r0, HaltReason_IllInstn);
-  if (t3 & 1)
+  if (((t3 & 1) != 0))
     goto SUSPENDMACHINE;
   /* Here when someone wants the emulator to trap. */
   /* Extract PROCESSORSTATE_PLEASE_TRAP (ivory) */
@@ -35,12 +35,12 @@ collision:
   t3 = (r0 == TrapReason_HighPrioritySequenceBreak) ? 1 : 0;
 
 g8643:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g8639;
   /* Here if argument TrapReasonHighPrioritySequenceBreak */
   /* Only interrupts EXTRA-STACK and EMULATOR */
   t4 = ((u64)t4 <= (u64)TrapMode_ExtraStack) ? 1 : 0;
-  if (t4 == 0)
+  if ((t4 == 0))
     goto continuecurrentinstruction;
   goto highprioritysequencebreak;
 
@@ -48,11 +48,11 @@ g8639:
   t3 = (r0 == TrapReason_LowPrioritySequenceBreak) ? 1 : 0;
 
 g8644:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g8640;
   /* Here if argument TrapReasonLowPrioritySequenceBreak */
   /* Only interrupts EMULATOR */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto continuecurrentinstruction;
   goto lowprioritysequencebreak;
 
@@ -62,10 +62,10 @@ g8640:
   /* Get the preempt-pending bit */
   t5 = *(s32 *)&processor->interruptreg;
   /* Don't take preempt trap unless in emulator mode */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto continuecurrentinstruction;
   /* Jump if preempt request not pending */
-  if ((t5 & 1) == 0)
+  if (((t5 & 1) == 0))
     goto continuecurrentinstruction;
   goto preemptrequesttrap;
 

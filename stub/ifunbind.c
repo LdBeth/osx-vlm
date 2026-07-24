@@ -71,7 +71,7 @@ begindobindlocativetovalue:
   t1 = arg5 - Type_Locative;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto bindloctovaliop;
 #ifdef MINIMA
   t2 = arg3 >> 32;
@@ -80,7 +80,7 @@ begindobindlocativetovalue:
   arg4 = (u32)arg4;
   t1 = arg3 - arg4;
   /* J. if binding stack overflow */
-  if ((s64)t1 >= 0)
+  if (((s64)t1 >= 0))
     goto bindloctovalov;
   t3 = arg3 + 1;
 #ifdef MINIMA
@@ -88,7 +88,7 @@ begindobindlocativetovalue:
   t1 = t2 - Type_Locative;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto bindloctovaldeep;
 #endif
   t9 = *(s32 *)&processor->control;
@@ -109,7 +109,7 @@ g8388:
     : [val] "=r"(t2) : [adr] "r"(t6) : "memory" : decodefault);
   /* Stack cache offset */
   t4 = t8 - t4;
-  t7 = *(u64 *)&(processor->bindread_mask);
+  t7 = cached_bindread_mask;
   /* In range? */
   t5 = ((u64)t4 < (u64)t5) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -118,15 +118,15 @@ g8388:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t1) : [adr] "r"(t1) : "memory" : decodefault);
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8390;
 
 g8389:
   t6 = zero + 224;
   t7 = t7 >> (t2 & 63);
   t6 = t6 >> (t2 & 63);
-  if (t7 & 1)
-    goto g8392;
+  if (((t7 & 1) != 0))
+    goto coldl8392;
 
 g8397:
   t10 = t9 >> 19;
@@ -155,7 +155,7 @@ g8400:
     : : [val] "r"(arg6), [adr] "r"(t7), [tag] "r"(t11), [tadr] "r"(t4)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g8399;
 
 g8398:
@@ -180,7 +180,7 @@ g8403:
     : : [val] "r"(t1), [adr] "r"(t7), [tag] "r"(t2), [tadr] "r"(t4)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g8402;
 
 g8401:
@@ -201,7 +201,7 @@ g8404:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = arg6 - t6;
-  t10 = *(u64 *)&(processor->bindwrite_mask);
+  t10 = cached_bindwrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)t7) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -210,15 +210,15 @@ g8404:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g8406;
 
 g8405:
   t8 = zero + 224;
   t10 = t10 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t10 & 1)
-    goto g8408;
+  if (((t10 & 1) != 0))
+    goto coldl8408;
 
 g8413:
   /* Merge cdr-code */
@@ -245,7 +245,7 @@ g8416:
     : : [val] "r"(arg1), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8415;
 
 g8414:
@@ -306,8 +306,8 @@ g8406:
   t4 = *(s32 *)(t6 + 4);
   goto g8405;
 
-g8408:
-  if ((t8 & 1) == 0)
+coldl8408:
+  if (((t8 & 1) == 0))
     goto g8407;
   /* Do the indirect thing */
   arg6 = (u32)t5;
@@ -371,8 +371,8 @@ g8390:
   t2 = *(s32 *)(t4 + 4);
   goto g8389;
 
-g8392:
-  if ((t6 & 1) == 0)
+coldl8392:
+  if (((t6 & 1) == 0))
     goto g8391;
   /* Do the indirect thing */
   t8 = (u32)t1;
@@ -443,7 +443,7 @@ begindobindlocative:
   t1 = arg5 - Type_Locative;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto bindlociop;
 #ifdef MINIMA
   t2 = arg3 >> 32;
@@ -452,7 +452,7 @@ begindobindlocative:
   arg4 = (u32)arg4;
   t1 = arg3 - arg4;
   /* J. if binding stack overflow */
-  if ((s64)t1 >= 0)
+  if (((s64)t1 >= 0))
     goto bindlocov;
   t3 = arg3 + 1;
 #ifdef MINIMA
@@ -460,7 +460,7 @@ begindobindlocative:
   t1 = t2 - Type_Locative;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto bindlocdeep;
 #endif
   t9 = *(s32 *)&processor->control;
@@ -481,7 +481,7 @@ g8421:
     : [val] "=r"(t2) : [adr] "r"(t6) : "memory" : decodefault);
   /* Stack cache offset */
   t4 = t8 - t4;
-  t7 = *(u64 *)&(processor->bindread_mask);
+  t7 = cached_bindread_mask;
   /* In range? */
   t5 = ((u64)t4 < (u64)t5) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -490,15 +490,15 @@ g8421:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t1) : [adr] "r"(t1) : "memory" : decodefault);
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8423;
 
 g8422:
   t6 = zero + 224;
   t7 = t7 >> (t2 & 63);
   t6 = t6 >> (t2 & 63);
-  if (t7 & 1)
-    goto g8425;
+  if (((t7 & 1) != 0))
+    goto coldl8425;
 
 g8430:
   t10 = t9 >> 19;
@@ -527,7 +527,7 @@ g8433:
     : : [val] "r"(arg6), [adr] "r"(t7), [tag] "r"(t11), [tadr] "r"(t4)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g8432;
 
 g8431:
@@ -552,7 +552,7 @@ g8436:
     : : [val] "r"(t1), [adr] "r"(t7), [tag] "r"(t2), [tadr] "r"(t4)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g8435;
 
 g8434:
@@ -629,8 +629,8 @@ g8423:
   t2 = *(s32 *)(t4 + 4);
   goto g8422;
 
-g8425:
-  if ((t6 & 1) == 0)
+coldl8425:
+  if (((t6 & 1) == 0))
     goto g8424;
   /* Do the indirect thing */
   t8 = (u32)t1;
@@ -715,7 +715,7 @@ begindounbindn:
   t1 = arg2 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto unbindniop;
 #ifdef MINIMA
   /* BSP not a locative -> Deep-bound */
@@ -723,7 +723,7 @@ begindounbindn:
   t1 = t2 - Type_Locative;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto unbindndeep;
 #endif
   t11 = *(u64 *)&(processor->stackcachebasevma);
@@ -742,7 +742,7 @@ unbindntoploop:
   t3 = t4 & t2;
   /* Turn off the bit */
   t4 = t4 & ~t2;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g8439;
   /* Get the SP, ->op2 */
   t4 = *(u64 *)&(processor->restartsp);
@@ -764,7 +764,7 @@ g8440:
     : [val] "=r"(t7) : [adr] "r"(arg4) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t1 - t11;
-  arg5 = *(u64 *)&(processor->bindread_mask);
+  arg5 = cached_bindread_mask;
   /* In range? */
   arg3 = ((u64)t8 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -773,15 +773,15 @@ g8440:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t6) : [adr] "r"(t6) : "memory" : decodefault);
-  if (arg3 != 0)
+  if ((arg3 != 0))
     goto g8442;
 
 g8441:
   arg4 = zero + 224;
   arg5 = arg5 >> (t7 & 63);
   arg4 = arg4 >> (t7 & 63);
-  if (arg5 & 1)
-    goto g8444;
+  if (((arg5 & 1) != 0))
+    goto coldl8444;
 
 g8449:
   /* Memory Read Internal */
@@ -797,7 +797,7 @@ g8450:
     : [val] "=r"(t3) : [adr] "r"(arg4) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t5 - t11;
-  arg5 = *(u64 *)&(processor->bindread_mask);
+  arg5 = cached_bindread_mask;
   /* In range? */
   arg3 = ((u64)t8 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -806,7 +806,7 @@ g8450:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (arg3 != 0)
+  if ((arg3 != 0))
     goto g8452;
 
 g8451:
@@ -814,8 +814,8 @@ g8451:
   arg5 = arg5 >> (t3 & 63);
   arg4 = arg4 >> (t3 & 63);
   t2 = (u32)t2;
-  if (arg5 & 1)
-    goto g8454;
+  if (((arg5 & 1) != 0))
+    goto coldl8454;
 
 g8459:
   /* Memory Read Internal */
@@ -839,16 +839,16 @@ g8460:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg3) : [adr] "r"(arg3) : "memory" : decodefault);
-  if (arg5 != 0)
+  if ((arg5 != 0))
     goto g8462;
 
 g8461:
-  arg4 = *(u64 *)&(processor->bindwrite_mask);
+  arg4 = cached_bindwrite_mask;
   arg6 = zero + 224;
   arg4 = arg4 >> (t8 & 63);
   arg6 = arg6 >> (t8 & 63);
-  if (arg4 & 1)
-    goto g8464;
+  if (((arg4 & 1) != 0))
+    goto coldl8464;
 
 g8469:
   /* Merge cdr-code */
@@ -874,7 +874,7 @@ g8472:
   /* In range? */
   arg4 = ((u64)arg5 < (u64)arg4) ? 1 : 0;
   /* J. if in cache */
-  if (arg4 != 0)
+  if ((arg4 != 0))
     goto g8471;
 
 g8470:
@@ -888,14 +888,14 @@ g8470:
   *(u32 *)&processor->control = t4;
 
 unbindnendloop:
-  if ((s64)arg1 > 0)
+  if (((s64)arg1 > 0))
     goto unbindntoploop;
   t3 = *(s32 *)&processor->interruptreg;
   t4 = t3 & 2;
   t4 = (t4 == 2) ? 1 : 0;
   t3 = t3 | t4;
   *(u32 *)&processor->interruptreg = t3;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto NEXTINSTRUCTION;
   *(u64 *)&processor->stop_interpreter = t3;
   goto NEXTINSTRUCTION;
@@ -942,8 +942,8 @@ g8462:
   t8 = *(s32 *)(arg4 + 4);
   goto g8461;
 
-g8464:
-  if ((arg6 & 1) == 0)
+coldl8464:
+  if (((arg6 & 1) == 0))
     goto g8463;
   /* Do the indirect thing */
   t2 = (u32)arg3;
@@ -977,8 +977,8 @@ g8452:
   t3 = *(s32 *)(t8 + 4);
   goto g8451;
 
-g8454:
-  if ((arg4 & 1) == 0)
+coldl8454:
+  if (((arg4 & 1) == 0))
     goto g8453;
   /* Do the indirect thing */
   t5 = (u32)t2;
@@ -1012,8 +1012,8 @@ g8442:
   t7 = *(s32 *)(t8 + 4);
   goto g8441;
 
-g8444:
-  if ((arg4 & 1) == 0)
+coldl8444:
+  if (((arg4 & 1) == 0))
     goto g8443;
   /* Do the indirect thing */
   t1 = (u32)t6;
@@ -1093,7 +1093,7 @@ begindorestorebindingstack:
   t1 = arg2 - Type_Locative;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto restorebsiop;
 #ifdef MINIMA
   /* BSP not a locative -> Deep-bound */
@@ -1101,7 +1101,7 @@ begindorestorebindingstack:
   t1 = t2 - Type_Locative;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto restorebsdeep;
 #endif
   t1 = *(u64 *)&(processor->bindingstackpointer);
@@ -1120,7 +1120,7 @@ restorebstoploop:
   t3 = t4 & t2;
   /* Turn off the bit */
   t4 = t4 & ~t2;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g8473;
   /* Get the SP, ->op2 */
   t4 = *(u64 *)&(processor->restartsp);
@@ -1142,7 +1142,7 @@ g8474:
     : [val] "=r"(t7) : [adr] "r"(arg4) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t1 - t11;
-  arg5 = *(u64 *)&(processor->bindread_mask);
+  arg5 = cached_bindread_mask;
   /* In range? */
   arg3 = ((u64)t8 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1151,15 +1151,15 @@ g8474:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t6) : [adr] "r"(t6) : "memory" : decodefault);
-  if (arg3 != 0)
+  if ((arg3 != 0))
     goto g8476;
 
 g8475:
   arg4 = zero + 224;
   arg5 = arg5 >> (t7 & 63);
   arg4 = arg4 >> (t7 & 63);
-  if (arg5 & 1)
-    goto g8478;
+  if (((arg5 & 1) != 0))
+    goto coldl8478;
 
 g8483:
   /* Memory Read Internal */
@@ -1175,7 +1175,7 @@ g8484:
     : [val] "=r"(t3) : [adr] "r"(arg4) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t5 - t11;
-  arg5 = *(u64 *)&(processor->bindread_mask);
+  arg5 = cached_bindread_mask;
   /* In range? */
   arg3 = ((u64)t8 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1184,7 +1184,7 @@ g8484:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (arg3 != 0)
+  if ((arg3 != 0))
     goto g8486;
 
 g8485:
@@ -1192,8 +1192,8 @@ g8485:
   arg5 = arg5 >> (t3 & 63);
   arg4 = arg4 >> (t3 & 63);
   t2 = (u32)t2;
-  if (arg5 & 1)
-    goto g8488;
+  if (((arg5 & 1) != 0))
+    goto coldl8488;
 
 g8493:
   /* Memory Read Internal */
@@ -1217,16 +1217,16 @@ g8494:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg3) : [adr] "r"(arg3) : "memory" : decodefault);
-  if (arg5 != 0)
+  if ((arg5 != 0))
     goto g8496;
 
 g8495:
-  arg4 = *(u64 *)&(processor->bindwrite_mask);
+  arg4 = cached_bindwrite_mask;
   arg6 = zero + 224;
   arg4 = arg4 >> (t8 & 63);
   arg6 = arg6 >> (t8 & 63);
-  if (arg4 & 1)
-    goto g8498;
+  if (((arg4 & 1) != 0))
+    goto coldl8498;
 
 g8503:
   /* Merge cdr-code */
@@ -1252,7 +1252,7 @@ g8506:
   /* In range? */
   arg4 = ((u64)arg5 < (u64)arg4) ? 1 : 0;
   /* J. if in cache */
-  if (arg4 != 0)
+  if ((arg4 != 0))
     goto g8505;
 
 g8504:
@@ -1267,14 +1267,14 @@ g8504:
 
 restorebsendloop:
   arg4 = (s32)((u32)t1 - (u32)arg1);
-  if ((s64)arg4 > 0)
+  if (((s64)arg4 > 0))
     goto restorebstoploop;
   t3 = *(s32 *)&processor->interruptreg;
   t4 = t3 & 2;
   t4 = (t4 == 2) ? 1 : 0;
   t3 = t3 | t4;
   *(u32 *)&processor->interruptreg = t3;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto NEXTINSTRUCTION;
   *(u64 *)&processor->stop_interpreter = t3;
   goto NEXTINSTRUCTION;
@@ -1321,8 +1321,8 @@ g8496:
   t8 = *(s32 *)(arg4 + 4);
   goto g8495;
 
-g8498:
-  if ((arg6 & 1) == 0)
+coldl8498:
+  if (((arg6 & 1) == 0))
     goto g8497;
   /* Do the indirect thing */
   t2 = (u32)arg3;
@@ -1356,8 +1356,8 @@ g8486:
   t3 = *(s32 *)(t8 + 4);
   goto g8485;
 
-g8488:
-  if ((arg4 & 1) == 0)
+coldl8488:
+  if (((arg4 & 1) == 0))
     goto g8487;
   /* Do the indirect thing */
   t5 = (u32)t2;
@@ -1391,8 +1391,8 @@ g8476:
   t7 = *(s32 *)(t8 + 4);
   goto g8475;
 
-g8478:
-  if ((arg4 & 1) == 0)
+coldl8478:
+  if (((arg4 & 1) == 0))
     goto g8477;
   /* Do the indirect thing */
   t1 = (u32)t6;

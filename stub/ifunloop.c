@@ -33,16 +33,16 @@ DoBranchTrueElseNoPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto NEXTINSTRUCTION;
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 8;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -78,7 +78,7 @@ DoBranchTrueElseExtraPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto dobrelsepopextrapop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -88,13 +88,13 @@ DoBranchTrueElseExtraPopFP:
 
 dobrelsepopextrapop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 8;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -130,7 +130,7 @@ DoBranchFalseElseExtraPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto dobrnelsepopextrapop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -140,13 +140,13 @@ DoBranchFalseElseExtraPopFP:
 
 dobrnelsepopextrapop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 8;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -182,7 +182,7 @@ DoBranchFalseExtraPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto dobrnpopelsepopextrapop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -192,13 +192,13 @@ DoBranchFalseExtraPopFP:
 
 dobrnpopelsepopextrapop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 16;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -231,23 +231,23 @@ DoLoopDecrementTosFP:
   t3 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t3 = t3 & 63;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g6951;
   t3 = (s32)((u32)t2 - (u32)1);
   t4 = ((s64)t3 < (s64)t2) ? 1 : 0;
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g6953;
   t6 = Type_Fixnum;
   *(u32 *)iSP = t3;
   /* write the stack cache */
   *(u32 *)(iSP + 4) = t6;
-  if ((s64)t3 <= 0)
+  if (((s64)t3 <= 0))
     goto NEXTINSTRUCTION;
   /* Here if branch taken. */
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -256,7 +256,7 @@ g6951:
   t3 = t1 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t3 = t3 & 56;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g6952;
 
 g6953:
@@ -303,7 +303,7 @@ DoLoopIncrementTosLessThanFP:
   t5 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6954;
   /* Get arg1. */
   t4 = *(s32 *)(iSP + -8);
@@ -312,18 +312,18 @@ DoLoopIncrementTosLessThanFP:
   t5 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6955;
   t5 = (s32)((u32)t2 + (u32)1);
   t6 = ((s64)t2 <= (s64)t5) ? 1 : 0;
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g6956;
   t6 = Type_Fixnum;
   *(u32 *)iSP = t5;
   /* write the stack cache */
   *(u32 *)(iSP + 4) = t6;
   t6 = ((s64)t5 <= (s64)t4) ? 1 : 0;
-  if (t6 == 0)
+  if ((t6 == 0))
     goto NEXTINSTRUCTION;
   /* Here if branch taken. */
 
@@ -331,7 +331,7 @@ g6958:
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -340,14 +340,14 @@ g6954:
   t5 = t1 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t5 = t5 & 56;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6957;
 
 g6955:
   t5 = t3 - Type_Fixnum;
   /* Strip CDR code, low bits */
   t5 = t5 & 56;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g6957;
 
 g6956:
@@ -397,7 +397,7 @@ DoBranchTrueExtraPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto dobrpopelsepopextrapop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -407,13 +407,13 @@ DoBranchTrueExtraPopFP:
 
 dobrpopelsepopextrapop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 16;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -449,7 +449,7 @@ DoBranchTrueAndNoPopElseNoPopExtraPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto dobrextrapop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -459,13 +459,13 @@ DoBranchTrueAndNoPopElseNoPopExtraPopFP:
 
 dobrextrapop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 8;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;
@@ -501,7 +501,7 @@ DoBranchFalseAndNoPopElseNoPopExtraPopFP:
   t1 = t1 & 63;
   /* Compare to NIL */
   t1 = t1 - Type_NIL;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto dobrnextrapop;
   /* Here if branch not taken.  Pop the argument. */
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -511,13 +511,13 @@ DoBranchFalseAndNoPopElseNoPopExtraPopFP:
 
 dobrnextrapop:
   /* Can't branch to ourself */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto branchexception;
   iSP = iSP - 8;
   /* Update the PC in halfwords */
   iPC = iPC + arg1;
 #ifndef CACHEMETERING
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto interpretinstructionpredicted;
 #endif
   goto interpretinstructionforbranch;

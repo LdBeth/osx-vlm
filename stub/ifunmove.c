@@ -48,7 +48,7 @@ begindopushnnils:
   t5 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto pushnnbadop;
 #ifdef TRACING
   goto DoPushNNilsIM;
@@ -68,9 +68,9 @@ DoPushNNilsIM:
   t2 = (t4 * 8) + t2;
   t4 = ((s64)t1 <= (s64)t2) ? 1 : 0;
   /* We're done if new SCA is within bounds */
-  if (t4 == 0)
+  if ((t4 == 0))
     goto stackcacheoverflowhandler;
-  arg6 = *(u64 *)&(processor->niladdress);
+  arg6 = cached_niladdress;
   goto pushnnilsl2;
 
 pushnnilsl1:
@@ -80,7 +80,7 @@ pushnnilsl1:
   arg2 = arg2 - 1;
 
 pushnnilsl2:
-  if ((s64)arg2 > 0)
+  if (((s64)arg2 > 0))
     goto pushnnilsl1;
   goto NEXTINSTRUCTION;
 
@@ -149,7 +149,7 @@ begindopushaddresssprelative:
   t3 = (t2 == Type_Fixnum) ? 1 : 0;
 
 g7755:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7752;
   /* Here if argument TypeFixnum */
   arg1 = (arg1 * 8) + 8;
@@ -251,10 +251,10 @@ begindostackblt:
   /* Top of Stack Cache. */
   t7 = t3 - t5;
   /* J. if vma below stack cache */
-  if ((s64)t6 < 0)
+  if (((s64)t6 < 0))
     goto stkbltexc;
   /* J. if vma above stack cache */
-  if ((s64)t7 >= 0)
+  if (((s64)t7 >= 0))
     goto stkbltexc;
   /* Compute the stackcache address */
   t6 = (t6 * 8) + t1;
@@ -273,7 +273,7 @@ stkbltloopend:
   /* copy the word */
   *(u64 *)t6 = t1;
   /* J. if sourse not stack top */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto stkbltloop;
   /* Update the SP to point at the last written location */
   iSP = t6;
@@ -337,10 +337,10 @@ begindostackbltaddress:
   /* Top of Stack Cache. */
   t7 = t3 - t5;
   /* J. if vma below stack cache */
-  if ((s64)t6 < 0)
+  if (((s64)t6 < 0))
     goto stkbltadrexc;
   /* J. if vma above stack cache */
-  if ((s64)t7 >= 0)
+  if (((s64)t7 >= 0))
     goto stkbltadrexc;
   /* Compute the stackcache address */
   t6 = (t6 * 8) + t1;
@@ -359,7 +359,7 @@ stkbltaddloopend:
   /* copy the word */
   *(u64 *)t6 = t1;
   /* J. if sourse not stack top */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto stkbltaddloop;
   /* Update the SP to point at the last written location */
   iSP = t6;

@@ -50,7 +50,7 @@ begindopushlexicalvarn:
   t3 = t3 & ~4L;
   /* Compute the address of the lexical variable. */
   t1 = t1 + t4;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto pushlexvariop;
   arg5 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
@@ -68,7 +68,7 @@ g8050:
     : [val] "=r"(t2) : [adr] "r"(t6) : "memory" : decodefault);
   /* Stack cache offset */
   t4 = t1 - arg5;
-  t7 = *(u64 *)&(processor->dataread_mask);
+  t7 = cached_dataread_mask;
   /* In range? */
   t5 = ((u64)t4 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -77,15 +77,15 @@ g8050:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8052;
 
 g8051:
   t6 = zero + 240;
   t7 = t7 >> (t2 & 63);
   t6 = t6 >> (t2 & 63);
-  if (t7 & 1)
-    goto g8054;
+  if (((t7 & 1) != 0))
+    goto coldl8054;
 
 g8061:
   iPC = *(u64 *)&(((CACHELINEP)iCP)->nextpcdata);
@@ -112,8 +112,8 @@ g8052:
   t2 = *(s32 *)(t4 + 4);
   goto g8051;
 
-g8054:
-  if ((t6 & 1) == 0)
+coldl8054:
+  if (((t6 & 1) == 0))
     goto g8053;
   /* Do the indirect thing */
   t1 = (u32)t3;
@@ -134,7 +134,7 @@ g8053:
 
 g8058:
   t6 = t7 & MemoryActionTransform;
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g8057;
   t2 = t2 & ~63L;
   t2 = t2 | Type_ExternalValueCellPointer;
@@ -148,7 +148,7 @@ g8057:
 g8057:
   t6 = t7 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g8056;
   t4 = t1 << 1;
   t6 = *(u64 *)&(processor->dbcbase);
@@ -167,13 +167,13 @@ g8057:
   /* Compare */
   t6 = (s32)((u32)t1 - (u32)t4);
   /* Trap on miss */
-  if (t6 != 0)
-    goto g8060;
+  if ((t6 != 0))
+    goto coldl8060;
   /* Extract the pointer, and indirect */
   t1 = (u32)t3;
   goto g8050;
 
-g8060:
+coldl8060:
   goto dbcachemisstrap;
 #endif
 
@@ -236,7 +236,7 @@ begindopoplexicalvarn:
   t3 = t3 & ~4L;
   /* Compute the address of the lexical variable. */
   t1 = t1 + t4;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto poplexvariop;
   t3 = *(s32 *)iSP;
   t2 = *(s32 *)(iSP + 4);
@@ -259,7 +259,7 @@ g8062:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = t1 - arg5;
-  t9 = *(u64 *)&(processor->datawrite_mask);
+  t9 = cached_datawrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -268,15 +268,15 @@ g8062:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g8064;
 
 g8063:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t9 & 1)
-    goto g8066;
+  if (((t9 & 1) != 0))
+    goto coldl8066;
 
 g8072:
   /* Merge cdr-code */
@@ -301,7 +301,7 @@ g8074:
     : : [val] "r"(t3), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8073;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -332,8 +332,8 @@ g8064:
   t4 = *(s32 *)(t6 + 4);
   goto g8063;
 
-g8066:
-  if ((t8 & 1) == 0)
+coldl8066:
+  if (((t8 & 1) == 0))
     goto g8065;
   /* Do the indirect thing */
   t1 = (u32)t5;
@@ -360,7 +360,7 @@ g8069:
 g8069:
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g8068;
   t6 = t1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
@@ -379,13 +379,13 @@ g8069:
   /* Compare */
   t8 = (s32)((u32)t1 - (u32)t6);
   /* Trap on miss */
-  if (t8 != 0)
-    goto g8071;
+  if ((t8 != 0))
+    goto coldl8071;
   /* Extract the pointer, and indirect */
   t1 = (u32)t5;
   goto g8062;
 
-g8071:
+coldl8071:
   goto dbcachemisstrap;
 #endif
 
@@ -448,7 +448,7 @@ begindomovemlexicalvarn:
   t3 = t3 & ~4L;
   /* Compute the address of the lexical variable. */
   t1 = t1 + t4;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto movemlexvariop;
   t3 = *(s32 *)iSP;
   t2 = *(s32 *)(iSP + 4);
@@ -469,7 +469,7 @@ g8075:
     : [val] "=r"(t4) : [adr] "r"(t8) : "memory" : decodefault);
   /* Stack cache offset */
   t6 = t1 - arg5;
-  t9 = *(u64 *)&(processor->datawrite_mask);
+  t9 = cached_datawrite_mask;
   /* In range? */
   t7 = ((u64)t6 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -478,15 +478,15 @@ g8075:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g8077;
 
 g8076:
   t8 = zero + 240;
   t9 = t9 >> (t4 & 63);
   t8 = t8 >> (t4 & 63);
-  if (t9 & 1)
-    goto g8079;
+  if (((t9 & 1) != 0))
+    goto coldl8079;
 
 g8085:
   /* Merge cdr-code */
@@ -511,7 +511,7 @@ g8087:
     : : [val] "r"(t3), [adr] "r"(t5), [tag] "r"(t4), [tadr] "r"(t6)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8086;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -542,8 +542,8 @@ g8077:
   t4 = *(s32 *)(t6 + 4);
   goto g8076;
 
-g8079:
-  if ((t8 & 1) == 0)
+coldl8079:
+  if (((t8 & 1) == 0))
     goto g8078;
   /* Do the indirect thing */
   t1 = (u32)t5;
@@ -570,7 +570,7 @@ g8082:
 g8082:
   t8 = t9 & MemoryActionBinding;
   t7 = *(u64 *)&(processor->dbcmask);
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g8081;
   t6 = t1 << 1;
   t8 = *(u64 *)&(processor->dbcbase);
@@ -589,13 +589,13 @@ g8082:
   /* Compare */
   t8 = (s32)((u32)t1 - (u32)t6);
   /* Trap on miss */
-  if (t8 != 0)
-    goto g8084;
+  if ((t8 != 0))
+    goto coldl8084;
   /* Extract the pointer, and indirect */
   t1 = (u32)t5;
   goto g8075;
 
-g8084:
+coldl8084:
   goto dbcachemisstrap;
 #endif
 

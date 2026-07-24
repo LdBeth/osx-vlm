@@ -46,17 +46,17 @@ begindoeql:
   t3 = *(u64 *)iSP;
   /* Low part of EQ-NOT-EQL mask */
   t4 = zero + -2048;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   /* High part of EQ-NOT-EQL mask */
   t4 = t4 + ((u64)(1) << 16);
   /* Assume result will be T */
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   t5 = arg1 ^ t3;
   /* Shift left to lose CDRCODE. */
   t5 = t5 << 26;
   /* 1 if no-pop, 0 if pop */
   arg6 = arg6 & 1;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto eqldone;
   /* They are not EQ, if types different or not numeric return nil */
   /* Get the tag alone */
@@ -64,7 +64,7 @@ begindoeql:
   /* Now assume result will be NIL */
   t12 = t11;
   /* Return NIL if tags different */
-  if (t5 != 0)
+  if ((t5 != 0))
     goto eqldone;
   /* Get tag, check for numeric */
   t3 = t3 >> 32;
@@ -73,7 +73,7 @@ begindoeql:
   /* Type is now a bit mask */
   t4 = t4 >> (t3 & 63);
   /* If funny numeric type, exception */
-  if (t4 & 1)
+  if (((t4 & 1) != 0))
     goto eqlexc;
 
 eqldone:
@@ -96,10 +96,10 @@ DoEqlIM:
   /* Sign extension of arg2 is complete */
   arg2 = (s64)arg2 >> 56;
   t3 = (u32)t3;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   /* TagType. */
   t4 = t4 & 63;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   arg2 = (s32)((u32)t3 - (u32)arg2);
   t4 = t4 ^ Type_Fixnum;
   /* 1 if no-pop, 0 if pop */
@@ -138,7 +138,7 @@ dogreaterp:
 DoGreaterpSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindogreaterp;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -161,9 +161,9 @@ begindogreaterp:
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   t7 = arg3 >> 12;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   /* Get ARG1 tag */
   arg3 = (u32)(arg6 >> ((4&7)*8));
   /* t1 is tag of arg2 */
@@ -180,13 +180,13 @@ begindogreaterp:
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g7773:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7761;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g7765:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7756;
   /* Here if argument TypeFixnum */
   t2 = arg4 - arg2;
@@ -206,13 +206,13 @@ g7761:
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g7774:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7766;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g7770:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7756;
   /* Here if argument TypeSingleFloat */
 
@@ -244,10 +244,10 @@ g7760:
 #endif
 
 DoGreaterpIM:
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   /* First half of sign extension */
   arg2 = arg2 << 56;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   t7 = arg3 >> 12;
   arg3 = (u32)(arg6 >> ((4&7)*8));
   arg4 = (s32)arg6;
@@ -259,7 +259,7 @@ DoGreaterpIM:
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
 g7779:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7776;
   /* Here if argument TypeFixnum */
   t2 = arg4 - arg2;
@@ -300,7 +300,7 @@ dologtest:
 DoLogtestSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindologtest;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -323,9 +323,9 @@ begindologtest:
   /* arg1 has the operand address. */
   /* Compute operand address */
   arg1 = (arg2 * 8) + arg1;
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   t7 = arg3 >> 12;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   /* Get ARG1 tag */
   arg3 = (u32)(arg6 >> ((4&7)*8));
   arg2 = *(s32 *)arg1;
@@ -343,13 +343,13 @@ begindologtest:
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g7792:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7785;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g7789:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7782;
   /* Here if argument TypeFixnum */
   t2 = arg4 & arg2;
@@ -399,10 +399,10 @@ g7784:
 #endif
 
 DoLogtestIM:
-  t11 = *(u64 *)&(processor->niladdress);
+  t11 = cached_niladdress;
   /* First half of sign extension */
   arg2 = arg2 << 56;
-  t12 = *(u64 *)&(processor->taddress);
+  t12 = cached_taddress;
   t7 = arg3 >> 12;
   arg3 = (u32)(arg6 >> ((4&7)*8));
   arg4 = (s32)arg6;
@@ -414,7 +414,7 @@ DoLogtestIM:
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
 g7797:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7794;
   /* Here if argument TypeFixnum */
   t2 = arg4 & arg2;
@@ -454,13 +454,13 @@ equalnumbermmexc:
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g7815:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7803;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g7807:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7800;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -473,13 +473,13 @@ g7803:
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g7816:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7808;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g7812:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7800;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
@@ -530,13 +530,13 @@ lesspmmexc:
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g7834:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7822;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g7826:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7819;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -549,13 +549,13 @@ g7822:
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g7835:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7827;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g7831:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7819;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);
@@ -606,13 +606,13 @@ greaterpmmexc:
   t6 = (t5 == Type_Fixnum) ? 1 : 0;
 
 g7853:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7841;
   /* Here if argument TypeFixnum */
   t3 = (t4 == Type_SingleFloat) ? 1 : 0;
 
 g7845:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7838;
   /* Here if argument TypeSingleFloat */
   CVTLQ(1, f1, f31, 1, f1);
@@ -625,13 +625,13 @@ g7841:
   t6 = (t5 == Type_SingleFloat) ? 1 : 0;
 
 g7854:
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7846;
   /* Here if argument TypeSingleFloat */
   t3 = (t4 == Type_Fixnum) ? 1 : 0;
 
 g7850:
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7838;
   /* Here if argument TypeFixnum */
   CVTLQ(2, f2, f31, 2, f2);

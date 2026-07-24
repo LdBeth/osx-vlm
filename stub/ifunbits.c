@@ -50,12 +50,12 @@ begindologand:
   t6 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8088;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8089;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
@@ -107,7 +107,7 @@ DoLogandIM:
   t6 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8090;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
@@ -188,12 +188,12 @@ begindologior:
   t6 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8091;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8092;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
@@ -245,7 +245,7 @@ DoLogiorIM:
   t6 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8093;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
@@ -326,12 +326,12 @@ begindologxor:
   t6 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8094;
   t6 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8095;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
@@ -383,7 +383,7 @@ DoLogxorIM:
   t6 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t6 = t6 & 63;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8096;
   /* Here we know that both args are fixnums! */
   /* Do the operation */
@@ -484,25 +484,25 @@ begindoash:
   t2 = (t1 == Type_Fixnum) ? 1 : 0;
 
 g8109:
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g8102;
   /* Here if argument TypeFixnum */
   t4 = (t3 == Type_Fixnum) ? 1 : 0;
 
 g8106:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g8099;
   /* Here if argument TypeFixnum */
   /* B. if ash of zero -- trivial case */
-  if (arg4 == 0)
+  if ((arg4 == 0))
     goto zerash;
   /* B. if negative ash. */
-  if ((s64)arg1 <= 0)
+  if (((s64)arg1 <= 0))
     goto negash;
   /* Sign extend ARG1 before shifting. */
   arg4 = (s32)arg4;
   arg5 = arg1 - 32;
-  if ((s64)arg5 > 0)
+  if (((s64)arg5 > 0))
     goto ashovexc;
   /* Shift Left */
   arg5 = arg4 << (arg1 & 63);
@@ -512,7 +512,7 @@ g8106:
   /* TagType. */
   arg2 = arg2 & 63;
   /* J. if overflow */
-  if (arg6 != 0)
+  if ((arg6 != 0))
     goto ashovexc;
   *(u32 *)iSP = arg5;
   /* write the stack cache */
@@ -608,7 +608,7 @@ dorot:
 DoRotSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindorot;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -648,13 +648,13 @@ g8112:
   t8 = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* Strip CDR code if any. */
   t5 = t5 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8111;
   t2 = (u32)t2;
   t5 = t5 - Type_Fixnum;
 
 g8113:
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8111;
   /* Get low 5 bits of the rotation */
   t2 = t2 & 31;
@@ -699,7 +699,7 @@ dolsh:
 DoLshSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindolsh;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -739,18 +739,18 @@ g8116:
   t8 = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* Strip CDR code if any. */
   t5 = t5 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8115;
   t5 = t5 - Type_Fixnum;
 
 g8117:
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8115;
   /* B. if negative lsh. */
-  if ((s64)t2 < 0)
+  if (((s64)t2 < 0))
     goto neglsh;
   t3 = t2 - 32;
-  if ((s64)t3 >= 0)
+  if (((s64)t3 >= 0))
     goto returnzero;
   /* Shift Left */
   t3 = t1 << (t2 & 63);
@@ -759,7 +759,7 @@ g8117:
 neglsh:
   t2 = zero - t2;
   t3 = t2 - 32;
-  if ((s64)t3 >= 0)
+  if (((s64)t3 >= 0))
     goto returnzero;
   /* Shift Right */
   t3 = t1 >> (t2 & 63);
@@ -810,7 +810,7 @@ do32bitplus:
 Do32BitPlusSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindo32bitplus;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -850,13 +850,13 @@ g8121:
   t8 = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* Strip CDR code if any. */
   t5 = t5 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8120;
   t2 = (u32)t2;
   t5 = t5 - Type_Fixnum;
 
 g8122:
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8120;
   /* Perform the 32 bit Add. */
   t3 = t1 + t2;
@@ -895,7 +895,7 @@ do32bitdifference:
 Do32BitDifferenceSP:
   /* Assume SP mode */
   arg1 = arg5;
-  if (arg2 != 0)
+  if ((arg2 != 0))
     goto begindo32bitdifference;
   /* SP-pop, Reload TOS */
   arg6 = *(u64 *)arg4;
@@ -935,13 +935,13 @@ g8125:
   t8 = *(u64 *)&(((CACHELINEP)iCP)->nextcp);
   /* Strip CDR code if any. */
   t5 = t5 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8124;
   t2 = (u32)t2;
   t5 = t5 - Type_Fixnum;
 
 g8126:
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8124;
   /* Perform the 32 bit Difference. */
   t3 = t1 - t2;

@@ -22,7 +22,7 @@ g8646:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -31,21 +31,21 @@ g8646:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8648;
 
 g8647:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g8650;
+  if (((t8 & 1) != 0))
+    goto coldl8650;
 
 g8657:
   t5 = arg5 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8645;
   *((u32 *)(&processor->fp0)+1) = arg6;
   arg2 = arg2 + 1;
@@ -62,7 +62,7 @@ g8658:
     : [val] "=r"(arg5) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg2 - t11;
-  t8 = *(u64 *)&(processor->dataread_mask);
+  t8 = cached_dataread_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -71,28 +71,28 @@ g8658:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g8660;
 
 g8659:
   t7 = zero + 240;
   t8 = t8 >> (arg5 & 63);
   t7 = t7 >> (arg5 & 63);
-  if (t8 & 1)
-    goto g8662;
+  if (((t8 & 1) != 0))
+    goto coldl8662;
 
 g8669:
   t5 = arg5 - Type_Fixnum;
   /* Strip CDR code */
   t5 = t5 & 63;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g8645;
   *(u32 *)&processor->fp0 = arg6;
   sp = sp + 8;
   goto *(void *)r0; /* ret */
 
-g8662:
-  if ((t7 & 1) == 0)
+coldl8662:
+  if (((t7 & 1) == 0))
     goto g8661;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -108,8 +108,8 @@ return0091:
   r0 = *(u64 *)sp;
   goto g8669;
 
-g8650:
-  if ((t7 & 1) == 0)
+coldl8650:
+  if (((t7 & 1) == 0))
     goto g8649;
   /* Do the indirect thing */
   arg2 = (u32)arg6;
@@ -145,18 +145,18 @@ consdoublefloat:
   arg6 = *(s32 *)&processor->fp0;
   arg5 = *((s32 *)(&processor->fp0)+1);
   t5 = *(u64 *)&(processor->lcarea);
-  t8 = *(u64 *)&(processor->niladdress);
+  t8 = cached_niladdress;
   t6 = *(s32 *)&processor->lclength;
   /* Fetch address */
   arg2 = *(u64 *)&(processor->lcaddress);
   t7 = (t5 == t8) ? 1 : 0;
   /* Decached area */
-  if (t7 != 0)
+  if ((t7 != 0))
     goto g8670;
   /* Effectively an unsigned 32-bit compare */
   t7 = t6 - 2;
   /* Insufficient cache */
-  if ((s64)t7 < 0)
+  if (((s64)t7 < 0))
     goto g8670;
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
@@ -286,14 +286,14 @@ begindodoublefloatop:
   t3 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t3 = t3 & 63;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto doublefloatiop;
   LDT(1, f1, processor->fp0);
   LDT(2, f2, processor->fp1);
   /* NIL */
   t3 = zero + DoubleFloatOp_Add;
   t3 = t1 - t3;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g8674;
   /* Here if argument DoubleFloatOpAdd */
   ADDT(1, f1, 1, f1, 2, f2); /* addt */
@@ -302,7 +302,7 @@ begindodoublefloatop:
 g8674:
   t3 = zero + DoubleFloatOp_Sub;
   t3 = t1 - t3;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g8675;
   /* Here if argument DoubleFloatOpSub */
   SUBT(1, f1, 1, f1, 2, f2);
@@ -311,7 +311,7 @@ g8674:
 g8675:
   t3 = zero + DoubleFloatOp_Multiply;
   t3 = t1 - t3;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g8676;
   /* Here if argument DoubleFloatOpMultiply */
   MULT(1, f1, 1, f1, 2, f2);
@@ -320,7 +320,7 @@ g8675:
 g8676:
   t3 = zero + DoubleFloatOp_Divide;
   t3 = t1 - t3;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g8677;
   /* Here if argument DoubleFloatOpDivide */
   DIVT(1, f1, 1, f1, 2, f2);
@@ -332,7 +332,7 @@ g8673:
   /* Force the trap to occur here */
   /* trapb force the trap to occur here */
   /* There was no FP exception */
-  t3 = *(u64 *)&(processor->niladdress);
+  t3 = cached_niladdress;
 
 doublefloatmerge:
   STT( (u64 *)&processor->fp0, 1, f1 );
@@ -361,7 +361,7 @@ doublefloatmerge:
 
 doublefloatexc:
   /* Indicate an FP exception occurred */
-  t3 = *(u64 *)&(processor->taddress);
+  t3 = cached_taddress;
   goto doublefloatmerge;
 
 doublefloatiop:

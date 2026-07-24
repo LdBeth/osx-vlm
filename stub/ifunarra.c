@@ -25,7 +25,7 @@ g7454:
     : [val] "=r"(arg5) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t1 = arg4 - t1;
-  t4 = *(u64 *)&(processor->header_mask);
+  t4 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t1 < (u64)t2) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -34,7 +34,7 @@ g7454:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7456;
 
 g7455:
@@ -42,24 +42,24 @@ g7455:
   t4 = t4 >> (arg5 & 63);
   t3 = t3 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t4 & 1)
-    goto g7458;
+  if (((t4 & 1) != 0))
+    goto coldl7458;
 
 g7463:
   /* TagType. */
   t1 = arg5 & 63;
   t2 = arg6 >> (Array_LongPrefixBitPos & 63);
   t1 = t1 - Type_HeaderI;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aref1illegal;
-  if (t2 & 1)
+  if (((t2 & 1) != 0))
     goto aref1exception;
   /* store the array */
   *(u32 *)&((ARRAYCACHEP)t7)->array = t12;
   t2 = zero + Array_LengthMask;
   t1 = arg6 & t2;
   t2 = ((u64)arg2 < (u64)t1) ? 1 : 0;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto aref1bounds;
   /* store the array length [implicit fixnum] */
   *(u64 *)&((ARRAYCACHEP)t7)->length = t1;
@@ -91,8 +91,8 @@ g7456:
   arg5 = *(s32 *)(t1 + 4);
   goto g7455;
 
-g7458:
-  if ((t3 & 1) == 0)
+coldl7458:
+  if (((t3 & 1) == 0))
     goto g7457;
   /* Do the indirect thing */
   arg4 = (u32)arg6;
@@ -128,7 +128,7 @@ aref1recomputearrayregister:
   t6 = t4 - Type_Array;
   /* Strip CDR code, low bits */
   t6 = t6 & 62;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7465;
   /* Memory Read Internal */
 
@@ -146,7 +146,7 @@ g7467:
     : [val] "=r"(t7) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t5 - t8;
-  t1 = *(u64 *)&(processor->header_mask);
+  t1 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t8 < (u64)t2) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -155,7 +155,7 @@ g7467:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t6) : [adr] "r"(t6) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7469;
 
 g7468:
@@ -163,17 +163,17 @@ g7468:
   t1 = t1 >> (t7 & 63);
   t3 = t3 >> (t7 & 63);
   t6 = (u32)t6;
-  if (t1 & 1)
-    goto g7471;
+  if (((t1 & 1) != 0))
+    goto coldl7471;
 
 g7476:
   /* TagType. */
   t8 = t7 & 63;
   t2 = t6 >> (Array_LongPrefixBitPos & 63);
   t8 = t8 - Type_HeaderI;
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7464;
-  if (t2 & 1)
+  if (((t2 & 1) != 0))
     goto g7466;
   t1 = t6 >> (Array_BytePackingPos & 63);
   t4 = *(u64 *)&(processor->areventcount);
@@ -215,7 +215,7 @@ g7466:
   goto setup1dlongarray;
 return0068:
   t4 = (t2 == ReturnValue_Exception) ? 1 : 0;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g7465;
   /* Just a place to save these values */
   arg1 = *(u64 *)&(processor->asrf5);
@@ -276,8 +276,8 @@ g7469:
   t7 = *(s32 *)(t8 + 4);
   goto g7468;
 
-g7471:
-  if ((t3 & 1) == 0)
+coldl7471:
+  if (((t3 & 1) == 0))
     goto g7470;
   /* Do the indirect thing */
   t5 = (u32)t6;
@@ -355,10 +355,10 @@ return0069:
   *(u32 *)&((ARRAYCACHEP)t7)->array = t9;
   t9 = (u32)t5;
   t2 = (t2 == ReturnValue_Exception) ? 1 : 0;
-  if (t2 != 0)
+  if ((t2 != 0))
     goto reallyaref1exc;
   t5 = ((u64)arg2 < (u64)t1) ? 1 : 0;
-  if (t5 == 0)
+  if ((t5 == 0))
     goto aref1bounds;
   /* get BP into arg5 */
   arg5 = t3 >> (Array_BytePackingPos & 63);
@@ -420,7 +420,7 @@ g7477:
     : [val] "=r"(arg5) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t1 = arg4 - t1;
-  t4 = *(u64 *)&(processor->header_mask);
+  t4 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t1 < (u64)t2) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -429,7 +429,7 @@ g7477:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7479;
 
 g7478:
@@ -437,24 +437,24 @@ g7478:
   t4 = t4 >> (arg5 & 63);
   t3 = t3 >> (arg5 & 63);
   arg6 = (u32)arg6;
-  if (t4 & 1)
-    goto g7481;
+  if (((t4 & 1) != 0))
+    goto coldl7481;
 
 g7486:
   /* TagType. */
   t1 = arg5 & 63;
   t2 = arg6 >> (Array_LongPrefixBitPos & 63);
   t1 = t1 - Type_HeaderI;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aset1illegal;
-  if (t2 & 1)
+  if (((t2 & 1) != 0))
     goto aset1exception;
   /* store the array */
   *(u32 *)&((ARRAYCACHEP)t7)->array = t12;
   t2 = zero + Array_LengthMask;
   t1 = arg6 & t2;
   t2 = ((u64)arg2 < (u64)t1) ? 1 : 0;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto aset1bounds;
   /* store the array length [implicit fixnum] */
   *(u64 *)&((ARRAYCACHEP)t7)->length = t1;
@@ -486,8 +486,8 @@ g7479:
   arg5 = *(s32 *)(t1 + 4);
   goto g7478;
 
-g7481:
-  if ((t3 & 1) == 0)
+coldl7481:
+  if (((t3 & 1) == 0))
     goto g7480;
   /* Do the indirect thing */
   arg4 = (u32)arg6;
@@ -523,7 +523,7 @@ aset1recomputearrayregister:
   t6 = t4 - Type_Array;
   /* Strip CDR code, low bits */
   t6 = t6 & 62;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7488;
   /* Memory Read Internal */
 
@@ -541,7 +541,7 @@ g7490:
     : [val] "=r"(t7) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t8 = t5 - t8;
-  t1 = *(u64 *)&(processor->header_mask);
+  t1 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t8 < (u64)t2) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -550,7 +550,7 @@ g7490:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t6) : [adr] "r"(t6) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7492;
 
 g7491:
@@ -558,17 +558,17 @@ g7491:
   t1 = t1 >> (t7 & 63);
   t3 = t3 >> (t7 & 63);
   t6 = (u32)t6;
-  if (t1 & 1)
-    goto g7494;
+  if (((t1 & 1) != 0))
+    goto coldl7494;
 
 g7499:
   /* TagType. */
   t8 = t7 & 63;
   t2 = t6 >> (Array_LongPrefixBitPos & 63);
   t8 = t8 - Type_HeaderI;
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7487;
-  if (t2 & 1)
+  if (((t2 & 1) != 0))
     goto g7489;
   t1 = t6 >> (Array_BytePackingPos & 63);
   t4 = *(u64 *)&(processor->areventcount);
@@ -610,7 +610,7 @@ g7489:
   goto setup1dlongarray;
 return0070:
   t4 = (t2 == ReturnValue_Exception) ? 1 : 0;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g7488;
   /* Just a place to save these values */
   arg1 = *(u64 *)&(processor->asrf5);
@@ -671,8 +671,8 @@ g7492:
   t7 = *(s32 *)(t8 + 4);
   goto g7491;
 
-g7494:
-  if ((t3 & 1) == 0)
+coldl7494:
+  if (((t3 & 1) == 0))
     goto g7493;
   /* Do the indirect thing */
   t5 = (u32)t6;
@@ -721,7 +721,7 @@ aset1exception:
   goto setup1dlongarray;
 return0071:
   t1 = (t2 == ReturnValue_Exception) ? 1 : 0;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto reallyaset1exc;
   /* Just a place to save these values */
   arg2 = *(s32 *)&processor->asrf4;
@@ -761,7 +761,7 @@ return0071:
   *(u32 *)&((ARRAYCACHEP)t7)->array = t9;
   t9 = (u32)t2;
   t2 = ((u64)arg2 < (u64)t1) ? 1 : 0;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto aset1bounds;
   /* get BP into arg5 */
   arg5 = t3 >> (Array_BytePackingPos & 63);
@@ -853,14 +853,14 @@ begindoaloc1:
   t1 = arg1 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aloc1illegal;
 
 aloc1merge:
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aloc1exception;
   /* Memory Read Internal */
 
@@ -878,7 +878,7 @@ g7500:
     : [val] "=r"(arg5) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t1 = arg4 - t1;
-  t4 = *(u64 *)&(processor->header_mask);
+  t4 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t1 < (u64)t2) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -887,29 +887,29 @@ g7500:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7502;
 
 g7501:
   t3 = zero + 64;
   t4 = t4 >> (arg5 & 63);
   t3 = t3 >> (arg5 & 63);
-  if (t4 & 1)
-    goto g7504;
+  if (((t4 & 1) != 0))
+    goto coldl7504;
 
 g7509:
   /* TagType. */
   t1 = arg5 & 63;
   t2 = arg6 >> (Array_LongPrefixBitPos & 63);
   t1 = t1 - Type_HeaderI;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto aloc1illegal;
-  if (t2 & 1)
+  if (((t2 & 1) != 0))
     goto aloc1exception;
   t2 = zero + Array_LengthMask;
   t1 = arg6 & t2;
   t3 = ((u64)arg2 < (u64)t1) ? 1 : 0;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto aloc1illegal;
   /* get element type into arg6 */
   arg6 = arg6 >> (Array_ElementTypePos & 63);
@@ -917,7 +917,7 @@ g7509:
   arg4 = arg4 + arg2;
   arg6 = arg6 & Array_ElementTypeMask;
   arg6 = arg6 - Array_ElementTypeObject;
-  if (arg6 != 0)
+  if ((arg6 != 0))
     goto aloc1notobject;
   t1 = Type_Locative;
   *(u32 *)(iSP + 8) = arg4;
@@ -980,8 +980,8 @@ g7502:
   arg5 = *(s32 *)(t1 + 4);
   goto g7501;
 
-g7504:
-  if ((t3 & 1) == 0)
+coldl7504:
+  if (((t3 & 1) == 0))
     goto g7503;
   /* Do the indirect thing */
   arg4 = (u32)arg6;
@@ -1070,7 +1070,7 @@ begindosetup1darray:
   t3 = arg2 - Type_Array;
   /* Strip CDR code, low bits */
   t3 = t3 & 62;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g7511;
   /* Memory Read Internal */
 
@@ -1088,7 +1088,7 @@ g7513:
     : [val] "=r"(t4) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg1 - t5;
-  t8 = *(u64 *)&(processor->header_mask);
+  t8 = cached_header_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1097,7 +1097,7 @@ g7513:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7515;
 
 g7514:
@@ -1105,17 +1105,17 @@ g7514:
   t8 = t8 >> (t4 & 63);
   t7 = t7 >> (t4 & 63);
   t3 = (u32)t3;
-  if (t8 & 1)
-    goto g7517;
+  if (((t8 & 1) != 0))
+    goto coldl7517;
 
 g7522:
   /* TagType. */
   t5 = t4 & 63;
   t6 = t3 >> (Array_LongPrefixBitPos & 63);
   t5 = t5 - Type_HeaderI;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7510;
-  if (t6 & 1)
+  if (((t6 & 1) != 0))
     goto g7512;
   /* set CDR-NEXT */
   t5 = arg2 & 63;
@@ -1177,13 +1177,13 @@ g7512:
   goto setup1dlongarray;
 return0072:
   t1 = (t2 == ReturnValue_Normal) ? 1 : 0;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto NEXTINSTRUCTION;
   t1 = (t2 == ReturnValue_Exception) ? 1 : 0;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7511;
   t1 = (t2 == ReturnValue_IllegalOperand) ? 1 : 0;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7510;
   goto NEXTINSTRUCTION;
 
@@ -1196,8 +1196,8 @@ g7515:
   t4 = *(s32 *)(t5 + 4);
   goto g7514;
 
-g7517:
-  if ((t7 & 1) == 0)
+coldl7517:
+  if (((t7 & 1) == 0))
     goto g7516;
   /* Do the indirect thing */
   arg1 = (u32)t3;
@@ -1285,7 +1285,7 @@ begindosetupforce1darray:
   t3 = arg2 - Type_Array;
   /* Strip CDR code, low bits */
   t3 = t3 & 62;
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g7525;
   /* Memory Read Internal */
 
@@ -1303,7 +1303,7 @@ g7527:
     : [val] "=r"(t4) : [adr] "r"(t7) : "memory" : decodefault);
   /* Stack cache offset */
   t5 = arg1 - t5;
-  t8 = *(u64 *)&(processor->header_mask);
+  t8 = cached_header_mask;
   /* In range? */
   t6 = ((u64)t5 < (u64)t6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1312,7 +1312,7 @@ g7527:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7529;
 
 g7528:
@@ -1320,17 +1320,17 @@ g7528:
   t8 = t8 >> (t4 & 63);
   t7 = t7 >> (t4 & 63);
   t3 = (u32)t3;
-  if (t8 & 1)
-    goto g7531;
+  if (((t8 & 1) != 0))
+    goto coldl7531;
 
 g7536:
   /* TagType. */
   t5 = t4 & 63;
   t6 = t3 >> (Array_LongPrefixBitPos & 63);
   t5 = t5 - Type_HeaderI;
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7524;
-  if (t6 & 1)
+  if (((t6 & 1) != 0))
     goto g7526;
   /* set CDR-NEXT */
   t5 = arg2 & 63;
@@ -1392,13 +1392,13 @@ g7526:
   goto setup1dlongarray;
 return0073:
   t1 = (t2 == ReturnValue_Normal) ? 1 : 0;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto NEXTINSTRUCTION;
   t1 = (t2 == ReturnValue_Exception) ? 1 : 0;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7525;
   t1 = (t2 == ReturnValue_IllegalOperand) ? 1 : 0;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7524;
   goto NEXTINSTRUCTION;
 
@@ -1411,8 +1411,8 @@ g7529:
   t4 = *(s32 *)(t5 + 4);
   goto g7528;
 
-g7531:
-  if ((t7 & 1) == 0)
+coldl7531:
+  if (((t7 & 1) == 0))
     goto g7530;
   /* Do the indirect thing */
   arg1 = (u32)t3;
@@ -1462,7 +1462,7 @@ g7547:
     : [val] "=r"(t6) : [adr] "r"(t10) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = t1 - t7;
-  t11 = *(u64 *)&(processor->dataread_mask);
+  t11 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)t8) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1471,7 +1471,7 @@ g7547:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg4) : [adr] "r"(arg4) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7549;
 
 g7548:
@@ -1479,14 +1479,14 @@ g7548:
   t11 = t11 >> (t6 & 63);
   t10 = t10 >> (t6 & 63);
   arg4 = (u32)arg4;
-  if (t11 & 1)
-    goto g7551;
+  if (((t11 & 1) != 0))
+    goto coldl7551;
 
 g7558:
   t8 = t6 - Type_Fixnum;
   /* Strip CDR code */
   t8 = t8 & 63;
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7538;
   /* Offset is adata+2 */
   t1 = t1 + 1;
@@ -1506,7 +1506,7 @@ g7559:
     : [val] "=r"(t6) : [adr] "r"(t10) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = t1 - t7;
-  t11 = *(u64 *)&(processor->dataread_mask);
+  t11 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)t8) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1515,7 +1515,7 @@ g7559:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg3) : [adr] "r"(arg3) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7561;
 
 g7560:
@@ -1523,14 +1523,14 @@ g7560:
   t11 = t11 >> (t6 & 63);
   t10 = t10 >> (t6 & 63);
   arg3 = (u32)arg3;
-  if (t11 & 1)
-    goto g7563;
+  if (((t11 & 1) != 0))
+    goto coldl7563;
 
 g7570:
   t8 = t6 - Type_Fixnum;
   /* Strip CDR code */
   t8 = t8 & 63;
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7538;
   /* Indirect is adata+3 */
   t1 = t1 + 1;
@@ -1550,7 +1550,7 @@ g7571:
     : [val] "=r"(t6) : [adr] "r"(t10) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = t1 - t7;
-  t11 = *(u64 *)&(processor->dataread_mask);
+  t11 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)t8) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1559,7 +1559,7 @@ g7571:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7573;
 
 g7572:
@@ -1567,8 +1567,8 @@ g7572:
   t11 = t11 >> (t6 & 63);
   t10 = t10 >> (t6 & 63);
   t5 = (u32)t5;
-  if (t11 & 1)
-    goto g7575;
+  if (((t11 & 1) != 0))
+    goto coldl7575;
 
 g7582:
   /* Strip off any CDR code bits. */
@@ -1576,7 +1576,7 @@ g7582:
   t11 = (t10 == Type_Locative) ? 1 : 0;
 
 g7647:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g7584;
   /* Here if argument TypeLocative */
 
@@ -1616,7 +1616,7 @@ g7584:
   t11 = (t10 == Type_Fixnum) ? 1 : 0;
 
 g7648:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g7585;
   /* Here if argument TypeFixnum */
   goto g7541;
@@ -1625,7 +1625,7 @@ g7585:
   t11 = (t10 == Type_Array) ? 1 : 0;
 
 g7649:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g7586;
   /* Here if argument TypeArray */
 
@@ -1634,7 +1634,7 @@ g7545:
   t1 = (t1 == 1) ? 1 : 0;
   /* Force true if FORCE */
   t1 = t1 | t2;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7538;
   t12 = t3 >> (Array_BytePackingPos & 63);
   t12 = t12 & Array_BytePackingMask;
@@ -1657,7 +1657,7 @@ g7587:
     : [val] "=r"(t6) : [adr] "r"(t10) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = t5 - t7;
-  t11 = *(u64 *)&(processor->header_mask);
+  t11 = cached_header_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)t8) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1666,7 +1666,7 @@ g7587:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t4) : [adr] "r"(t4) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7589;
 
 g7588:
@@ -1674,15 +1674,15 @@ g7588:
   t11 = t11 >> (t6 & 63);
   t10 = t10 >> (t6 & 63);
   t4 = (u32)t4;
-  if (t11 & 1)
-    goto g7591;
+  if (((t11 & 1) != 0))
+    goto coldl7591;
 
 g7596:
   t10 = t4 >> (Array_BytePackingPos & 63);
   t10 = t10 & Array_BytePackingMask;
   arg1 = t12 - t10;
   t7 = t4 >> (Array_LongPrefixBitPos & 63);
-  if (t7 & 1)
+  if (((t7 & 1) != 0))
     goto g7542;
   /* increment beyond header */
   t5 = t5 + 1;
@@ -1729,7 +1729,7 @@ g7539:
   iSP = iSP + 8;
   if ((s64)arg4 <= 0)
     arg4 = zero;
-  if (arg4 == 0)
+  if ((arg4 == 0))
     goto g7543;
   t1 = zero - t12;
   t1 = t2 << (t1 & 63);
@@ -1771,7 +1771,7 @@ g7597:
     : [val] "=r"(t4) : [adr] "r"(t10) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = t1 - t7;
-  t11 = *(u64 *)&(processor->dataread_mask);
+  t11 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)t8) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1780,7 +1780,7 @@ g7597:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg6) : [adr] "r"(arg6) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7599;
 
 g7598:
@@ -1788,14 +1788,14 @@ g7598:
   t11 = t11 >> (t4 & 63);
   t10 = t10 >> (t4 & 63);
   arg6 = (u32)arg6;
-  if (t11 & 1)
-    goto g7601;
+  if (((t11 & 1) != 0))
+    goto coldl7601;
 
 g7608:
   t1 = t4 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7538;
   /* offset=array+2 */
   t1 = t5 + 2;
@@ -1815,7 +1815,7 @@ g7609:
     : [val] "=r"(t4) : [adr] "r"(t10) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = t1 - t7;
-  t11 = *(u64 *)&(processor->dataread_mask);
+  t11 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)t8) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1824,7 +1824,7 @@ g7609:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg5) : [adr] "r"(arg5) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7611;
 
 g7610:
@@ -1832,14 +1832,14 @@ g7610:
   t11 = t11 >> (t4 & 63);
   t10 = t10 >> (t4 & 63);
   arg5 = (u32)arg5;
-  if (t11 & 1)
-    goto g7613;
+  if (((t11 & 1) != 0))
+    goto coldl7613;
 
 g7620:
   t1 = t4 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7538;
   /* next=array+3 */
   t1 = t5 + 3;
@@ -1859,7 +1859,7 @@ g7621:
     : [val] "=r"(t4) : [adr] "r"(t10) : "memory" : decodefault);
   /* Stack cache offset */
   t7 = t1 - t7;
-  t11 = *(u64 *)&(processor->dataread_mask);
+  t11 = cached_dataread_mask;
   /* In range? */
   t8 = ((u64)t7 < (u64)t8) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -1868,7 +1868,7 @@ g7621:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t5) : [adr] "r"(t5) : "memory" : decodefault);
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7623;
 
 g7622:
@@ -1876,8 +1876,8 @@ g7622:
   t11 = t11 >> (t4 & 63);
   t10 = t10 >> (t4 & 63);
   t5 = (u32)t5;
-  if (t11 & 1)
-    goto g7625;
+  if (((t11 & 1) != 0))
+    goto coldl7625;
 
 g7632:
   t8 = zero - arg1;
@@ -1897,7 +1897,7 @@ g7632:
   t10 = (t8 == Type_Locative) ? 1 : 0;
 
 g7640:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7634;
   /* Here if argument TypeLocative */
   goto g7539;
@@ -1906,7 +1906,7 @@ g7634:
   t10 = (t8 == Type_Fixnum) ? 1 : 0;
 
 g7641:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7635;
   /* Here if argument TypeFixnum */
   goto g7539;
@@ -1915,7 +1915,7 @@ g7635:
   t10 = (t8 == Type_Array) ? 1 : 0;
 
 g7642:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7636;
   /* Here if argument TypeArray */
 
@@ -1932,7 +1932,7 @@ g7636:
   t10 = (t8 == Type_String) ? 1 : 0;
 
 g7643:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7637;
   /* Here if argument TypeString */
   goto g7544;
@@ -1947,7 +1947,7 @@ g7586:
   t11 = (t10 == Type_String) ? 1 : 0;
 
 g7650:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g7644;
   /* Here if argument TypeString */
   goto g7545;
@@ -1975,8 +1975,8 @@ g7623:
   t4 = *(s32 *)(t7 + 4);
   goto g7622;
 
-g7625:
-  if ((t10 & 1) == 0)
+coldl7625:
+  if (((t10 & 1) == 0))
     goto g7624;
   /* Do the indirect thing */
   t1 = (u32)t5;
@@ -1997,7 +1997,7 @@ g7624:
 
 g7629:
   t10 = t11 & MemoryActionTransform;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7628;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -2011,7 +2011,7 @@ g7628:
 g7628:
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7627;
   t7 = t1 << 1;
   t10 = *(u64 *)&(processor->dbcbase);
@@ -2030,13 +2030,13 @@ g7628:
   /* Compare */
   t10 = (s32)((u32)t1 - (u32)t7);
   /* Trap on miss */
-  if (t10 != 0)
-    goto g7631;
+  if ((t10 != 0))
+    goto coldl7631;
   /* Extract the pointer, and indirect */
   t1 = (u32)t5;
   goto g7621;
 
-g7631:
+coldl7631:
   goto dbcachemisstrap;
 #endif
 
@@ -2055,8 +2055,8 @@ g7611:
   t4 = *(s32 *)(t7 + 4);
   goto g7610;
 
-g7613:
-  if ((t10 & 1) == 0)
+coldl7613:
+  if (((t10 & 1) == 0))
     goto g7612;
   /* Do the indirect thing */
   t1 = (u32)arg5;
@@ -2077,7 +2077,7 @@ g7612:
 
 g7617:
   t10 = t11 & MemoryActionTransform;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7616;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -2091,7 +2091,7 @@ g7616:
 g7616:
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7615;
   t7 = t1 << 1;
   t10 = *(u64 *)&(processor->dbcbase);
@@ -2110,13 +2110,13 @@ g7616:
   /* Compare */
   t10 = (s32)((u32)t1 - (u32)t7);
   /* Trap on miss */
-  if (t10 != 0)
-    goto g7619;
+  if ((t10 != 0))
+    goto coldl7619;
   /* Extract the pointer, and indirect */
   t1 = (u32)arg5;
   goto g7609;
 
-g7619:
+coldl7619:
   goto dbcachemisstrap;
 #endif
 
@@ -2135,8 +2135,8 @@ g7599:
   t4 = *(s32 *)(t7 + 4);
   goto g7598;
 
-g7601:
-  if ((t10 & 1) == 0)
+coldl7601:
+  if (((t10 & 1) == 0))
     goto g7600;
   /* Do the indirect thing */
   t1 = (u32)arg6;
@@ -2157,7 +2157,7 @@ g7600:
 
 g7605:
   t10 = t11 & MemoryActionTransform;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7604;
   t4 = t4 & ~63L;
   t4 = t4 | Type_ExternalValueCellPointer;
@@ -2171,7 +2171,7 @@ g7604:
 g7604:
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7603;
   t7 = t1 << 1;
   t10 = *(u64 *)&(processor->dbcbase);
@@ -2190,13 +2190,13 @@ g7604:
   /* Compare */
   t10 = (s32)((u32)t1 - (u32)t7);
   /* Trap on miss */
-  if (t10 != 0)
-    goto g7607;
+  if ((t10 != 0))
+    goto coldl7607;
   /* Extract the pointer, and indirect */
   t1 = (u32)arg6;
   goto g7597;
 
-g7607:
+coldl7607:
   goto dbcachemisstrap;
 #endif
 
@@ -2215,8 +2215,8 @@ g7589:
   t6 = *(s32 *)(t7 + 4);
   goto g7588;
 
-g7591:
-  if ((t10 & 1) == 0)
+coldl7591:
+  if (((t10 & 1) == 0))
     goto g7590;
   /* Do the indirect thing */
   t5 = (u32)t4;
@@ -2250,8 +2250,8 @@ g7573:
   t6 = *(s32 *)(t7 + 4);
   goto g7572;
 
-g7575:
-  if ((t10 & 1) == 0)
+coldl7575:
+  if (((t10 & 1) == 0))
     goto g7574;
   /* Do the indirect thing */
   t1 = (u32)t5;
@@ -2272,7 +2272,7 @@ g7574:
 
 g7579:
   t10 = t11 & MemoryActionTransform;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7578;
   t6 = t6 & ~63L;
   t6 = t6 | Type_ExternalValueCellPointer;
@@ -2286,7 +2286,7 @@ g7578:
 g7578:
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7577;
   t7 = t1 << 1;
   t10 = *(u64 *)&(processor->dbcbase);
@@ -2305,13 +2305,13 @@ g7578:
   /* Compare */
   t10 = (s32)((u32)t1 - (u32)t7);
   /* Trap on miss */
-  if (t10 != 0)
-    goto g7581;
+  if ((t10 != 0))
+    goto coldl7581;
   /* Extract the pointer, and indirect */
   t1 = (u32)t5;
   goto g7571;
 
-g7581:
+coldl7581:
   goto dbcachemisstrap;
 #endif
 
@@ -2330,8 +2330,8 @@ g7561:
   t6 = *(s32 *)(t7 + 4);
   goto g7560;
 
-g7563:
-  if ((t10 & 1) == 0)
+coldl7563:
+  if (((t10 & 1) == 0))
     goto g7562;
   /* Do the indirect thing */
   t1 = (u32)arg3;
@@ -2352,7 +2352,7 @@ g7562:
 
 g7567:
   t10 = t11 & MemoryActionTransform;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7566;
   t6 = t6 & ~63L;
   t6 = t6 | Type_ExternalValueCellPointer;
@@ -2366,7 +2366,7 @@ g7566:
 g7566:
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7565;
   t7 = t1 << 1;
   t10 = *(u64 *)&(processor->dbcbase);
@@ -2385,13 +2385,13 @@ g7566:
   /* Compare */
   t10 = (s32)((u32)t1 - (u32)t7);
   /* Trap on miss */
-  if (t10 != 0)
-    goto g7569;
+  if ((t10 != 0))
+    goto coldl7569;
   /* Extract the pointer, and indirect */
   t1 = (u32)arg3;
   goto g7559;
 
-g7569:
+coldl7569:
   goto dbcachemisstrap;
 #endif
 
@@ -2410,8 +2410,8 @@ g7549:
   t6 = *(s32 *)(t7 + 4);
   goto g7548;
 
-g7551:
-  if ((t10 & 1) == 0)
+coldl7551:
+  if (((t10 & 1) == 0))
     goto g7550;
   /* Do the indirect thing */
   t1 = (u32)arg4;
@@ -2432,7 +2432,7 @@ g7550:
 
 g7555:
   t10 = t11 & MemoryActionTransform;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7554;
   t6 = t6 & ~63L;
   t6 = t6 | Type_ExternalValueCellPointer;
@@ -2446,7 +2446,7 @@ g7554:
 g7554:
   t10 = t11 & MemoryActionBinding;
   t8 = *(u64 *)&(processor->dbcmask);
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g7553;
   t7 = t1 << 1;
   t10 = *(u64 *)&(processor->dbcbase);
@@ -2465,13 +2465,13 @@ g7554:
   /* Compare */
   t10 = (s32)((u32)t1 - (u32)t7);
   /* Trap on miss */
-  if (t10 != 0)
-    goto g7557;
+  if ((t10 != 0))
+    goto coldl7557;
   /* Extract the pointer, and indirect */
   t1 = (u32)arg4;
   goto g7547;
 
-g7557:
+coldl7557:
   goto dbcachemisstrap;
 #endif
 
@@ -2532,7 +2532,7 @@ begindofastaset1:
   t1 = arg3 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto fastaset1iop;
 
 fastaset1retry:
@@ -2546,10 +2546,10 @@ fastaset1retry:
   t4 = *(u64 *)&(processor->areventcount);
   t5 = t5 >> 42;
   t2 = ((u64)arg4 < (u64)t3) ? 1 : 0;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto fastaset1bounds;
   t6 = t4 - t5;
-  if (t6 != 0)
+  if ((t6 != 0))
     goto aset1recomputearrayregister;
   t6 = arg6 >> (Array_RegisterBytePackingPos & 63);
   t7 = arg6 >> (Array_RegisterByteOffsetPos & 63);
@@ -2563,11 +2563,11 @@ fastaset1retry:
   t12 = (t8 == Array_ElementTypeCharacter) ? 1 : 0;
 
 g7661:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7657;
   /* Here if argument ArrayElementTypeCharacter */
   t2 = t1 - Type_Character;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g7652;
   arg5 = 0;
   arg2 = 29;
@@ -2575,7 +2575,7 @@ g7661:
 
 g7652:
   /* Certainly will fit if not packed! */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7651;
   t2 = 32;
   /* Compute size of byte */
@@ -2587,7 +2587,7 @@ g7652:
   t1 = t11 & t1;
   t1 = t11 - t1;
   /* J. if character fits. */
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g7651;
   arg5 = 0;
   arg2 = 62;
@@ -2597,11 +2597,11 @@ g7657:
   t12 = (t8 == Array_ElementTypeFixnum) ? 1 : 0;
 
 g7662:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7658;
   /* Here if argument ArrayElementTypeFixnum */
   t2 = t1 - Type_Fixnum;
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g7651;
   arg5 = 0;
   arg2 = 33;
@@ -2611,13 +2611,13 @@ g7658:
   t12 = (t8 == Array_ElementTypeBoolean) ? 1 : 0;
 
 g7663:
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7656;
   /* Here if argument ArrayElementTypeBoolean */
   t11 = 1;
   t1 = t1 - Type_NIL;
   /* J. if True */
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7651;
   t11 = zero;
   goto g7651;
@@ -2627,10 +2627,10 @@ g7656:
 
 g7651:
   /* J. if packed */
-  if (t6 != 0)
+  if ((t6 != 0))
     goto g7653;
   t1 = t8 - Array_ElementTypeObject;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g7653;
   /* Here for the simple non packed case */
   t1 = t9 + arg4;
@@ -2650,7 +2650,7 @@ g7664:
     : [val] "=r"(t2) : [adr] "r"(t12) : "memory" : decodefault);
   /* Stack cache offset */
   t4 = t1 - t4;
-  arg3 = *(u64 *)&(processor->datawrite_mask);
+  arg3 = cached_datawrite_mask;
   /* In range? */
   t5 = ((u64)t4 < (u64)t5) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2659,15 +2659,15 @@ g7664:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
-  if (t5 != 0)
+  if ((t5 != 0))
     goto g7666;
 
 g7665:
   t12 = zero + 240;
   arg3 = arg3 >> (t2 & 63);
   t12 = t12 >> (t2 & 63);
-  if (arg3 & 1)
-    goto g7668;
+  if (((arg3 & 1) != 0))
+    goto coldl7668;
 
 g7674:
   /* Merge cdr-code */
@@ -2694,7 +2694,7 @@ g7676:
     : : [val] "r"(t11), [adr] "r"(t3), [tag] "r"(t2), [tadr] "r"(t4)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (arg3 != 0)
+  if ((arg3 != 0))
     goto g7675;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -2722,7 +2722,7 @@ g7677:
     : [val] "=r"(arg5) : [adr] "r"(t4) : "memory" : decodefault);
   /* Stack cache offset */
   t2 = t1 - t2;
-  t5 = *(u64 *)&(processor->dataread_mask);
+  t5 = cached_dataread_mask;
   /* In range? */
   t3 = ((u64)t2 < (u64)t3) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -2731,7 +2731,7 @@ g7677:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t9) : [adr] "r"(t9) : "memory" : decodefault);
-  if (t3 != 0)
+  if ((t3 != 0))
     goto g7679;
 
 g7678:
@@ -2739,8 +2739,8 @@ g7678:
   t5 = t5 >> (arg5 & 63);
   t4 = t4 >> (arg5 & 63);
   t9 = (u32)t9;
-  if (t5 & 1)
-    goto g7681;
+  if (((t5 & 1) != 0))
+    goto coldl7681;
 
 g7688:
   /* Check fixnum element type */
@@ -2748,10 +2748,10 @@ g7688:
   t2 = arg5 & 63;
   t2 = t2 - Type_Fixnum;
   /* J. if element type not fixnum. */
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7654;
   /* J. if unpacked fixnum element type. */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g7655;
   t12 = ~zero;
   t12 = t12 << (t6 & 63);
@@ -2769,7 +2769,7 @@ g7688:
   /* Compute mask for byte */
   t4 = ~t3;
   /* inserting into the low byte is easy */
-  if (t2 == 0)
+  if ((t2 == 0))
     goto g7689;
   /* Inserting the byte into any byte other than the low byte */
   t5 = 64;
@@ -2826,7 +2826,7 @@ g7692:
     : : [val] "r"(t11), [adr] "r"(t5), [tag] "r"(arg5), [tadr] "r"(t2)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t12 != 0)
+  if ((t12 != 0))
     goto g7691;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -2870,8 +2870,8 @@ g7679:
   arg5 = *(s32 *)(t2 + 4);
   goto g7678;
 
-g7681:
-  if ((t4 & 1) == 0)
+coldl7681:
+  if (((t4 & 1) == 0))
     goto g7680;
   /* Do the indirect thing */
   t1 = (u32)t9;
@@ -2892,7 +2892,7 @@ g7680:
 
 g7685:
   t4 = t5 & MemoryActionTransform;
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7684;
   arg5 = arg5 & ~63L;
   arg5 = arg5 | Type_ExternalValueCellPointer;
@@ -2906,7 +2906,7 @@ g7684:
 g7684:
   t4 = t5 & MemoryActionBinding;
   t3 = *(u64 *)&(processor->dbcmask);
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g7683;
   t2 = t1 << 1;
   t4 = *(u64 *)&(processor->dbcbase);
@@ -2925,13 +2925,13 @@ g7684:
   /* Compare */
   t4 = (s32)((u32)t1 - (u32)t2);
   /* Trap on miss */
-  if (t4 != 0)
-    goto g7687;
+  if ((t4 != 0))
+    goto coldl7687;
   /* Extract the pointer, and indirect */
   t1 = (u32)t9;
   goto g7677;
 
-g7687:
+coldl7687:
   goto dbcachemisstrap;
 #endif
 
@@ -2965,8 +2965,8 @@ g7666:
   t2 = *(s32 *)(t4 + 4);
   goto g7665;
 
-g7668:
-  if ((t12 & 1) == 0)
+coldl7668:
+  if (((t12 & 1) == 0))
     goto g7667;
   /* Do the indirect thing */
   t1 = (u32)t3;
@@ -2993,7 +2993,7 @@ g7671:
 g7671:
   t12 = arg3 & MemoryActionBinding;
   t5 = *(u64 *)&(processor->dbcmask);
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g7670;
   t4 = t1 << 1;
   t12 = *(u64 *)&(processor->dbcbase);
@@ -3012,13 +3012,13 @@ g7671:
   /* Compare */
   t12 = (s32)((u32)t1 - (u32)t4);
   /* Trap on miss */
-  if (t12 != 0)
-    goto g7673;
+  if ((t12 != 0))
+    goto coldl7673;
   /* Extract the pointer, and indirect */
   t1 = (u32)t3;
   goto g7664;
 
-g7673:
+coldl7673:
   goto dbcachemisstrap;
 #endif
 
@@ -3087,14 +3087,14 @@ begindoarrayleader:
   t1 = arg1 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto arrayleaderiop;
 
 arrayleadermerge:
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto arrayleaderexception;
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
@@ -3112,7 +3112,7 @@ g7695:
     : [val] "=r"(arg6) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t1 = arg4 - t11;
-  t4 = *(u64 *)&(processor->header_mask);
+  t4 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t1 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3121,26 +3121,26 @@ g7695:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg5) : [adr] "r"(arg5) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7697;
 
 g7696:
   t3 = zero + 64;
   t4 = t4 >> (arg6 & 63);
   t3 = t3 >> (arg6 & 63);
-  if (t4 & 1)
-    goto g7699;
+  if (((t4 & 1) != 0))
+    goto coldl7699;
 
 g7704:
   /* TagType. */
   t1 = arg6 & 63;
   t1 = t1 - Type_HeaderI;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto arrayleaderiop;
   t8 = arg5 >> (Array_LeaderLengthFieldPos & 63);
   t8 = t8 & Array_LeaderLengthFieldMask;
   t1 = ((u64)arg2 < (u64)t8) ? 1 : 0;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto arrayleaderbounds;
   arg2 = arg4 - arg2;
   arg2 = arg2 - 1;
@@ -3157,7 +3157,7 @@ g7705:
     : [val] "=r"(arg6) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t1 = arg2 - t11;
-  t4 = *(u64 *)&(processor->dataread_mask);
+  t4 = cached_dataread_mask;
   /* In range? */
   t2 = ((u64)t1 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3166,15 +3166,15 @@ g7705:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg5) : [adr] "r"(arg5) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7707;
 
 g7706:
   t3 = zero + 240;
   t4 = t4 >> (arg6 & 63);
   t3 = t3 >> (arg6 & 63);
-  if (t4 & 1)
-    goto g7709;
+  if (((t4 & 1) != 0))
+    goto coldl7709;
 
 g7716:
   /* set CDR-NEXT */
@@ -3234,8 +3234,8 @@ g7707:
   arg6 = *(s32 *)(t1 + 4);
   goto g7706;
 
-g7709:
-  if ((t3 & 1) == 0)
+coldl7709:
+  if (((t3 & 1) == 0))
     goto g7708;
   /* Do the indirect thing */
   arg2 = (u32)arg5;
@@ -3256,7 +3256,7 @@ g7708:
 
 g7713:
   t3 = t4 & MemoryActionTransform;
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7712;
   arg6 = arg6 & ~63L;
   arg6 = arg6 | Type_ExternalValueCellPointer;
@@ -3270,7 +3270,7 @@ g7712:
 g7712:
   t3 = t4 & MemoryActionBinding;
   t2 = *(u64 *)&(processor->dbcmask);
-  if (t3 == 0)
+  if ((t3 == 0))
     goto g7711;
   t1 = arg2 << 1;
   t3 = *(u64 *)&(processor->dbcbase);
@@ -3289,13 +3289,13 @@ g7712:
   /* Compare */
   t3 = (s32)((u32)arg2 - (u32)t1);
   /* Trap on miss */
-  if (t3 != 0)
-    goto g7715;
+  if ((t3 != 0))
+    goto coldl7715;
   /* Extract the pointer, and indirect */
   arg2 = (u32)arg5;
   goto g7705;
 
-g7715:
+coldl7715:
   goto dbcachemisstrap;
 #endif
 
@@ -3314,8 +3314,8 @@ g7697:
   arg6 = *(s32 *)(t1 + 4);
   goto g7696;
 
-g7699:
-  if ((t3 & 1) == 0)
+coldl7699:
+  if (((t3 & 1) == 0))
     goto g7698;
   /* Do the indirect thing */
   arg4 = (u32)arg5;
@@ -3400,14 +3400,14 @@ begindostorearrayleader:
   t1 = arg1 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto storearrayleaderiop;
 
 storearrayleadermerge:
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto storearrayleaderexception;
   t11 = *(u64 *)&(processor->stackcachebasevma);
   /* Size of the stack cache (words) */
@@ -3425,7 +3425,7 @@ g7717:
     : [val] "=r"(arg6) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t1 = arg4 - t11;
-  t4 = *(u64 *)&(processor->header_mask);
+  t4 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t1 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3434,26 +3434,26 @@ g7717:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg5) : [adr] "r"(arg5) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7719;
 
 g7718:
   t3 = zero + 64;
   t4 = t4 >> (arg6 & 63);
   t3 = t3 >> (arg6 & 63);
-  if (t4 & 1)
-    goto g7721;
+  if (((t4 & 1) != 0))
+    goto coldl7721;
 
 g7726:
   /* TagType. */
   t1 = arg6 & 63;
   t1 = t1 - Type_HeaderI;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto storearrayleaderiop;
   t2 = arg5 >> (Array_LeaderLengthFieldPos & 63);
   t2 = t2 & Array_LeaderLengthFieldMask;
   t1 = ((u64)arg2 < (u64)t2) ? 1 : 0;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto storearrayleaderbounds;
   arg2 = arg4 - arg2;
   arg2 = arg2 - 1;
@@ -3470,7 +3470,7 @@ g7727:
     : [val] "=r"(t1) : [adr] "r"(t5) : "memory" : decodefault);
   /* Stack cache offset */
   t3 = arg2 - t11;
-  t8 = *(u64 *)&(processor->datawrite_mask);
+  t8 = cached_datawrite_mask;
   /* In range? */
   t4 = ((u64)t3 < (u64)t12) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3479,15 +3479,15 @@ g7727:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t2) : [adr] "r"(t2) : "memory" : decodefault);
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g7729;
 
 g7728:
   t5 = zero + 240;
   t8 = t8 >> (t1 & 63);
   t5 = t5 >> (t1 & 63);
-  if (t8 & 1)
-    goto g7731;
+  if (((t8 & 1) != 0))
+    goto coldl7731;
 
 g7737:
   /* Merge cdr-code */
@@ -3512,7 +3512,7 @@ g7739:
     : : [val] "r"(t7), [adr] "r"(t2), [tag] "r"(t1), [tadr] "r"(t3)
     : "memory" : decodefault);
   /* J. if in cache */
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g7738;
   goto NEXTINSTRUCTION;
   goto NEXTINSTRUCTION;
@@ -3585,8 +3585,8 @@ g7729:
   t1 = *(s32 *)(t3 + 4);
   goto g7728;
 
-g7731:
-  if ((t5 & 1) == 0)
+coldl7731:
+  if (((t5 & 1) == 0))
     goto g7730;
   /* Do the indirect thing */
   arg2 = (u32)t2;
@@ -3613,7 +3613,7 @@ g7734:
 g7734:
   t5 = t8 & MemoryActionBinding;
   t4 = *(u64 *)&(processor->dbcmask);
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g7733;
   t3 = arg2 << 1;
   t5 = *(u64 *)&(processor->dbcbase);
@@ -3632,13 +3632,13 @@ g7734:
   /* Compare */
   t5 = (s32)((u32)arg2 - (u32)t3);
   /* Trap on miss */
-  if (t5 != 0)
-    goto g7736;
+  if ((t5 != 0))
+    goto coldl7736;
   /* Extract the pointer, and indirect */
   arg2 = (u32)t2;
   goto g7727;
 
-g7736:
+coldl7736:
   goto dbcachemisstrap;
 #endif
 
@@ -3657,8 +3657,8 @@ g7719:
   arg6 = *(s32 *)(t1 + 4);
   goto g7718;
 
-g7721:
-  if ((t3 & 1) == 0)
+coldl7721:
+  if (((t3 & 1) == 0))
     goto g7720;
   /* Do the indirect thing */
   arg4 = (u32)arg5;
@@ -3736,14 +3736,14 @@ begindoalocleader:
   t1 = arg1 - Type_Fixnum;
   /* Strip CDR code */
   t1 = t1 & 63;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto alocleaderiop;
 
 alocleadermerge:
   t1 = arg3 - Type_Array;
   /* Strip CDR code, low bits */
   t1 = t1 & 62;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto alocleaderexception;
   /* Memory Read Internal */
 
@@ -3761,7 +3761,7 @@ g7740:
     : [val] "=r"(arg6) : [adr] "r"(t3) : "memory" : decodefault);
   /* Stack cache offset */
   t1 = arg4 - t1;
-  t4 = *(u64 *)&(processor->header_mask);
+  t4 = cached_header_mask;
   /* In range? */
   t2 = ((u64)t1 < (u64)t2) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -3770,26 +3770,26 @@ g7740:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(arg5) : [adr] "r"(arg5) : "memory" : decodefault);
-  if (t2 != 0)
+  if ((t2 != 0))
     goto g7742;
 
 g7741:
   t3 = zero + 64;
   t4 = t4 >> (arg6 & 63);
   t3 = t3 >> (arg6 & 63);
-  if (t4 & 1)
-    goto g7744;
+  if (((t4 & 1) != 0))
+    goto coldl7744;
 
 g7749:
   /* TagType. */
   t1 = arg6 & 63;
   t1 = t1 - Type_HeaderI;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto alocleaderiop;
   t9 = arg5 >> (Array_LeaderLengthFieldPos & 63);
   t9 = t9 & Array_LeaderLengthFieldMask;
   t1 = ((u64)arg2 < (u64)t9) ? 1 : 0;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto alocleaderbounds;
   arg2 = arg4 - arg2;
   arg2 = arg2 - 1;
@@ -3849,8 +3849,8 @@ g7742:
   arg6 = *(s32 *)(t1 + 4);
   goto g7741;
 
-g7744:
-  if ((t3 & 1) == 0)
+coldl7744:
+  if (((t3 & 1) == 0))
     goto g7743;
   /* Do the indirect thing */
   arg4 = (u32)arg5;

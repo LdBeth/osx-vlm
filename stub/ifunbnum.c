@@ -59,7 +59,7 @@ begindoaddbignumstep:
   t4 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto addbignumsteplose;
   /* Get arg1 */
   arg3 = *(s32 *)(iSP + -8);
@@ -70,14 +70,14 @@ begindoaddbignumstep:
   t4 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto addbignumsteplose;
   /* Clear sign extension */
   arg3 = (u32)arg3;
   t4 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto addbignumsteplose;
   arg4 = arg1 + arg2;
   arg5 = arg3 + arg4;
@@ -157,7 +157,7 @@ begindosubbignumstep:
   t4 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto subbignumsteplose;
   /* Get arg1 */
   arg3 = *(s32 *)(iSP + -8);
@@ -168,14 +168,14 @@ begindosubbignumstep:
   t4 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto subbignumsteplose;
   /* Clear sign extension */
   arg3 = (u32)arg3;
   t4 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto subbignumsteplose;
   /* arg1-arg2 */
   arg4 = arg3 - arg2;
@@ -262,13 +262,13 @@ begindomultiplybignumstep:
   t4 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto multbignumsteplose;
   arg2 = (u32)arg2;
   t4 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto multbignumsteplose;
   /* arg1*arg2 */
   arg3 = arg2 * arg1;
@@ -347,10 +347,10 @@ begindodividebignumstep:
   t4 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto divbignumsteplose1;
   /* J. if division by zero */
-  if (arg1 == 0)
+  if ((arg1 == 0))
     goto divbignumsteplose2;
   arg2 = (u32)arg2;
   /* Get arg1 */
@@ -359,7 +359,7 @@ begindodividebignumstep:
   t4 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto divbignumsteplose1;
   /* arg2=(ash arg2 32) */
   arg2 = arg2 << 32;
@@ -367,7 +367,7 @@ begindodividebignumstep:
   t4 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto divbignumsteplose1;
   /* arg1+(ash arg2 32) */
   arg4 = arg3 | arg2;
@@ -456,7 +456,7 @@ begindolshcbignumstep:
   t4 = t3 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto lshcbignumsteplose;
   arg2 = (u32)arg2;
   /* Get arg1 */
@@ -465,7 +465,7 @@ begindolshcbignumstep:
   t4 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto lshcbignumsteplose;
   /* arg2=(ash arg2 32) */
   arg2 = arg2 << 32;
@@ -473,7 +473,7 @@ begindolshcbignumstep:
   t4 = t1 - Type_Fixnum;
   /* Strip CDR code */
   t4 = t4 & 63;
-  if (t4 != 0)
+  if ((t4 != 0))
     goto lshcbignumsteplose;
   /* arg1+(ash arg2 32) */
   arg4 = arg3 | arg2;

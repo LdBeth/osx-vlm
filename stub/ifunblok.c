@@ -213,28 +213,28 @@ g8133:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t7) : [adr] "r"(t7) : "memory" : decodefault);
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8135;
 
 g8134:
   t12 = t12 >> (t8 & 63);
   t7 = (u32)t7;
-  if (t12 & 1)
-    goto g8137;
+  if (((t12 & 1) != 0))
+    goto coldl8137;
 
 g8144:
   /* J. if we don't have to test for fixnump. */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g8129;
   t9 = t8 - Type_Fixnum;
   /* Strip CDR code */
   t9 = t9 & 63;
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8132;
 
 g8129:
   /* J. if we don't have to increment the address. */
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8130;
   /* Increment the address */
   t2 = t2 + 1;
@@ -243,7 +243,7 @@ g8130:
   /* Store updated vma in BAR */
   *(u32 *)arg2 = t2;
   /* J. if we don't have to clear CDR codes. */
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g8131;
   t8 = t8 & 63;
 
@@ -260,7 +260,7 @@ g8131:
   t5 = (t2 == ALUByteBackground_Op1) ? 1 : 0;
 
 g8151:
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g8147;
   /* Here if argument ALUByteBackgroundOp1 */
   t2 = t1;
@@ -275,7 +275,7 @@ g8146:
   /* OP2 rotated */
   t7 = t7 | t5;
   /* Don't update rotate latch if not requested */
-  if (t6 == 0)
+  if ((t6 == 0))
     goto g8145;
   *(u64 *)&processor->rotatelatch = t7;
 
@@ -290,7 +290,7 @@ g8145:
   t4 = (t5 == ALUByteFunction_Dpb) ? 1 : 0;
 
 g8156:
-  if (t4 == 0)
+  if ((t4 == 0))
     goto g8153;
   /* Here if argument ALUByteFunctionDpb */
   /* Position mask */
@@ -319,7 +319,7 @@ g8153:
   t4 = (t5 == ALUByteFunction_Ldb) ? 1 : 0;
 
 g8157:
-  if (t4 != 0)
+  if ((t4 != 0))
     goto g8152;
   goto g8152;
 
@@ -327,7 +327,7 @@ g8147:
   t5 = (t2 == ALUByteBackground_RotateLatch) ? 1 : 0;
 
 g8158:
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g8148;
   /* Here if argument ALUByteBackgroundRotateLatch */
   t2 = *(u64 *)&(processor->rotatelatch);
@@ -337,7 +337,7 @@ g8148:
   t5 = (t2 == ALUByteBackground_Zero) ? 1 : 0;
 
 g8159:
-  if (t5 == 0)
+  if ((t5 == 0))
     goto g8146;
   /* Here if argument ALUByteBackgroundZero */
   t2 = zero;
@@ -352,7 +352,7 @@ g8135:
   t8 = *(s32 *)(t9 + 4);
   goto g8134;
 
-g8137:
+coldl8137:
 
 g8136:
   /* Cycle-number -> table offset */
@@ -371,7 +371,7 @@ g8136:
 
 g8142:
   t10 = t12 & MemoryActionIndirect;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g8141;
   /* Do the indirect thing */
   t2 = (u32)t7;
@@ -379,7 +379,7 @@ g8142:
 
 g8141:
   t11 = t12 & MemoryActionTransform;
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8140;
   t8 = t8 & ~63L;
   t8 = t8 | Type_ExternalValueCellPointer;
@@ -393,7 +393,7 @@ g8140:
 g8140:
   t11 = t12 & MemoryActionBinding;
   t10 = *(u64 *)&(processor->dbcmask);
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8139;
   t9 = t2 << 1;
   t11 = *(u64 *)&(processor->dbcbase);
@@ -412,13 +412,13 @@ g8140:
   /* Compare */
   t11 = (s32)((u32)t2 - (u32)t9);
   /* Trap on miss */
-  if (t11 != 0)
-    goto g8143;
+  if ((t11 != 0))
+    goto coldl8143;
   /* Extract the pointer, and indirect */
   t2 = (u32)t7;
   goto g8133;
 
-g8143:
+coldl8143:
   goto dbcachemisstrap;
 #endif
 
@@ -606,7 +606,7 @@ blockreadalu:
   t9 = t4 - Type_Fixnum;
   /* Strip CDR code */
   t9 = t9 & 63;
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8160;
   t1 = (u32)t1;
   /* Memory Read Internal */
@@ -622,7 +622,7 @@ g8162:
     : [val] "=r"(t2) : [adr] "r"(t11) : "memory" : decodefault);
   /* Stack cache offset */
   t9 = t1 - arg5;
-  t12 = *(u64 *)&(processor->dataread_mask);
+  t12 = cached_dataread_mask;
   /* In range? */
   t10 = ((u64)t9 < (u64)arg6) ? 1 : 0;
   asm goto ("0:\tldrsw %[val], [%[adr]]\n\t"
@@ -631,7 +631,7 @@ g8162:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8164;
 
 g8163:
@@ -639,14 +639,14 @@ g8163:
   t12 = t12 >> (t2 & 63);
   t11 = t11 >> (t2 & 63);
   t3 = (u32)t3;
-  if (t12 & 1)
-    goto g8166;
+  if (((t12 & 1) != 0))
+    goto coldl8166;
 
 g8173:
   t9 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t9 = t9 & 63;
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8161;
   /* Increment the address */
   t1 = t1 + 1;
@@ -658,7 +658,7 @@ g8173:
   t1 = (t6 == ALUFunction_Boolean) ? 1 : 0;
 
 g8234:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8175;
   /* Here if argument ALUFunctionBoolean */
   t8 = t7 >> 10;
@@ -667,14 +667,14 @@ g8234:
   t1 = (t8 == Boole_Clear) ? 1 : 0;
 
 g8194:
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g8176;
 
 g8177:
   t1 = (t8 == Boole_And) ? 1 : 0;
 
 g8195:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8178;
   /* Here if argument BooleAnd */
   t8 = t3 & t5;
@@ -684,7 +684,7 @@ g8178:
   t1 = (t8 == Boole_AndC1) ? 1 : 0;
 
 g8196:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8179;
   /* Here if argument BooleAndC1 */
   t8 = t5 & ~t3;
@@ -694,7 +694,7 @@ g8179:
   t1 = (t8 == Boole_2) ? 1 : 0;
 
 g8197:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8180;
   /* Here if argument Boole2 */
   t8 = t5;
@@ -704,7 +704,7 @@ g8180:
   t1 = (t8 == Boole_AndC2) ? 1 : 0;
 
 g8198:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8181;
   /* Here if argument BooleAndC2 */
   t8 = t3 & ~t5;
@@ -714,7 +714,7 @@ g8181:
   t1 = (t8 == Boole_1) ? 1 : 0;
 
 g8199:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8182;
   /* Here if argument Boole1 */
   t8 = t3;
@@ -724,7 +724,7 @@ g8182:
   t1 = (t8 == Boole_Xor) ? 1 : 0;
 
 g8200:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8183;
   /* Here if argument BooleXor */
   t8 = t3 ^ t5;
@@ -734,7 +734,7 @@ g8183:
   t1 = (t8 == Boole_Ior) ? 1 : 0;
 
 g8201:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8184;
   /* Here if argument BooleIor */
   t8 = t3 | t5;
@@ -744,7 +744,7 @@ g8184:
   t1 = (t8 == Boole_Nor) ? 1 : 0;
 
 g8202:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8185;
   /* Here if argument BooleNor */
   t8 = t3 | t5;
@@ -755,7 +755,7 @@ g8185:
   t1 = (t8 == Boole_Equiv) ? 1 : 0;
 
 g8203:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8186;
   /* Here if argument BooleEquiv */
   t8 = t3 ^ t5;
@@ -766,7 +766,7 @@ g8186:
   t1 = (t8 == Boole_C1) ? 1 : 0;
 
 g8204:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8187;
   /* Here if argument BooleC1 */
   t8 = ~t3;
@@ -776,7 +776,7 @@ g8187:
   t1 = (t8 == Boole_OrC1) ? 1 : 0;
 
 g8205:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8188;
   /* Here if argument BooleOrC1 */
   t8 = t5 | ~(t3);
@@ -786,7 +786,7 @@ g8188:
   t1 = (t8 == Boole_C2) ? 1 : 0;
 
 g8206:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8189;
   /* Here if argument BooleC2 */
   t8 = ~t5;
@@ -796,7 +796,7 @@ g8189:
   t1 = (t8 == Boole_OrC2) ? 1 : 0;
 
 g8207:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8190;
   /* Here if argument BooleOrC2 */
   t8 = t3 & ~t5;
@@ -806,7 +806,7 @@ g8190:
   t1 = (t8 == Boole_Nand) ? 1 : 0;
 
 g8208:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8191;
   /* Here if argument BooleNand */
   t8 = t3 & t5;
@@ -816,7 +816,7 @@ g8191:
   t1 = (t8 == Boole_Set) ? 1 : 0;
 
 g8209:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8176;
   /* Here if argument BooleSet */
   t8 = ~zero;
@@ -829,7 +829,7 @@ g8175:
   t1 = (t6 == ALUFunction_Byte) ? 1 : 0;
 
 g8235:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8210;
   /* Here if argument ALUFunctionByte */
   /* Get rotate */
@@ -843,7 +843,7 @@ g8235:
   t11 = (t1 == ALUByteBackground_Op1) ? 1 : 0;
 
 g8217:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8213;
   /* Here if argument ALUByteBackgroundOp1 */
   t1 = t3;
@@ -858,7 +858,7 @@ g8212:
   /* OP2 rotated */
   t8 = t8 | t11;
   /* Don't update rotate latch if not requested */
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g8211;
   *(u64 *)&processor->rotatelatch = t8;
 
@@ -873,7 +873,7 @@ g8211:
   t10 = (t11 == ALUByteFunction_Dpb) ? 1 : 0;
 
 g8222:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g8219;
   /* Here if argument ALUByteFunctionDpb */
   /* Position mask */
@@ -892,7 +892,7 @@ g8210:
   t1 = (t6 == ALUFunction_Adder) ? 1 : 0;
 
 g8236:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8223;
   /* Here if argument ALUFunctionAdder */
   t10 = t7 >> 11;
@@ -904,7 +904,7 @@ g8236:
   t11 = (t10 == ALUAdderOp2_Op2) ? 1 : 0;
 
 g8231:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8226;
   /* Here if argument ALUAdderOp2Op2 */
   t1 = t5;
@@ -921,7 +921,7 @@ g8225:
   /* Get the load-carry-in bit */
   t11 = t7 >> 24;
   *(u64 *)&processor->aluoverflow = t10;
-  if ((t11 & 1) == 0)
+  if (((t11 & 1) == 0))
     goto g8224;
   /* Get the carry */
   t10 = (u32)(t8 >> ((4&7)*8));
@@ -947,7 +947,7 @@ g8223:
   t1 = (t6 == ALUFunction_MultiplyDivide) ? 1 : 0;
 
 g8237:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8174;
   /* Here if argument ALUFunctionMultiplyDivide */
   /* This instruction has not been written yet. */
@@ -981,7 +981,7 @@ g8226:
   t11 = (t10 == ALUAdderOp2_Zero) ? 1 : 0;
 
 g8238:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8227;
   /* Here if argument ALUAdderOp2Zero */
   t1 = zero;
@@ -991,7 +991,7 @@ g8227:
   t11 = (t10 == ALUAdderOp2_Invert) ? 1 : 0;
 
 g8239:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8228;
   /* Here if argument ALUAdderOp2Invert */
   t1 = (s32)t5;
@@ -1003,7 +1003,7 @@ g8228:
   t11 = (t10 == ALUAdderOp2_MinusOne) ? 1 : 0;
 
 g8240:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8225;
   /* Here if argument ALUAdderOp2MinusOne */
   t1 = ~zero;
@@ -1014,7 +1014,7 @@ g8219:
   t10 = (t11 == ALUByteFunction_Ldb) ? 1 : 0;
 
 g8241:
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8218;
   goto g8218;
 
@@ -1022,7 +1022,7 @@ g8213:
   t11 = (t1 == ALUByteBackground_RotateLatch) ? 1 : 0;
 
 g8242:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8214;
   /* Here if argument ALUByteBackgroundRotateLatch */
   t1 = *(u64 *)&(processor->rotatelatch);
@@ -1032,7 +1032,7 @@ g8214:
   t11 = (t1 == ALUByteBackground_Zero) ? 1 : 0;
 
 g8243:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8212;
   /* Here if argument ALUByteBackgroundZero */
   t1 = zero;
@@ -1047,8 +1047,8 @@ g8164:
   t2 = *(s32 *)(t9 + 4);
   goto g8163;
 
-g8166:
-  if ((t11 & 1) == 0)
+coldl8166:
+  if (((t11 & 1) == 0))
     goto g8165;
   /* Do the indirect thing */
   t1 = (u32)t3;
@@ -1069,7 +1069,7 @@ g8165:
 
 g8170:
   t11 = t12 & MemoryActionTransform;
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8169;
   t2 = t2 & ~63L;
   t2 = t2 | Type_ExternalValueCellPointer;
@@ -1083,7 +1083,7 @@ g8169:
 g8169:
   t11 = t12 & MemoryActionBinding;
   t10 = *(u64 *)&(processor->dbcmask);
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8168;
   t9 = t1 << 1;
   t11 = *(u64 *)&(processor->dbcbase);
@@ -1102,13 +1102,13 @@ g8169:
   /* Compare */
   t11 = (s32)((u32)t1 - (u32)t9);
   /* Trap on miss */
-  if (t11 != 0)
-    goto g8172;
+  if ((t11 != 0))
+    goto coldl8172;
   /* Extract the pointer, and indirect */
   t1 = (u32)t3;
   goto g8162;
 
-g8172:
+coldl8172:
   goto dbcachemisstrap;
 #endif
 
@@ -1251,37 +1251,37 @@ g8250:
     ".quad 0b, %l[decodefault]\n\t"
     ".popsection"
     : [val] "=r"(t3) : [adr] "r"(t3) : "memory" : decodefault);
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8252;
 
 g8251:
   t12 = t12 >> (t2 & 63);
   t3 = (u32)t3;
-  if (t12 & 1)
-    goto g8254;
+  if (((t12 & 1) != 0))
+    goto coldl8254;
 
 g8261:
   /* =fixnum onlyp */
   t1 = arg1 & 32;
   /* J. if we don't have to test for fixnump. */
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8244;
   t9 = t2 - Type_Fixnum;
   /* Strip CDR code */
   t9 = t9 & 63;
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8247;
   t9 = t4 - Type_Fixnum;
   /* Strip CDR code */
   t9 = t9 & 63;
-  if (t9 != 0)
+  if ((t9 != 0))
     goto g8248;
 
 g8244:
   /* =cdr-code-nextp */
   t1 = arg1 & 16;
   /* J. if we don't have to clear CDR codes. */
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8246;
   /* TagType. */
   t2 = t2 & 63;
@@ -1293,7 +1293,7 @@ g8246:
   t1 = (t6 == ALUFunction_Boolean) ? 1 : 0;
 
 g8322:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8263;
   /* Here if argument ALUFunctionBoolean */
   t8 = t7 >> 10;
@@ -1302,14 +1302,14 @@ g8322:
   t1 = (t8 == Boole_Clear) ? 1 : 0;
 
 g8282:
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g8264;
 
 g8265:
   t1 = (t8 == Boole_And) ? 1 : 0;
 
 g8283:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8266;
   /* Here if argument BooleAnd */
   t8 = t3 & t5;
@@ -1319,7 +1319,7 @@ g8266:
   t1 = (t8 == Boole_AndC1) ? 1 : 0;
 
 g8284:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8267;
   /* Here if argument BooleAndC1 */
   t8 = t5 & ~t3;
@@ -1329,7 +1329,7 @@ g8267:
   t1 = (t8 == Boole_2) ? 1 : 0;
 
 g8285:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8268;
   /* Here if argument Boole2 */
   t8 = t5;
@@ -1339,7 +1339,7 @@ g8268:
   t1 = (t8 == Boole_AndC2) ? 1 : 0;
 
 g8286:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8269;
   /* Here if argument BooleAndC2 */
   t8 = t3 & ~t5;
@@ -1349,7 +1349,7 @@ g8269:
   t1 = (t8 == Boole_1) ? 1 : 0;
 
 g8287:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8270;
   /* Here if argument Boole1 */
   t8 = t3;
@@ -1359,7 +1359,7 @@ g8270:
   t1 = (t8 == Boole_Xor) ? 1 : 0;
 
 g8288:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8271;
   /* Here if argument BooleXor */
   t8 = t3 ^ t5;
@@ -1369,7 +1369,7 @@ g8271:
   t1 = (t8 == Boole_Ior) ? 1 : 0;
 
 g8289:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8272;
   /* Here if argument BooleIor */
   t8 = t3 | t5;
@@ -1379,7 +1379,7 @@ g8272:
   t1 = (t8 == Boole_Nor) ? 1 : 0;
 
 g8290:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8273;
   /* Here if argument BooleNor */
   t8 = t3 | t5;
@@ -1390,7 +1390,7 @@ g8273:
   t1 = (t8 == Boole_Equiv) ? 1 : 0;
 
 g8291:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8274;
   /* Here if argument BooleEquiv */
   t8 = t3 ^ t5;
@@ -1401,7 +1401,7 @@ g8274:
   t1 = (t8 == Boole_C1) ? 1 : 0;
 
 g8292:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8275;
   /* Here if argument BooleC1 */
   t8 = ~t3;
@@ -1411,7 +1411,7 @@ g8275:
   t1 = (t8 == Boole_OrC1) ? 1 : 0;
 
 g8293:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8276;
   /* Here if argument BooleOrC1 */
   t8 = t5 | ~(t3);
@@ -1421,7 +1421,7 @@ g8276:
   t1 = (t8 == Boole_C2) ? 1 : 0;
 
 g8294:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8277;
   /* Here if argument BooleC2 */
   t8 = ~t5;
@@ -1431,7 +1431,7 @@ g8277:
   t1 = (t8 == Boole_OrC2) ? 1 : 0;
 
 g8295:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8278;
   /* Here if argument BooleOrC2 */
   t8 = t3 & ~t5;
@@ -1441,7 +1441,7 @@ g8278:
   t1 = (t8 == Boole_Nand) ? 1 : 0;
 
 g8296:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8279;
   /* Here if argument BooleNand */
   t8 = t3 & t5;
@@ -1451,7 +1451,7 @@ g8279:
   t1 = (t8 == Boole_Set) ? 1 : 0;
 
 g8297:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8264;
   /* Here if argument BooleSet */
   t8 = ~zero;
@@ -1468,12 +1468,12 @@ g8262:
   t9 = (t1 == ALUCondition_SignedLessThanOrEqual) ? 1 : 0;
 
 g8354:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8327;
   /* Here if argument ALUConditionSignedLessThanOrEqual */
-  if (t12 != 0)
+  if ((t12 != 0))
     goto g8323;
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g8323;
 
 g8326:
@@ -1490,12 +1490,12 @@ g8325:
   /* Extract the condition sense */
   t9 = t9 & 1;
   t1 = t1 ^ t9;
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g8249;
   /* =no-incrementp */
   t1 = arg1 & 4;
   /* J. if we don't have to increment the address. */
-  if (t1 != 0)
+  if ((t1 != 0))
     goto g8245;
   /* Increment the address */
   arg3 = arg3 + 1;
@@ -1537,10 +1537,10 @@ g8327:
   t9 = (t1 == ALUCondition_SignedLessThan) ? 1 : 0;
 
 g8355:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8328;
   /* Here if argument ALUConditionSignedLessThan */
-  if (t12 != 0)
+  if ((t12 != 0))
     goto g8323;
   goto g8326;
 
@@ -1548,10 +1548,10 @@ g8328:
   t9 = (t1 == ALUCondition_Negative) ? 1 : 0;
 
 g8356:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8329;
   /* Here if argument ALUConditionNegative */
-  if ((s64)t8 < 0)
+  if (((s64)t8 < 0))
     goto g8323;
   goto g8326;
 
@@ -1559,10 +1559,10 @@ g8329:
   t9 = (t1 == ALUCondition_SignedOverflow) ? 1 : 0;
 
 g8357:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8330;
   /* Here if argument ALUConditionSignedOverflow */
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8323;
   goto g8326;
 
@@ -1570,12 +1570,12 @@ g8330:
   t9 = (t1 == ALUCondition_UnsignedLessThanOrEqual) ? 1 : 0;
 
 g8358:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8331;
   /* Here if argument ALUConditionUnsignedLessThanOrEqual */
-  if (t11 != 0)
+  if ((t11 != 0))
     goto g8323;
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g8323;
   goto g8326;
 
@@ -1583,10 +1583,10 @@ g8331:
   t9 = (t1 == ALUCondition_UnsignedLessThan) ? 1 : 0;
 
 g8359:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8332;
   /* Here if argument ALUConditionUnsignedLessThan */
-  if (t11 != 0)
+  if ((t11 != 0))
     goto g8323;
   goto g8326;
 
@@ -1594,10 +1594,10 @@ g8332:
   t9 = (t1 == ALUCondition_Zero) ? 1 : 0;
 
 g8360:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8333;
   /* Here if argument ALUConditionZero */
-  if (t8 == 0)
+  if ((t8 == 0))
     goto g8323;
   goto g8326;
 
@@ -1605,11 +1605,11 @@ g8333:
   t9 = (t1 == ALUCondition_High25Zero) ? 1 : 0;
 
 g8361:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8334;
   /* Here if argument ALUConditionHigh25Zero */
   t1 = t8 >> 7;
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8323;
   goto g8326;
 
@@ -1617,15 +1617,15 @@ g8334:
   t9 = (t1 == ALUCondition_Eq) ? 1 : 0;
 
 g8362:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8335;
   /* Here if argument ALUConditionEq */
-  if (t8 != 0)
+  if ((t8 != 0))
     goto g8324;
   t9 = t2 ^ t4;
   /* TagType. */
   t9 = t9 & 63;
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8323;
   goto g8326;
 
@@ -1633,7 +1633,7 @@ g8335:
   t9 = (t1 == ALUCondition_Op1Ephemeralp) ? 1 : 0;
 
 g8363:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8336;
   /* Here if argument ALUConditionOp1Ephemeralp */
   /* This instruction has not been written yet. */
@@ -1645,7 +1645,7 @@ g8336:
   t9 = (t1 == ALUCondition_ResultTypeNil) ? 1 : 0;
 
 g8364:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8337;
   /* Here if argument ALUConditionResultTypeNil */
   /* This instruction has not been written yet. */
@@ -1657,7 +1657,7 @@ g8337:
   t9 = (t1 == ALUCondition_Op2Fixnum) ? 1 : 0;
 
 g8365:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8338;
   /* Here if argument ALUConditionOp2Fixnum */
   /* This instruction has not been written yet. */
@@ -1669,7 +1669,7 @@ g8338:
   t9 = (t1 == ALUCondition_False) ? 1 : 0;
 
 g8366:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8339;
   /* Here if argument ALUConditionFalse */
   /* This instruction has not been written yet. */
@@ -1681,7 +1681,7 @@ g8339:
   t9 = (t1 == ALUCondition_ResultCdrLow) ? 1 : 0;
 
 g8367:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8340;
   /* Here if argument ALUConditionResultCdrLow */
   /* TagCdr. */
@@ -1693,7 +1693,7 @@ g8340:
   t9 = (t1 == ALUCondition_CleanupBitsSet) ? 1 : 0;
 
 g8368:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8341;
   /* Here if argument ALUConditionCleanupBitsSet */
   /* This instruction has not been written yet. */
@@ -1705,7 +1705,7 @@ g8341:
   t9 = (t1 == ALUCondition_AddressInStackCache) ? 1 : 0;
 
 g8369:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8342;
   /* Here if argument ALUConditionAddressInStackCache */
   /* This instruction has not been written yet. */
@@ -1717,7 +1717,7 @@ g8342:
   t9 = (t1 == ALUCondition_ExtraStackMode) ? 1 : 0;
 
 g8370:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8343;
   /* Here if argument ALUConditionExtraStackMode */
   /* This instruction has not been written yet. */
@@ -1729,7 +1729,7 @@ g8343:
   t9 = (t1 == ALUCondition_FepMode) ? 1 : 0;
 
 g8371:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8344;
   /* Here if argument ALUConditionFepMode */
   /* This instruction has not been written yet. */
@@ -1741,7 +1741,7 @@ g8344:
   t9 = (t1 == ALUCondition_FpCoprocessorPresent) ? 1 : 0;
 
 g8372:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8345;
   /* Here if argument ALUConditionFpCoprocessorPresent */
   /* This instruction has not been written yet. */
@@ -1753,7 +1753,7 @@ g8345:
   t9 = (t1 == ALUCondition_Op1Oldspacep) ? 1 : 0;
 
 g8373:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8346;
   /* Here if argument ALUConditionOp1Oldspacep */
   /* This instruction has not been written yet. */
@@ -1765,7 +1765,7 @@ g8346:
   t9 = (t1 == ALUCondition_PendingSequenceBreakEnabled) ? 1 : 0;
 
 g8374:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8347;
   /* Here if argument ALUConditionPendingSequenceBreakEnabled */
   /* This instruction has not been written yet. */
@@ -1777,7 +1777,7 @@ g8347:
   t9 = (t1 == ALUCondition_Op1TypeAcceptable) ? 1 : 0;
 
 g8375:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8348;
   /* Here if argument ALUConditionOp1TypeAcceptable */
   /* This instruction has not been written yet. */
@@ -1789,7 +1789,7 @@ g8348:
   t9 = (t1 == ALUCondition_Op1TypeCondition) ? 1 : 0;
 
 g8376:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8349;
   /* Here if argument ALUConditionOp1TypeCondition */
   /* This instruction has not been written yet. */
@@ -1801,7 +1801,7 @@ g8349:
   t9 = (t1 == ALUCondition_StackCacheOverflow) ? 1 : 0;
 
 g8377:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8350;
   /* Here if argument ALUConditionStackCacheOverflow */
   /* This instruction has not been written yet. */
@@ -1813,7 +1813,7 @@ g8350:
   t9 = (t1 == ALUCondition_OrLogicVariable) ? 1 : 0;
 
 g8378:
-  if (t9 == 0)
+  if ((t9 == 0))
     goto g8351;
   /* Here if argument ALUConditionOrLogicVariable */
   /* This instruction has not been written yet. */
@@ -1832,7 +1832,7 @@ g8263:
   t1 = (t6 == ALUFunction_Byte) ? 1 : 0;
 
 g8379:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8298;
   /* Here if argument ALUFunctionByte */
   /* Get rotate */
@@ -1846,7 +1846,7 @@ g8379:
   t11 = (t1 == ALUByteBackground_Op1) ? 1 : 0;
 
 g8305:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8301;
   /* Here if argument ALUByteBackgroundOp1 */
   t1 = t3;
@@ -1861,7 +1861,7 @@ g8300:
   /* OP2 rotated */
   t8 = t8 | t11;
   /* Don't update rotate latch if not requested */
-  if (t12 == 0)
+  if ((t12 == 0))
     goto g8299;
   *(u64 *)&processor->rotatelatch = t8;
 
@@ -1876,7 +1876,7 @@ g8299:
   t10 = (t11 == ALUByteFunction_Dpb) ? 1 : 0;
 
 g8310:
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g8307;
   /* Here if argument ALUByteFunctionDpb */
   /* Position mask */
@@ -1894,7 +1894,7 @@ g8298:
   t1 = (t6 == ALUFunction_Adder) ? 1 : 0;
 
 g8380:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8311;
   /* Here if argument ALUFunctionAdder */
   t10 = t7 >> 11;
@@ -1906,7 +1906,7 @@ g8380:
   t11 = (t10 == ALUAdderOp2_Op2) ? 1 : 0;
 
 g8319:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8314;
   /* Here if argument ALUAdderOp2Op2 */
   t1 = t5;
@@ -1923,7 +1923,7 @@ g8313:
   /* Get the load-carry-in bit */
   t11 = t7 >> 24;
   *(u64 *)&processor->aluoverflow = t10;
-  if ((t11 & 1) == 0)
+  if (((t11 & 1) == 0))
     goto g8312;
   /* Get the carry */
   t10 = (u32)(t8 >> ((4&7)*8));
@@ -1948,7 +1948,7 @@ g8311:
   t1 = (t6 == ALUFunction_MultiplyDivide) ? 1 : 0;
 
 g8381:
-  if (t1 == 0)
+  if ((t1 == 0))
     goto g8262;
   /* Here if argument ALUFunctionMultiplyDivide */
   /* This instruction has not been written yet. */
@@ -1960,7 +1960,7 @@ g8314:
   t11 = (t10 == ALUAdderOp2_Zero) ? 1 : 0;
 
 g8382:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8315;
   /* Here if argument ALUAdderOp2Zero */
   t1 = zero;
@@ -1970,7 +1970,7 @@ g8315:
   t11 = (t10 == ALUAdderOp2_Invert) ? 1 : 0;
 
 g8383:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8316;
   /* Here if argument ALUAdderOp2Invert */
   t1 = (s32)t5;
@@ -1982,7 +1982,7 @@ g8316:
   t11 = (t10 == ALUAdderOp2_MinusOne) ? 1 : 0;
 
 g8384:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8313;
   /* Here if argument ALUAdderOp2MinusOne */
   t1 = ~zero;
@@ -1993,7 +1993,7 @@ g8307:
   t10 = (t11 == ALUByteFunction_Ldb) ? 1 : 0;
 
 g8385:
-  if (t10 != 0)
+  if ((t10 != 0))
     goto g8306;
   goto g8306;
 
@@ -2001,7 +2001,7 @@ g8301:
   t11 = (t1 == ALUByteBackground_RotateLatch) ? 1 : 0;
 
 g8386:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8302;
   /* Here if argument ALUByteBackgroundRotateLatch */
   t1 = *(u64 *)&(processor->rotatelatch);
@@ -2011,7 +2011,7 @@ g8302:
   t11 = (t1 == ALUByteBackground_Zero) ? 1 : 0;
 
 g8387:
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8300;
   /* Here if argument ALUByteBackgroundZero */
   t1 = zero;
@@ -2026,7 +2026,7 @@ g8252:
   t2 = *(s32 *)(t9 + 4);
   goto g8251;
 
-g8254:
+coldl8254:
 
 g8253:
   /* Cycle-number -> table offset */
@@ -2045,7 +2045,7 @@ g8253:
 
 g8259:
   t10 = t12 & MemoryActionIndirect;
-  if (t10 == 0)
+  if ((t10 == 0))
     goto g8258;
   /* Do the indirect thing */
   arg3 = (u32)t3;
@@ -2053,7 +2053,7 @@ g8259:
 
 g8258:
   t11 = t12 & MemoryActionTransform;
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8257;
   t2 = t2 & ~63L;
   t2 = t2 | Type_ExternalValueCellPointer;
@@ -2067,7 +2067,7 @@ g8257:
 g8257:
   t11 = t12 & MemoryActionBinding;
   t10 = *(u64 *)&(processor->dbcmask);
-  if (t11 == 0)
+  if ((t11 == 0))
     goto g8256;
   t9 = arg3 << 1;
   t11 = *(u64 *)&(processor->dbcbase);
@@ -2086,13 +2086,13 @@ g8257:
   /* Compare */
   t11 = (s32)((u32)arg3 - (u32)t9);
   /* Trap on miss */
-  if (t11 != 0)
-    goto g8260;
+  if ((t11 != 0))
+    goto coldl8260;
   /* Extract the pointer, and indirect */
   arg3 = (u32)t3;
   goto g8250;
 
-g8260:
+coldl8260:
   goto dbcachemisstrap;
 #endif
 
