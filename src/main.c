@@ -176,6 +176,8 @@ int main (int argc, char** argv)
 #ifdef GENERA
   LoadVLMDebugger (&config);
 
+  RepaveStackRegions ();
+
   worldImageMB = WordsToMB (worldImageSize);
   if (worldImageMB > config.virtualMemory)
     vpunt (NULL, "World file %s won't fit within the requested virtual memory (%dMB)",

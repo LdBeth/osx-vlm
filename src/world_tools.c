@@ -93,6 +93,165 @@ Integer LoadWorld (VLMConfig* config)
 }
 
 
+/* Repave the holes in the stack regions of a freshly loaded world
+
+   Genera world files -- including the official distribution -- ship with pages
+   ABSENT below the free pointer of the data, control and binding stack regions.
+   PHT-MISS-HANDLER halts the machine on a miss below a region's free pointer
+   ("Miss fault on extant virtual address") while the stack-growth code raises
+   stack limits assuming those pages exist, so the first deep recursion steps
+   on a hole and takes the machine down.  Create the missing pages here, once,
+   right after the world has been loaded.
+
+   The region tables are reached through the wired SYSCOM forwarding cells:
+   each holds a DTP-ARRAY Q whose data is the vma of the table's array header,
+   with entry n at header+1+n as a boxed fixnum. */
+
+#define RegionOriginTableCell		0xF804110AL	/* entries are QUANTUM numbers */
+#define RegionLengthTableCell		0xF804110BL	/* entries are QUANTUM counts */
+#define RegionFreePointerTableCell	0xF804110CL	/* entries are word counts */
+#define RegionBitsTableCell		0xF804110EL
+
+#define RegionQuantumAddressShift	16
+#define RegionTableCapacity		0x400
+
+/* SPACE-TYPE field of the region bits word.  Verified against the Genera 8.5
+   sources: sys/i-sys/sysdef.lisp:1283 "(DEFSYSBYTE %%REGION-SPACE-TYPE 4 2)",
+   i.e. (BYTE 4 2) -- size 4 at position 2 (DEFSYSBYTE is (NAME N-BITS
+   BITS-OVER), sys/i-compiler/i-sysdef-support.lisp:99).  The values come from
+   the DEFENUMERATED *REGION-SPACE-TYPES* at sysdef.lisp:1284, which starts at
+   0 and steps by 1:  FREE 0, OLD 1, NEW 2, COPY 3, WEAK 4, 5-7 unused, then
+   the stack regions STACK 8, STRUCTURE-STACK 9, CONTROL-STACK 10,
+   BINDING-STACK 11.  (%%REGION-STACK, sysdef.lisp:1302, is bit 5 -- the high
+   bit of this field -- and marks any stack region.) */
+
+/* %%REGION-STACK (sysdef.lisp:1302), the high bit of the space-type field:
+   set exactly for the four stack space types 8-11 */
+#define RegionBitsStack			0x20
+
+/* Largest stack region seen in a real world is 32 quanta = 256 pages; a
+   region claiming more than this is a corrupt table, not a big stack */
+#define RegionMaxRepavePages		0x8000
+
+#define RegionPageExistsP(vma) \
+  (VMExists (VMAttributeTable[(Integer)(vma) >> MemoryPage_AddressShift]) ? TRUE : FALSE)
+
+static boolean ReadRegionTableBase (Integer cell, Integer* base)
+{
+  LispObj q;
+
+	if (!RegionPageExistsP (cell))
+		return (FALSE);
+
+	q = VirtualMemoryReadUncached (cell);
+	if (Type_Array != (LispObjTag (q) & 0x3F))
+		return (FALSE);
+
+	*base = LispObjData (q);
+
+	return (RegionPageExistsP (*base));
+}
+
+static boolean ReadRegionTableEntry (Integer base, int n, Integer* value)
+{
+  Integer vma = base + 1 + n;
+  LispObj q;
+
+	if (!RegionPageExistsP (vma))
+		return (FALSE);
+
+	q = VirtualMemoryReadUncached (vma);
+	if (Type_Fixnum != (LispObjTag (q) & 0x3F))
+		return (FALSE);
+
+	*value = LispObjData (q);
+
+	return (TRUE);
+}
+
+void RepaveStackRegions (void)
+{
+  Integer originBase, lengthBase, freePointerBase, bitsBase;
+  Integer origin, length, freePointer, bits, originQuantum, vma;
+  int64_t page, nPages;
+  int n, nCreated;
+
+	if (!ReadRegionTableBase (RegionOriginTableCell, &originBase)
+	    || !ReadRegionTableBase (RegionLengthTableCell, &lengthBase)
+	    || !ReadRegionTableBase (RegionFreePointerTableCell, &freePointerBase)
+	    || !ReadRegionTableBase (RegionBitsTableCell, &bitsBase))
+	  {
+		vwarn (NULL, "Region tables unreadable; not repaving stack regions");
+		return;
+	  }
+
+	for (n = 0; n < RegionTableCapacity; n++)
+	  {
+		if (!ReadRegionTableEntry (originBase, n, &originQuantum)
+		    || !ReadRegionTableEntry (lengthBase, n, &length)
+		    || !ReadRegionTableEntry (freePointerBase, n, &freePointer)
+		    || !ReadRegionTableEntry (bitsBase, n, &bits))
+			continue;
+
+		/* length is in quanta, freePointer in words */
+		if (0 == freePointer || 0 == length
+		    || (uint64_t)freePointer > ((uint64_t)length << RegionQuantumAddressShift))
+			continue;
+
+		if (!(bits & RegionBitsStack))
+			continue;
+
+		origin = (originQuantum & 0xFFFF) << RegionQuantumAddressShift;
+		/* Step by page COUNT, never by comparing 32-bit vmas at the ends
+		   of the range:  a region that runs up to the top of the address
+		   space would wrap and either loop forever or stop short */
+		nPages = ((int64_t)freePointer + MemoryPage_Size - 1) / MemoryPage_Size;
+		if (nPages > RegionMaxRepavePages)
+		  {
+			vwarn (NULL, "Implausible stack region %d (%ld pages below the free pointer); not repaving it",
+				   n, (long)nPages);
+			continue;
+		  }
+		nCreated = 0;
+
+		for (page = 0; page < nPages; page++)
+		  {
+			vma = origin + (Integer)(page * MemoryPage_Size);
+
+			/* Only absent pages:  EnsureVirtualAddress forces the
+			   Modified attribute on, which would defeat the IDS
+			   incremental save's delta tracking for genuine world pages */
+			if (RegionPageExistsP (vma))
+				continue;
+
+			if (0 == EnsureVirtualAddress (vma, FALSE))
+			  {
+				vwarn (NULL, "Unable to repave stack page %08X of region %d",
+					   vma, n);
+				break;
+			  }
+
+			/* A page re-created inside an already-mapped wad exposes
+			   whatever bytes that wad last held -- stale stack pointers
+			   that the GC scavenger would scan, since it scans stack
+			   regions up to the region free pointer.  Fill with 0xFF:
+			   the data fill matches EnsureVirtualAddress's fresh-wad
+			   memset (non-ephemeral null pointers), and tag 0xFF reads
+			   as type 0x3F, an immediate the scavenger skips */
+			(void) memset (MapVirtualAddressTag (vma), 0xFF,
+						   sizeof (Tag[MemoryPage_Size]));
+			(void) memset (MapVirtualAddressData (vma), 0xFF,
+						   sizeof (Integer[MemoryPage_Size]));
+			nCreated++;
+		  }
+
+		if (nCreated > 0)
+			vwarn (NULL, "Repaved region %d (origin %08X, free pointer %X): %d pages created",
+				   n, origin, freePointer, nCreated);
+	  }
+}
+
+
 /* Save a world from the VLM's memory using information supplied by Lisp itself */
 
 void SaveWorld (Integer saveWorldDataVMA)

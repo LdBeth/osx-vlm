@@ -168,6 +168,7 @@ typedef struct
 
 void	LoadVLMDebugger (VLMConfig* config);
 Integer	LoadWorld (VLMConfig* config);
+void	RepaveStackRegions (void);
 void	SaveWorld (Integer saveWorldDataVMA);
 void	ByteSwapWorld (char* worldPathname, char* searchPath);
 
