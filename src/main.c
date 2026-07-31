@@ -13,6 +13,7 @@
 #include "memory.h"
 #else
 #include "ivoryrep.h"
+#include "memory.h"
 #endif
 #include "spy.h"
 
@@ -38,6 +39,41 @@ extern void EnableLifeSupportTermination (void);
    delivered only here, via sigwait.  Teardown therefore runs in an ordinary
    thread context -- it never interrupts a worker mid-X-call, so TerminateLife-
    Support can take XLock and close the display with normal locking. */
+
+/* Post-mortem for silent halts: when GENERA_HALT_DUMP names a file, write
+   every resident page (vma, tags, data) there for offline decoding by
+   worldtool.  Runs on the main thread after the interpreter has stopped,
+   so the page tables are quiescent. */
+
+static void MaybeDumpMemoryOnHalt (void)
+{
+  char *path = getenv ("GENERA_HALT_DUMP");
+  FILE *f;
+  size_t page, npages = (size_t)1 << (32 - MemoryPage_AddressShift);
+  Integer vma;
+  unsigned int pageQs = MemoryPage_Size;
+  static const char magic[8] = "VLMPMD1\n";
+
+  if (NULL == path) return;
+  f = fopen (path, "wb");
+  if (NULL == f)
+    {
+      vwarn (NULL, "Unable to write halt dump %s", path);
+      return;
+    }
+  fwrite (magic, 1, sizeof (magic), f);
+  fwrite (&pageQs, sizeof (pageQs), 1, f);
+  for (page = 0; page < npages; page++)
+    if (VMExists (VMAttributeTable[page]))
+      {
+        vma = (Integer)(page << MemoryPage_AddressShift);
+        fwrite (&vma, sizeof (Integer), 1, f);
+        fwrite (MapVirtualAddressTag (vma), sizeof (Tag), pageQs, f);
+        fwrite (MapVirtualAddressData (vma), sizeof (Integer), pageQs, f);
+      }
+  fclose (f);
+  vwarn (NULL, "Halt dump written to %s", path);
+}
 
 static void* TerminationThread (void* ignored)
 {
@@ -215,7 +251,7 @@ int main (int argc, char** argv)
               break;
     
             case HaltReason_Halted:
-              message = NULL;
+              message = "Halted";
               break;
               
             case HaltReason_SpyCalled:
@@ -234,8 +270,12 @@ int main (int argc, char** argv)
               message = "Halted for unknown reason";
             }
           if (message != NULL)
-            vwarn (NULL, "%s at PC %08x (%s)", message, processor->epc >> 1,
-                   (processor->epc & 1) ? "Odd" : "Even");
+            vwarn (NULL, "%s at PC %08x (%s) after %ld instructions",
+                   message, processor->epc >> 1,
+                   (processor->epc & 1) ? "Odd" : "Even",
+                   (long)(0 - processor->instruction_count));
+          if (reason != HaltReason_SpyCalled)
+            MaybeDumpMemoryOnHalt ();
         }
 #ifndef IVERIFY
       if (HaltReason_Halted == reason)
