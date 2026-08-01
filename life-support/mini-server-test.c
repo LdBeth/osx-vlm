@@ -367,6 +367,59 @@ int main (void)
 		CHECK (!mini_frame_is_ours (&core, frame, sizeof (frame)), "IP is not ours");
 	}
 
+	/* --- Coexist mode: sharing the address with a real NFILE host --- */
+	{
+	  unsigned char frame[MINI_ETH_HEADER + MINI_CHAOS_HEADER + 8];
+	  unsigned char arp[MINI_ETH_HEADER + 24];
+
+		core.coexist = TRUE;
+
+		/* Chaos-ARP for our address passes through (the real host answers) */
+		memset (arp, 0xFF, 6);
+		memcpy (arp + 6, clientMac, 6);
+		arp[12] = 0x08; arp[13] = 0x06;
+		arp[14] = 0x00; arp[15] = 0x01;
+		arp[16] = 0x08; arp[17] = 0x04;
+		arp[18] = 6; arp[19] = 2;
+		arp[20] = 0x00; arp[21] = 0x01;
+		memcpy (arp + 22, clientMac, 6);
+		mini_put16 (arp + 28, CLIENT_ADDR);
+		memset (arp + 30, 0, 6);
+		mini_put16 (arp + 36, SERVER_ADDR);
+		CHECK (!mini_frame_is_ours (&core, arp, sizeof (arp)),
+			   "coexist: ARP passes to the wire");
+
+		/* An RFC for NFILE at our address passes through */
+		memset (frame, 0, sizeof (frame));
+		frame[12] = 0x08; frame[13] = 0x04;
+		frame[MINI_ETH_HEADER + 1] = CHAOS_OP_RFC;
+		mini_put16 (frame + MINI_ETH_HEADER + 2, 5);
+		mini_put16 (frame + MINI_ETH_HEADER + 4, SERVER_ADDR);
+		mini_put16 (frame + MINI_ETH_HEADER + 8, CLIENT_ADDR);
+		mini_put16 (frame + MINI_ETH_HEADER + 10, 0x7777);
+		memcpy (frame + MINI_ETH_HEADER + MINI_CHAOS_HEADER, "NFILE", 5);
+		CHECK (!mini_frame_is_ours (&core, frame, sizeof (frame)),
+			   "coexist: NFILE RFC passes to the wire");
+
+		/* An RFC for MINI is still ours */
+		memcpy (frame + MINI_ETH_HEADER + MINI_CHAOS_HEADER, "MINI ", 5);
+		CHECK (mini_frame_is_ours (&core, frame, sizeof (frame)),
+			   "coexist: MINI RFC is ours");
+
+		/* Traffic on the open MINI conversation is ours... */
+		frame[MINI_ETH_HEADER + 1] = CHAOS_OP_STS;
+		mini_put16 (frame + MINI_ETH_HEADER + 10, clientIndex);
+		CHECK (mini_frame_is_ours (&core, frame, sizeof (frame)),
+			   "coexist: open-conversation traffic is ours");
+
+		/* ...but the same opcode from another connection passes through */
+		mini_put16 (frame + MINI_ETH_HEADER + 10, 0x7777);
+		CHECK (!mini_frame_is_ours (&core, frame, sizeof (frame)),
+			   "coexist: other-connection traffic passes to the wire");
+
+		core.coexist = FALSE;
+	}
+
 	f = failures;
 	printf (f ? "\n%d FAILURE(S)\n" : "\nall tests passed\n", f);
 	return (f ? 1 : 0);
