@@ -15,17 +15,18 @@ Genera NFILE server off its LMFS, over vmnet guest-to-guest chaos
 | Stock NFILE server on the OG2 world (login/dir/read/write) | verified |
 | Serving tree `ETHERNAL:>sys>**>` | built 2026-08-01 |
 | `>wobbly>` (QLD build log target) | created |
-| C MINI coexist demux (`MINI_COEXIST`) | built + unit-tested |
+| Lisp MINI server on A (contact MINI, both transfer modes) | `mini-server.lisp`, loopback-verified 2026-08-01 |
 | Server-enable script (in-core namespace, rerun per cold boot) | `enable-chaos-server.lisp` |
+| C MINI coexist demux (`MINI_COEXIST`) | superseded (see below), kept in tree |
 
 ## Server bring-up (og2vlm, "A", 192.168.2.2 / ETHERNAL)
 
 1. `cd og2vlm && sleep 2 && sudo ./genera` (og2vlm.sh).
 2. Log in on the console (or telnet in as LISP-MACHINE).
 3. Load the enable script over NFS.  The NFS export covers only
-   `/Users/ldbeth/Public/symbolics` (`/etc/exports`), so a copy of the
-   script is staged at `symbolics/route-b/` — re-copy it there after
-   editing the repo original:
+   `/Users/ldbeth/Public/symbolics` (`/etc/exports`), so copies of the
+   scripts are staged at `symbolics/route-b/` — re-copy after editing
+   the repo originals:
 
        (load "COSTUMEPARTY:/Users/ldbeth/Public/symbolics/route-b/enable-chaos-server.lisp")
 
@@ -33,6 +34,20 @@ Genera NFILE server off its LMFS, over vmnet guest-to-guest chaos
    host address `401` plus `:FILE CHAOS NFILE` service, and does a
    general network reset (drops telnet; reconnect).  It is idempotent.
    The edits are in-core only — rerun after every cold boot of A.
+4. Load the MINI server the same way (also once per cold boot):
+
+       (load "COSTUMEPARTY:/Users/ldbeth/Public/symbolics/route-b/mini-server.lisp")
+
+   It starts a "MINI Server" process listening on contact MINI and
+   serving `ETHERNAL:>sys>**>` (NOT this world's SYS:, which points at
+   the vbin-pruned `>rel-8-5>sys>` master).  One process per accepted
+   connection — a guest that reboots without closing its connection
+   parks the old service process but never blocks the next RFC
+   (single-process design wedged exactly that way in live test).
+   Logs go to `(mini-log)` — never the console; background typeout
+   would block the server.  Loopback-verified on A: binary (vbin magic
+   F013 0005 F012 A00C byte-perfect) + character + LOST + concurrent
+   connections.
 
 ## Serving tree
 
@@ -68,34 +83,31 @@ the IP would collide):
     genera.world: ../og2vlm/fresh.ilod
 
     cd og2vlm-qld
-    sudo GENERA_SYS_ROOT=/Users/ldbeth/Public/symbolics/rel-8-5/sys \
-         MINI_COEXIST=1 GENERA_HALT_DUMP=fresh-qld.pmd ./genera
+    sudo GENERA_HALT_DUMP=fresh-qld.pmd ./genera
 
-The `CHAOS|402` component is REQUIRED, not decorative: the C MINI
-server only starts when the network spec chain has a CHAOS element
-(network-darwin.c MiniServerStart gate) — `GENERA_SYS_ROOT` alone
-silently gets you no `MINI server:` boot line.  The guest adopts 402
-as its own chaos address from this spec (SETUP-MY-CHAOS-ADDRESS reads
-the FEP boot option).  Do NOT append `;host=401`: spec options are
-echoed verbatim into the guest-visible address string and the cold
-world's integer parser FERRORs on the `;` ("Garbage character seen
-while parsing integer") — the in-process MINI server defaults to 401
-anyway; `host=` is only for MOVING it elsewhere, and only warm worlds
-tolerate it.  Since B (og2vlm-b) is also chaos 402, don't run B and
-the QLD guest at the same time.
+**No `GENERA_SYS_ROOT`, no `MINI_COEXIST`** — with the Lisp MINI server
+on A, the guest runs with no in-emulator interception at all; MINI and
+NFILE both cross the wire to A at 401.  **Boot A first** (the guest
+must ARP-resolve 401 before anything works).  The `CHAOS|402` spec
+component is still REQUIRED — it is where the cold world gets its own
+chaos address (SETUP-MY-CHAOS-ADDRESS reads the FEP boot option).  Do
+NOT append `;host=...` options: the cold parser FERRORs on the `;`
+("Garbage character seen while parsing integer").  Since B (og2vlm-b)
+is also chaos 402, don't run B and the QLD guest at the same time.
 
-Coexist is enabled by `MINI_COEXIST=1` in the environment.  With coexist on, the in-emulator
-MINI server still owns the MINI protocol at 401, but:
-
-- chaos-ARP for 401 passes to the wire (A answers with its real MAC), and
-- every non-MINI chaos frame to 401 (NFILE RFCs, NFD data channels,
-  STATUS/hostat) passes to the wire, where A answers as DIS-SYS-HOST.
-
-Consequences: **boot A first** — with coexist on, the guest cannot even
-resolve 401's MAC (and therefore cannot reach the C MINI) until A
-answers ARP.  Traffic on the open MINI conversation is classified by
-(source address, source index); the guest NCP never reuses a live
-index, so MINI and NFILE connections do not collide.
+History (2026-08-01): the first architecture kept the C MINI server
+in-guest with a `MINI_COEXIST` demux (MINI claimed in-process,
+everything else passed to the wire).  Its MINI phase worked — the full
+inner system loaded with A live on the bridge — but the run died near
+"Canonicalizing cold load pathnames" with a host-side wild branch
+(`Memory fault at PC 0x10000000000 (VMA 0) is not a recorded VM
+access`), and the relaunch crashed the guest into the VLM debugger
+instead ("error printing").  Nondeterministic, root cause unknown;
+dump saved at `og2vlm-qld/fresh-qld.pmd` (28 MB, uninvestigated).  The
+Lisp-MINI architecture removes the intercept/injection machinery from
+the guest entirely — the original Route-B plan, and a cleaner suspect
+list if a crash reproduces.  The C coexist code stays in the tree
+(committed 94f8f46) for the rootless / no-second-VLM use case.
 
 The fresh QLD world already bakes DIS-SYS-HOST = 401 (MINIFS/syshost),
 so no client-side namespace fix is needed.  Stock **dist-world** test
@@ -106,36 +118,24 @@ such clients.
 
 ## Next session: resume checklist → attempt 21
 
-State when the VLMs were shut down (2026-08-01): serving tree, `>wobbly>`,
-and everything on LMFS **persist** (fep0.dsk).  A's chaos address / NFILE
-service and B's DIS-SYS-HOST fix are **in-core only and are now gone** —
-step 2 below restores the server side; B is only needed again as a debug
-client.  The rebuilt `src/genera` (MINI_COEXIST support) is what both
-instance dirs symlink, so it runs on next launch.
+Per cold boot of A, three things restore the server side (everything on
+LMFS persists; the namespace edits and the MINI server process are
+in-core only):
 
-1. **Commit first**: `life-support/mini-server.c`, `mini-server-test.c`,
-   `route-b/` are uncommitted.  (Standing deploy rule: run from committed
-   source.)  Re-run the unit harness if anything changed:
-   `cc -DMINI_STANDALONE -o /tmp/mini-test life-support/mini-server-test.c
-   && /tmp/mini-test` → 42 ok.
-2. **Boot + enable the server (A)**: `cd og2vlm && sleep 2 && sudo ./genera`,
-   log in (console or telnet, LISP-MACHINE works), then
+1. **Boot A**: `cd og2vlm && sleep 2 && sudo ./genera`, log in (console
+   or telnet, LISP-MACHINE works).
+2. **Enable chaos + NFILE**:
    `(load "COSTUMEPARTY:/Users/ldbeth/Public/symbolics/route-b/enable-chaos-server.lisp")`
    — expect the telnet connection to drop at the end (network reset);
    reconnect and check `chaos:my-address` ⇒ 257.
-3. **Optional sanity from B** (og2vlm-b, dist world): boot it, run
-   `(route-b-point-dis-sys-host-at-401)` from the same file, then the
-   verification snippets below.  Skip when confident — the QLD guest is
-   the real test.
-4. **Stage-A live test of coexist = attempt 21's cold phase**: launch the
-   QLD guest exactly as attempt 20 (fresh.ilod + `GENERA_SYS_ROOT` for the
-   C MINI) **plus `MINI_COEXIST=1`**, A already up (rule: guest can't
-   ARP-resolve 401 until A answers).  Boot line must read
-   `MINI server: chaos 401 serving ... (coexist: non-MINI traffic passes
-   to the wire)`.  The MINI inner-system load exercises coexist's claim
-   path; the first NFILE open exercises passthrough.
+3. **Start the MINI server**:
+   `(load "COSTUMEPARTY:/Users/ldbeth/Public/symbolics/route-b/mini-server.lisp")`
+   — then `(send *mini-server-process* :whostate)` ⇒ "Chaos Listen".
+4. **Launch the QLD guest** from `og2vlm-qld/` (see QLD guest section:
+   plain `sudo GENERA_HALT_DUMP=fresh-qld.pmd ./genera`, no env vars,
+   A up first).
 5. **Attempt 21**: `(si:qld :gc-on nil)` — the ephemeral-GC bug is still
-   unpatched in the fresh world; never `:gc-on t`.
+   unpatched in the fresh world; never plain `(si:qld)`.
 6. **Known watch-point near the end**: QLD writes
    `DIS-SYS-HOST:>wobbly><version>>vlm-qld-build.log` :OUTPUT.  `>wobbly>`
    exists, but the `<version>` subdirectory does not; if the stock server
