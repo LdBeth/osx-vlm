@@ -59,9 +59,28 @@ To refresh one file later (e.g. a recompiled vbin):
 
 ## QLD guest
 
-Run the QLD guest as before (`fresh.ilod`, `GENERA_SYS_ROOT` /
-`-minifsroot` for the C MINI inner-system load) **plus**
-`MINI_COEXIST=1` in the environment.  With coexist on, the in-emulator
+The guest runs from its own instance dir `og2vlm-qld/` (genera +
+VLM_debugger symlinks, `.VLM` below, **no fep0.dsk** — never launch it
+from `og2vlm/` while A runs there: A's LMFS disk is open O_RDWR and
+the IP would collide):
+
+    genera.network: 192.168.2.4;mask=255.255.255.0;gateway=192.168.2.1;host=192.168.2.1,CHAOS|402;host=401
+    genera.world: ../og2vlm/fresh.ilod
+
+    cd og2vlm-qld
+    sudo GENERA_SYS_ROOT=/Users/ldbeth/Public/symbolics/rel-8-5/sys \
+         MINI_COEXIST=1 GENERA_HALT_DUMP=fresh-qld.pmd ./genera
+
+The `CHAOS|402;host=401` component is REQUIRED, not decorative: the C
+MINI server only starts when the network spec chain has a CHAOS
+element (network-darwin.c MiniServerStart gate) — `GENERA_SYS_ROOT`
+alone silently gets you no `MINI server:` boot line.  The guest adopts
+402 as its own chaos address from this spec (SETUP-MY-CHAOS-ADDRESS
+reads the FEP boot option), and `host=401` is where the in-process
+MINI server answers.  Since B (og2vlm-b) is also chaos 402, don't run
+B and the QLD guest at the same time.
+
+Coexist is enabled by `MINI_COEXIST=1` in the environment.  With coexist on, the in-emulator
 MINI server still owns the MINI protocol at 401, but:
 
 - chaos-ARP for 401 passes to the wire (A answers with its real MAC), and
