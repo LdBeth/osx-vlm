@@ -3,8 +3,8 @@
 ;;; Route B: Lisp MINI cold-load file server, running on the server VLM
 ;;; ("A", chaos #o401) next to the stock NFILE server.  Replaces the
 ;;; in-emulator C MINI server (life-support/mini-server.c) for the QLD
-;;; guest: the guest now runs with NO GENERA_SYS_ROOT / MINI_COEXIST at
-;;; all, and every frame to 401 -- MINI and NFILE alike -- crosses the
+;;; guest: the guest now runs with NO GENERA_SYS_ROOT at all, and every
+;;; frame to 401 -- MINI and NFILE alike -- crosses the
 ;;; vmnet wire to this machine.
 ;;;
 ;;; Wire contract (reconstructed from SYS:IO;LMINI, same as the C server):

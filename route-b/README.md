@@ -17,7 +17,6 @@ Genera NFILE server off its LMFS, over vmnet guest-to-guest chaos
 | `>wobbly>` (QLD build log target) | created |
 | Lisp MINI server on A (contact MINI, both transfer modes) | `mini-server.lisp`, loopback-verified 2026-08-01 |
 | Server-enable script (in-core namespace, rerun per cold boot) | `enable-chaos-server.lisp` |
-| C MINI coexist demux (`MINI_COEXIST`) | superseded (see below), kept in tree |
 
 ## Server A: per-cold-boot runbook (og2vlm, 192.168.2.2 / ETHERNAL)
 
@@ -102,7 +101,7 @@ the IP would collide):
     cd og2vlm-qld
     sudo GENERA_HALT_DUMP=fresh-qld.pmd ./genera
 
-**No `GENERA_SYS_ROOT`, no `MINI_COEXIST`** — with the Lisp MINI server
+**No `GENERA_SYS_ROOT`** — with the Lisp MINI server
 on A, the guest runs with no in-emulator interception at all; MINI and
 NFILE both cross the wire to A at 401.  **Boot A first** (the guest
 must ARP-resolve 401 before anything works).  The `CHAOS|402` spec
@@ -126,8 +125,10 @@ VLM-debugger death was dump-proven to be an ephemeral-GC flip dying in
 FIND-FREE-EPHEMERAL-SPACE — see "Attempt 21 findings" below.)  The
 Lisp-MINI architecture removes the intercept/injection machinery from
 the guest entirely — the original Route-B plan, and a cleaner suspect
-list if a crash reproduces.  The C coexist code stays in the tree
-(committed 94f8f46) for the rootless / no-second-VLM use case.
+list if a crash reproduces.  The coexist demux itself was deleted once
+that architecture was abandoned (it lived only in 94f8f46..7625509); the
+C MINI server remains for the rootless / no-second-VLM use case, but it
+owns chaos 401 outright again, so it cannot share the wire with A.
 
 The fresh QLD world already bakes DIS-SYS-HOST = 401 (MINIFS/syshost),
 so no client-side namespace fix is needed.  Stock **dist-world** test

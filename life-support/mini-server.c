@@ -33,11 +33,10 @@
  * out via callback, caller-supplied clock) and compiles standalone under
  * -DMINI_STANDALONE for the unit harness in mini-server-test.c.
  *
- * MINI_COEXIST (environment) shares the server's chaos address with a real
- * host on the wire (a second VLM serving NFILE as DIS-SYS-HOST): we then
- * claim only RFCs whose contact is MINI plus traffic on the open MINI
- * conversation, and pass everything else -- including chaos-ARP, which the
- * real host must answer so passed-through unicasts resolve to its MAC.
+ * The server owns its chaos address outright: every frame addressed to it,
+ * including chaos-ARP, is answered in-process and never reaches the wire.
+ * It therefore cannot share the address with a real host -- for that, run
+ * the Lisp MINI server on a second VLM instead (route-b/mini-server.lisp).
  */
 
 #ifdef MINI_STANDALONE
@@ -109,10 +108,6 @@ typedef struct
 	unsigned short guestAddr;			/* Guest's chaos address (0402); informational */
 	unsigned char myMac[6];
 	char root[1024];					/* SYS: translation root */
-	boolean coexist;					/* Address shared with a real host on
-										   the wire: claim only MINI traffic,
-										   let everything else (and ARP)
-										   through to the network */
 	MiniEmitFn emit;
 	void* emitCtx;
 
@@ -663,11 +658,7 @@ static boolean mini_frame_is_ours (const MiniCore* c, const unsigned char* frame
 	etherType = (unsigned short) ((frame[12] << 8) | frame[13]);
 	if (ETH_P_ARP == etherType)
 	  {
-		/* ARP for the chaos protocol with our address as target.  When the
-		   address is shared, the real host answers ARP -- passed-through
-		   unicasts must resolve to its MAC, so we never compete. */
-		if (c->coexist)
-			return (FALSE);
+		/* ARP for the chaos protocol with our address as target. */
 		if (nBytes < MINI_ETH_HEADER + 24)
 			return (FALSE);
 		if (frame[MINI_ETH_HEADER + 2] != 0x08 || frame[MINI_ETH_HEADER + 3] != 0x04)
@@ -678,20 +669,7 @@ static boolean mini_frame_is_ours (const MiniCore* c, const unsigned char* frame
 	  {
 		if (nBytes < MINI_ETH_HEADER + MINI_CHAOS_HEADER)
 			return (FALSE);
-		if (mini_get16 (frame + MINI_ETH_HEADER + 4) != c->myAddr)
-			return (FALSE);
-		if (!c->coexist)
-			return (TRUE);
-		/* Sharing the address: claim RFCs for the MINI contact and traffic
-		   on the open MINI conversation; everything else at this address
-		   (NFILE, STATUS, ...) belongs to the host out on the wire. */
-		if (CHAOS_OP_RFC == frame[MINI_ETH_HEADER + 1])
-			return (nBytes >= MINI_ETH_HEADER + MINI_CHAOS_HEADER + 4 &&
-					0 == memcmp (frame + MINI_ETH_HEADER + MINI_CHAOS_HEADER,
-								 "MINI", 4));
-		return (c->state == MINI_OPEN &&
-				mini_get16 (frame + MINI_ETH_HEADER + 8) == c->clientAddr &&
-				mini_get16 (frame + MINI_ETH_HEADER + 10) == c->clientIndex);
+		return (mini_get16 (frame + MINI_ETH_HEADER + 4) == c->myAddr);
 	  }
 	return (FALSE);
 }
@@ -851,7 +829,6 @@ boolean MiniServerStart (EmbNetChannel* channel, unsigned short serverAddr,
 	server->debug = (getenv ("MINI_DEBUG") != NULL);
 	mini_core_init (&server->core, serverAddr, guestAddr, root,
 					&MiniServerEmit, (void*) server);
-	server->core.coexist = (getenv ("MINI_COEXIST") != NULL);
 	server->rxHead = server->rxTail = 0;
 	server->txHead = server->txTail = 0;
 	server->stop = 0;
@@ -871,10 +848,8 @@ boolean MiniServerStart (EmbNetChannel* channel, unsigned short serverAddr,
 	server->threadSetup = TRUE;
 	server->enabled = TRUE;
 
-	printf ("net #%d MINI server: chaos %o serving %s%s\n",
-			(int) channel->unit, (unsigned) serverAddr, root,
-			server->core.coexist
-				? " (coexist: non-MINI traffic passes to the wire)" : "");
+	printf ("net #%d MINI server: chaos %o serving %s\n",
+			(int) channel->unit, (unsigned) serverAddr, root);
 	return (TRUE);
 }
 
