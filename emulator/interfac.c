@@ -533,8 +533,34 @@ void InitializeIvoryProcessor (Integer *basedata, Tag *basetag)
       vpunt (NULL, "Couldn't create processor state page");
     /* allocate processor-state block (aligned to end of d-cache) */
     processor = (PROCESSORSTATEP)(state_page + 2*ALPHAPAGESIZE - PROCESSORSTATE_SIZE); /* pr */
-    /* allocate stack-cache in the same page (aligned at 0 relative to d-cache) */
-    stackcache = (LispObjRecordp)state_page;
+
+    /* The stack cache must NOT share the state page (the Alpha original put
+       it there "for better d-cache utilization").  The stack-cache overflow
+       handler deliberately raises scovlimit past stackcachesize while a
+       backing-page fault is serviced by Lisp (stub/ifunfcal.c
+       stackcacheoverflowhandler stores the new limit before the residency
+       probe, and the dump can't run until the faulted page exists), so the
+       trap handler's pushes legitimately overrun the logical cache size.
+       Sharing the page, that overrun walked into PROCESSORSTATE -- asrr26,
+       iInterpret's return-to-C label, sits at stack-cache word index 1889 --
+       and the next interpreter exit did goto *LispObj: the "Memory fault at
+       PC 0x10000000000" crash (root-caused 2026-08-01; a second VLM's chaos
+       broadcasts made the trap timing common).  Give the cache its own
+       mapping with a full cache-size of physical margin above, bracketed by
+       PROT_NONE guard pages so a wild overrun faults cleanly instead of
+       corrupting neighbors. */
+    {
+      size_t pageSize = (size_t) sysconf (_SC_PAGESIZE);
+      size_t cacheBytes = ((size_t) stackcachesize * sizeof (LispObjRecord) * 2
+			   + pageSize - 1) & ~(pageSize - 1);
+      caddr_t cacheBlock = mmap (NULL, cacheBytes + 2 * pageSize, PROT_NONE,
+				 MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      if (cacheBlock == MAP_FAILED)
+	vpunt (NULL, "Couldn't create stack cache");
+      if (mprotect (cacheBlock + pageSize, cacheBytes, PROT_READ | PROT_WRITE))
+	vpunt (NULL, "Couldn't enable stack cache pages");
+      stackcache = (LispObjRecordp) (cacheBlock + pageSize);
+    }
 
     block=(caddr_t)malloc((16*64*sizeof(int)) /* 16 vs. 13 to get full block */
 	                          +2*ALPHAPAGESIZE);

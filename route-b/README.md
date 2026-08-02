@@ -109,8 +109,10 @@ must ARP-resolve 401 before anything works).  The `CHAOS|402` spec
 component is still REQUIRED — it is where the cold world gets its own
 chaos address (SETUP-MY-CHAOS-ADDRESS reads the FEP boot option).  Do
 NOT append `;host=...` options: the cold parser FERRORs on the `;`
-("Garbage character seen while parsing integer").  Since B (og2vlm-b)
-is also chaos 402, don't run B and the QLD guest at the same time.
+("Garbage character seen while parsing integer").  Chaos 402 is the
+guest's alone — the phase-0 de-risk instance `og2vlm-b/` that also used
+it was deleted once the transport was verified; if you recreate a second
+client, give it a different address or don't run it alongside the guest.
 
 History (2026-08-01): the first architecture kept the C MINI server
 in-guest with a `MINI_COEXIST` demux (MINI claimed in-process,

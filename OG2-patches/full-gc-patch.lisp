@@ -360,11 +360,9 @@
 			   (GC-OPTIMIZATION-REPORT "~%~\DATIME\ Resetting temporary areas ...")
 			   (RESET-TEMPORARY-AREA REORDERING-LIST-AREA T)
 			   (RESET-TEMPORARY-AREA SYSTEM-WEAKSPACE-AREA T)
-			   1(region-check :fix-regions nil
-					 :all-areas t
-					 :verbose nil
-					 :show-errors nil)
-0			   T))
+			   ;; OG2 (7/21/26): post-reclaim report-only region-check removed --
+			   ;; redundant with the pre-flip fixing pass.
+			   T))
 		    (IF (LOOP FOR OPTIMIZATION IN OPTIMIZE
 			      NEVER (RUN-GC-OPTIMIZATION-P
 				      OPTIMIZATION :AFTER-RECLAIM-OLDSPACE))

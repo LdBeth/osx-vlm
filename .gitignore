@@ -37,6 +37,7 @@
 *~
 .DS_Store
 .clang_format
+.mcp.json
 tags
 TAGS
 CLAUDE.md
