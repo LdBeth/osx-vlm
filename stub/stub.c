@@ -544,9 +544,9 @@ __attribute__((optnone))
 int iInterpret (PROCESSORSTATEP ivoryp) {
   PROCESSORSTATEP processor;
   u64 ivory = (u64)ivoryp;
-  int _trace = 0;
-  int _show = 0;
-  u64 cpustack[1024];
+  // int _trace = 0;
+  // int _show = 0;
+  static u64 cpustack[1024];
 
 /* These registers were volatile so the SEGV handler's blind PC jam to
    the decodefault label would always find them in their stack slots.  On
@@ -702,6 +702,21 @@ show_loc(void)
   processor->internalregisterread2 = (int64_t)_internalregisterread2;
   processor->internalregisterwrite1 = (int64_t)_internalregisterwrite1;
   processor->internalregisterwrite2 = (int64_t)_internalregisterwrite2;
+
+  /* The i-stage-error hook is a DISPATCH TARGET: the icache fill stamps it
+     into cacheline code slots (idispat.c DoICacheFill: the odd half of every
+     full-word instruction, and both halves past a function's last instruction
+     -- pcendcf).  interfac.c initializes it to the extern DoIStageError,
+     which is a blanks.c EMPTY function: dispatching through it executes a
+     bare `ret`, and inside iInterpret x30 is the pinned ivory register, so
+     the host branches to TagSpace base (0x10000000000) and dies -- the
+     "Memory fault at PC 0x10000000000" crash, root-caused 2026-08-01 from a
+     QLD-attempt-21 register dump (i_stage_error_hook == &DoIStageError + no
+     other x30 writer).  Latent in the original Alpha->C translation on ALL
+     hosts; any guest i-stage error (a normal, guest-visible trap condition)
+     was fatal to the emulator.  Point it at the real internal label, same
+     pattern as DECODEFAULT/ICACHEMISS below. */
+  processor->i_stage_error_hook = (char *)&&doistageerror;
 
 processor->stop_interpreter = 0;
 

@@ -22,6 +22,7 @@
 #else
 #include <fenv.h>
 #endif
+#include <sys/mman.h>
 
 #define MBToWords(MB) ((MB * 1024 * 1024) + 4)/5
 #define WordsToMB(words) ((5 * words) + (1024 * 1024) - 1)/(1024 * 1024)
@@ -67,6 +68,15 @@ static void MaybeDumpMemoryOnHalt (void)
     if (VMExists (VMAttributeTable[page]))
       {
         vma = (Integer)(page << MemoryPage_AddressShift);
+        /* DataSpace pages can be PROT_NONE (transport/access armed); a plain
+           read here would SIGSEGV at an unrecorded PC inside libc and kill
+           the process mid-dump.  The interpreter is stopped and the process
+           exits after the dump, so lift host protection outright; if even
+           that fails, omit the page rather than die.  (TagSpace is never
+           protected -- memory.c.)  Data pages are host-page aligned. */
+        if (mprotect ((void *) MapVirtualAddressData (vma),
+                      sizeof (Integer) * pageQs, PROT_READ | PROT_WRITE) != 0)
+          continue;
         fwrite (&vma, sizeof (Integer), 1, f);
         fwrite (MapVirtualAddressTag (vma), sizeof (Tag), pageQs, f);
         fwrite (MapVirtualAddressData (vma), sizeof (Integer), pageQs, f);
