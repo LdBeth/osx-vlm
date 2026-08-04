@@ -195,6 +195,16 @@ void ClearCreated(Integer vma)
 
 /**** Virtual memory system ****/
 
+/* TRUE if the wad containing VMA is mapped, i.e. some page of it has been
+   created.  Every page of a mapped wad is reachable by the guest at the
+   wad's protection whether or not the attribute table says it exists, so
+   an uncreated page of one takes no fault and needs no repair; only a page
+   whose whole wad is absent can reach PHT-MISS-HANDLER. */
+Boolean VirtualAddressWadMappedP (Integer vma)
+{
+  return (WadCreated(vma) ? TRUE : FALSE);
+}
+
 Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
 {
   VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
@@ -218,8 +228,6 @@ Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
     int prot = ComputeProtection(attr);
     caddr_t data = (caddr_t)&DataSpace[aligned_vma];
     caddr_t tag = (caddr_t)&TagSpace[aligned_vma];
-  
-    VMAttributeTable[MemoryPageNumber(vma)] = attr;
 
     if (data != mmap(data, sizeof(Integer[MemoryWad_Size]), PROT_READ|PROT_WRITE|PROT_EXEC,
 		     MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED,-1,0))
@@ -231,16 +239,12 @@ Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
     (void)memset((unsigned char *)data, (unsigned char) -1, sizeof(Integer[MemoryWad_Size]));
 #if defined(OS_DARWIN)
     /* Protection lives on DataSpace: apply it after initializing the wad;
-       tags stay permanently read/write.  Keep the mapping in lockstep with
-       the attribute table for EVERY page of the wad: the non-created pages
-       read as attribute 0, i.e. PROT_NONE, and AdjustProtection derives a
-       page's current protection from its table entry -- if the whole wad
-       kept this page's protection, a later SetCreated of a sibling page
-       whose computed protection happens to equal ComputeProtection(0)
-       would skip its mprotect and never get the fault it asked for. */
-    if (mprotect(data, sizeof(Integer[MemoryWad_Size]), PROT_NONE)
-	|| (prot != PROT_NONE
-	    && mprotect(DataPageAddress(vma), DataPageSize, prot)))
+       tags stay permanently read/write.  The whole wad takes the created
+       page's protection, as the reference emulator does (there it is the
+       tag wad's mmap protection); AdjustProtection applies any per-page
+       divergence from here on. */
+    if (prot != (PROT_READ|PROT_WRITE|PROT_EXEC)
+	&& mprotect(data, sizeof(Integer[MemoryWad_Size]), prot))
     {
       verror (NULL, "Couldn't protect data wad at %lx for VMA %x", data, vma);
       munmap(data, sizeof(Integer[MemoryWad_Size]));
@@ -257,6 +261,18 @@ Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
       munmap(data, sizeof(Integer[MemoryWad_Size]));
       return(0);
     }
+
+    /* Only the requested page is created.  The wad's other pages stay
+       uncreated but MAPPED at the wad's protection, which is what makes a
+       world-file "hole" (a page absent from the load map but below its
+       region's free pointer) inert:  the guest reaches it without a fault,
+       so PHT-MISS-HANDLER -- whose #+VLM branch below the free pointer is
+       the fatal "Miss fault on extant virtual address", not a create --
+       never runs.  MapWorldLoad relies on the same thing, mapping the
+       ragged ends of every load-map extent a whole wad at a time.
+       AdjustProtection must not derive such a page's hardware protection
+       from its attributes; see the VMExists check there. */
+    VMAttributeTable[MemoryPageNumber(vma)] = attr;
   }
 
   return(MemoryPage_Size);
@@ -1552,6 +1568,16 @@ void AdjustProtection(Integer vma, VMAttribute new_attr)
 
   old = ComputeProtection(oa);
   new = ComputeProtection(new_attr);
+
+  /* A page the table calls non-existent is nonetheless mapped at its wad's
+     protection until something protects it individually (EnsureVirtualAddress
+     and MapWorldLoad both work a whole wad at a time), so ComputeProtection
+     of its attributes is not a statement about the hardware.  Creating such a
+     page must always reach mprotect, even when the two derived protections
+     agree -- otherwise a create that asks for faults (PROT_NONE) is skipped
+     and the page silently keeps the wad's access. */
+  if (!VMExists(oa) && VMExists(new_attr))
+    old = ~new;
 
 #if defined(OS_DARWIN)
   /* Protection lives on DataSpace (one Ivory page = 32KB of data = two whole

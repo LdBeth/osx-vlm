@@ -99,9 +99,17 @@ Integer LoadWorld (VLMConfig* config)
    ABSENT below the free pointer of the data, control and binding stack regions.
    PHT-MISS-HANDLER halts the machine on a miss below a region's free pointer
    ("Miss fault on extant virtual address") while the stack-growth code raises
-   stack limits assuming those pages exist, so the first deep recursion steps
-   on a hole and takes the machine down.  Create the missing pages here, once,
-   right after the world has been loaded.
+   stack limits assuming those pages exist, so a deep enough recursion steps on
+   a hole and takes the machine down.
+
+   Most such holes never fault:  wads are mapped and protected whole, so an
+   absent page that shares a wad with a loaded one is reachable anyway, which
+   is why these worlds run at all on the emulators that wrote them.  Only a
+   page whose ENTIRE wad is absent from the load map can reach the miss, so
+   only those are repaved -- creating one page maps its whole wad and renders
+   the rest of that wad inert.  Repairing the reachable-anyway pages instead
+   would put them in the load map of every world saved from this one, for no
+   gain:  worlds stay comparable with what the reference emulator writes.
 
    The region tables are reached through the wired SYSCOM forwarding cells:
    each holds a DTP-ARRAY Q whose data is the vma of the table's array header,
@@ -129,9 +137,11 @@ Integer LoadWorld (VLMConfig* config)
    set exactly for the four stack space types 8-11 */
 #define RegionBitsStack			0x20
 
-/* Largest stack region seen in a real world is 32 quanta = 256 pages; a
-   region claiming more than this is a corrupt table, not a big stack */
-#define RegionMaxRepavePages		0x8000
+/* Largest stack region seen in a real world is 36 pages (region 19 of the
+   8.5 distribution world, free pointer 0x48000 words); 4096 pages is 32M
+   words of stack, far above any real one, so a region claiming more than
+   this is a corrupt table rather than a big stack */
+#define RegionMaxRepavePages		0x1000
 
 #define RegionPageExistsP(vma) \
   (VMExists (VMAttributeTable[(Integer)(vma) >> MemoryPage_AddressShift]) ? TRUE : FALSE)
@@ -224,6 +234,12 @@ void RepaveStackRegions (void)
 			if (RegionPageExistsP (vma))
 				continue;
 
+			/* An absent page of a mapped wad is reachable at the wad's
+			   protection and never faults, so leave it out of the load
+			   map exactly as the world we loaded left it */
+			if (VirtualAddressWadMappedP (vma))
+				continue;
+
 			if (0 == EnsureVirtualAddress (vma, FALSE))
 			  {
 				vwarn (NULL, "Unable to repave stack page %08X of region %d",
@@ -231,13 +247,13 @@ void RepaveStackRegions (void)
 				break;
 			  }
 
-			/* A page re-created inside an already-mapped wad exposes
-			   whatever bytes that wad last held -- stale stack pointers
-			   that the GC scavenger would scan, since it scans stack
-			   regions up to the region free pointer.  Fill with 0xFF:
-			   the data fill matches EnsureVirtualAddress's fresh-wad
-			   memset (non-ephemeral null pointers), and tag 0xFF reads
-			   as type 0x3F, an immediate the scavenger skips */
+			/* The page is now resident and below the region free
+			   pointer, so the GC scavenger will scan it.  Its data comes
+			   back 0xFF from EnsureVirtualAddress's fresh-wad memset
+			   (non-ephemeral null pointers), but its tags come back ZERO
+			   from the anonymous mapping -- DTP-NULL Qs pointing at
+			   0xFFFFFFFF, which the scavenger would follow.  Stamp both
+			   0xFF:  tag 0xFF reads as type 0x3F, an immediate it skips */
 			(void) memset (MapVirtualAddressTag (vma), 0xFF,
 						   sizeof (Tag[MemoryPage_Size]));
 			(void) memset (MapVirtualAddressData (vma), 0xFF,
@@ -246,8 +262,8 @@ void RepaveStackRegions (void)
 		  }
 
 		if (nCreated > 0)
-			vwarn (NULL, "Repaved region %d (origin %08X, free pointer %X): %d pages created",
-				   n, origin, freePointer, nCreated);
+			vwarn (NULL, "Repaved region %d (origin %08X, free pointer %X): %d page%s created",
+				   n, origin, freePointer, nCreated, 1 == nCreated ? "" : "s");
 	  }
 }
 

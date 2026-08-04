@@ -11,6 +11,7 @@
 #include "ivoryrep.h"
 
 void ReserveIvoryAddressSpace (void);
+Boolean VirtualAddressWadMappedP (Integer vma);
 Integer EnsureVirtualAddress (Integer vma, Boolean faultp);
 Integer EnsureVirtualAddressRange (Integer vma, int count, Boolean faultp);
 void EnsureVirtualMemoryAccessible (Integer vma, int count);
