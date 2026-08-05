@@ -25,11 +25,24 @@ and multi-file tapes work and images interchange with other tools.
 
 ## Run
 
-    sudo ./rmtd --tape /path/to/genera.tap        # port 512 needs root
-    ./rmtd --tape test.tap --port 1512 -vv        # high port for testing; -vv traces wire
+    sudo ./rmtd --tape /path/to/genera.tap                    # port 512 needs root
+    ./rmtd --tape test.tap --host 127.0.0.1 --port 1512 -vv   # testing; -vv traces wire
 
 A missing tape image is created empty. Serves one connection at a time
 (a single drive). `-v` traces commands, `-vv` adds replies.
+
+**Security:** like `lpdd`, `rmtd` binds the vmnet bridge `192.168.2.1` by
+default and refuses a wildcard bind unless you pass `--insecure-any-interface`.
+The rexec credentials Genera sends are accepted and ignored, so anyone who can
+reach the port can read the tape image — and erase it, since `MTERASE`
+truncates it to zero bytes. The bridge address exists only while the VLM runs,
+so a bind failure before the VLM is up is expected.
+
+Root is needed only to bind port 512: `rmtd` drops to `$SUDO_USER` (override
+with `--user`) as soon as the bind succeeds, so the request loop runs
+unprivileged. The rmt `O` command's device name is ignored — the only file
+served is the `--tape` image. A tape image an *earlier* root run created is
+root-owned and will now fail a startup check; `chown` it to yourself.
 
 ## Genera namespace setup (important)
 

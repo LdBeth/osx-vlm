@@ -14,20 +14,31 @@ tapes work and images interchange with other tools.
   (NOT Sun).  DEC-AXP selects the rmt dialect that (a) never issues the binary
   `S` status command and (b) allows short input records -- both required here.
 
+SECURITY: rexec credentials are accepted and ignored (Genera sends none that
+mean anything here), so anyone who can open the port can read the tape image
+and erase it (MTERASE truncates it to zero bytes).  rmtd therefore binds the
+vmnet bridge address by default -- like lpdd -- and refuses a wildcard bind
+unless --insecure-any-interface says otherwise.  The bridge exists only while
+the VLM is running.  Root is needed only to bind port 512, so rmtd drops to
+$SUDO_USER (or --user) as soon as the bind is done; the request loop never runs
+as root.
+
 Run (port 512 is privileged):
     sudo ./rmtd --tape /path/to/genera.tap
 Test against a high port without root:
-    ./rmtd --tape test.tap --port 1512 -v
+    ./rmtd --tape test.tap --host 127.0.0.1 --port 1512 -v
 """
 
 import argparse
 import logging
 import os
+import pwd
 import socket
 import struct
 import sys
 
 DEFAULT_PORT = 512
+DEFAULT_HOST = "192.168.2.1"            # vmnet bridge, up only while the VLM runs
 
 # mtio MTIOCTOP opcodes -- order from sys.sct/embedding/ux/unix-tape.lisp.
 MTWEOF, MTFSF, MTBSF, MTFSR, MTBSR, MTREW, MTOFFL, MTNOP, MTRETEN, MTERASE, MTEOM = range(11)
@@ -297,12 +308,69 @@ def handle(conn, tape_path):
             pass
 
 
+def drop_privileges(want_user):
+    """Give up root once the privileged port is bound.
+
+    Nothing past the bind needs it: the only file rmtd ever touches is the tape
+    image named on the command line (the rmt `O` command's device name is read
+    and ignored), so the request loop has no business running as root.
+    Returns the user we became, or None if we were never root.
+    """
+    if os.geteuid() != 0:
+        return None
+
+    name = want_user or os.environ.get("SUDO_USER")
+    try:
+        if name:
+            pw = pwd.getpwnam(name)
+        elif os.environ.get("SUDO_UID"):
+            pw = pwd.getpwuid(int(os.environ["SUDO_UID"]))
+        else:
+            log.warning("running as root with no --user and no SUDO_USER: "
+                        "staying root (pass --user to drop privileges)")
+            return None
+    except (KeyError, ValueError) as e:
+        sys.exit("--user: %s" % e)
+
+    if pw.pw_uid == 0:
+        log.warning("--user names root: staying root")
+        return None
+
+    os.initgroups(pw.pw_name, pw.pw_gid)    # supplementary groups, still root
+    os.setgid(pw.pw_gid)
+    os.setuid(pw.pw_uid)                    # euid 0 -> real, effective and saved
+    return pw.pw_name
+
+
+def check_tape_access(path):
+    """Fail at startup, not on the first connection, if the tape is unreachable.
+
+    Worth doing right after the privilege drop: an image an earlier root run
+    created is root-owned, and would otherwise fail only when Genera dials in.
+    """
+    if os.path.exists(path):
+        if not os.access(path, os.R_OK | os.W_OK):
+            sys.exit("tape %s is not readable/writable as the current user\n"
+                     "(created by an earlier root run?  chown it, or pass --user root)"
+                     % path)
+    else:
+        directory = os.path.dirname(os.path.abspath(path))
+        if not os.access(directory, os.W_OK):
+            sys.exit("cannot create tape %s: %s is not writable as the current user"
+                     % (path, directory))
+
+
 def main():
     ap = argparse.ArgumentParser(description="fake VLM rexec+rmt tape server")
     ap.add_argument("--tape", required=True, help="path to the .tap tape image (created if absent)")
-    ap.add_argument("--host", default="0.0.0.0", help="bind address (default all)")
+    ap.add_argument("--host", default=DEFAULT_HOST,
+                    help="bind address (default: vmnet bridge %s)" % DEFAULT_HOST)
     ap.add_argument("--port", type=int, default=DEFAULT_PORT,
                     help="TCP port (default 512; <1024 needs root)")
+    ap.add_argument("--insecure-any-interface", action="store_true",
+                    help="permit binding a wildcard/routable address (see SECURITY above)")
+    ap.add_argument("--user", default=None,
+                    help="user to drop to after binding (default: $SUDO_USER)")
     ap.add_argument("-v", "--verbose", action="count", default=0,
                     help="-v traces commands, -vv adds replies")
     args = ap.parse_args()
@@ -310,14 +378,33 @@ def main():
     level = logging.WARNING - 10 * min(args.verbose, 2)
     logging.basicConfig(level=level, format="%(asctime)s %(levelname)s %(message)s")
 
+    # rmt is unauthenticated and exposes MTERASE and lseek+write over the whole
+    # tape image, so a wildcard bind hands every host that can reach this Mac
+    # the ability to read or destroy it.  Refuse unless explicitly overridden.
+    if args.host in ("", "0.0.0.0", "::") and not args.insecure_any_interface:
+        sys.exit("refusing to bind %s: rmtd is unauthenticated and can erase the tape.\n"
+                 "Bind the vmnet bridge (--host %s, the default) or, if you really mean\n"
+                 "to serve every interface, pass --insecure-any-interface."
+                 % (args.host or "all interfaces", DEFAULT_HOST))
+
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         srv.bind((args.host, args.port))
     except PermissionError:
         sys.exit("bind %s:%d failed: port <1024 needs sudo" % (args.host, args.port))
+    except OSError as e:
+        # EADDRNOTAVAIL: the bridge address only exists while the VLM runs.
+        sys.exit("bind %s:%d failed: %s\n"
+                 "(the vmnet bridge address exists only while the VLM is running)"
+                 % (args.host, args.port, e))
     srv.listen(1)                           # one tape drive: serve sequentially
-    log.warning("rmtd listening on %s:%d, tape=%s", args.host, args.port, args.tape)
+
+    dropped = drop_privileges(args.user)    # root was only ever for the bind
+    check_tape_access(args.tape)
+
+    log.warning("rmtd listening on %s:%d, tape=%s%s", args.host, args.port, args.tape,
+                (", running as %s" % dropped) if dropped else "")
 
     try:
         while True:
