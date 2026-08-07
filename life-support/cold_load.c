@@ -72,6 +72,9 @@ static KeySym *orig_meta = NULL, *orig_hyper = NULL ;
 static int ks_p_kc_meta, ks_p_kc_hyper ;
 static KeyCode alt_meta_code = 0 ;	/* Alt  -> Meta  remap (see make_map) */
 static KeyCode menu_hyper_code = 0 ;	/* Menu -> Hyper remap (see make_map) */
+/* Where make_map parks the ¥ key's original keysym.  Level 1 has to stay
+   XK_bar (Shift+¥), so the marker goes one level further out. */
+#define JIS_YEN_MARKER_LEVEL 2
 static KeySym *orig_yen = NULL ;	/* Apple JIS ¥-key remap (see make_map) */
 static int ks_p_kc_yen ;
 static KeyCode jis_yen_code = 0 ;
@@ -211,6 +214,42 @@ static KeyCode find_unshifted_keycode (KeySym keysym)
 	return result;
 }
 
+/* Find a key carrying one of our own relabels.  Every remap below parks the
+   key's ORIGINAL keysym at a level it does not otherwise use -- level 1 for
+   the modifier keys, JIS_YEN_MARKER_LEVEL for ¥ -- so `level0` is what we
+   wrote and `original` is what we saved.  Matching on both levels is what
+   distinguishes our relabels from each other: after the Menu -> Hyper remap
+   the Menu key is {Hyper_R, Menu} while right Command is {Hyper_R, Meta_R}.
+
+   The X keymap is server-global and outlives us, so this is not only an
+   idempotency guard: it is how a run recognises a keymap left behind by a
+   VLM that died without close_display (kill -9, SIGABRT, the _exit in
+   segv_handler), or one a concurrently running VLM installed.  Without the
+   parked keysym such a keymap is indistinguishable from a foreign layout --
+   the ¥ key reads as backslash, so JIS detection falls through to the DEC
+   fallback and the Command keys silently lose Super/Hyper for the rest of
+   the session. */
+static KeyCode find_relabelled_keycode (KeySym level0, int level, KeySym original)
+{
+	KeyCode result = 0;
+	int min_kc = 0, max_kc = 0, per = 0, i;
+	KeySym *map;
+
+	XDisplayKeycodes(display, &min_kc, &max_kc);
+	map = XGetKeyboardMapping(display, min_kc, max_kc - min_kc + 1, &per);
+	if (map) {
+		if (per > level)
+			for (i = 0; i <= max_kc - min_kc; i++)
+				if (map[i * per] == level0 &&
+				    map[i * per + level] == original) {
+					result = (KeyCode)(min_kc + i);
+					break;
+				}
+		XFree(map);
+	}
+	return result;
+}
+
 static void make_map (int for_real_p)
 {
 	KeySym meta_keysym[] = { XK_Meta_L, XK_Alt_L };
@@ -263,19 +302,50 @@ static void make_map (int for_real_p)
 	// pulls the keymap through the console X-protocol proxy.  Target the
 	// dedicated ¥ key (level-0 yen), NOT XKeysymToKeycode(XK_yen) -- that
 	// returns the "y" key, since Option+Y also yields ¥ on the Mac layout.
+	// ¥ itself is parked at JIS_YEN_MARKER_LEVEL rather than discarded, so
+	// the key stays recognisable as the JIS ¥ key -- both to this run and,
+	// since the keymap is server-global, to the next one if we die without
+	// close_display (see find_relabelled_keycode).
 	if (keyboardType == Apple_JIS && orig_yen == NULL) {
+		int leftover = 0;
+
 		jis_yen_code = find_unshifted_keycode(XK_yen);
+		if (jis_yen_code == 0) {
+			jis_yen_code = find_relabelled_keycode(XK_backslash,
+							       JIS_YEN_MARKER_LEVEL,
+							       XK_yen);
+			leftover = (jis_yen_code != 0);
+		}
 		if (jis_yen_code) {
-			KeySym backslash_keysym[] = { XK_backslash, XK_bar };
+			KeySym backslash_keysym[] = { XK_backslash, XK_bar, XK_yen };
+			int n = sizeof(backslash_keysym)/sizeof(KeySym);
+
+			/* On the leftover path this deliberately saves the
+			   REMAPPED entry, so close_display restores it
+			   unchanged.  Rebuilding the pristine entry from the
+			   marker instead would be self-healing for a single
+			   VLM, but the keymap is server-global and Route B
+			   runs two at once -- whichever exited first would
+			   then strip the ¥ remap (and, below, Super/Hyper)
+			   from the one still running.  The residue is benign:
+			   a JIS ¥ key that keeps typing backslash, which is
+			   what the remap is for. */
 			orig_yen = XGetKeyboardMapping(display, jis_yen_code,
 						       1, &ks_p_kc_yen);
+			/* Passing more keysyms than the server's
+			   keysyms_per_keycode would grow every entry in the
+			   keymap; drop the marker rather than do that. */
+			if (ks_p_kc_yen <= JIS_YEN_MARKER_LEVEL)
+				n = 2;
 			XChangeKeyboardMapping(display,
 					       jis_yen_code,
-					       sizeof(backslash_keysym)/sizeof(KeySym),
+					       n,
 					       backslash_keysym,
 					       1);
 			if (for_real_p) vwarn("cold load",
-					      "Your ¥ (yen) key now produces backslash");
+					      leftover
+					      ? "Adopting the ¥ (yen) -> backslash remap left by an earlier VLM"
+					      : "Your ¥ (yen) key now produces backslash");
 		}
 	}
 	// Apple JIS: relabel the Command keys so booted Genera (which reads the
@@ -283,22 +353,36 @@ static void make_map (int for_real_p)
 	// Meta itself stays on Option via the "Meta on Alt" remap above.
 	if (keyboardType == Apple_JIS) {
 		if (jis_super_code && orig_jsuper == NULL) {
-			KeySym super_keysym[] = { XK_Super_L };
+			/* Meta_L parked at level 1, like Alt -> {Meta_L, Alt_L}
+			   above: without it a keymap we left behind reads as
+			   a bare Super_L key and the pristine XK_Meta_L lookup
+			   below would hand us Option instead. */
+			KeySym super_keysym[] = { XK_Super_L, XK_Meta_L };
+			int leftover = (jis_super_code ==
+					find_relabelled_keycode(XK_Super_L, 1, XK_Meta_L));
 			orig_jsuper = XGetKeyboardMapping(display, jis_super_code,
 							  1, &ks_p_kc_jsuper);
 			XChangeKeyboardMapping(display, jis_super_code,
-					       1, super_keysym, 1);
+					       sizeof(super_keysym)/sizeof(KeySym),
+					       super_keysym, 1);
 			if (for_real_p) vwarn("cold load",
-					      "Your Super key now is on (left) Command");
+					      leftover
+					      ? "Adopting the (left) Command -> Super remap left by an earlier VLM"
+					      : "Your Super key now is on (left) Command");
 		}
 		if (jis_hyper_code && orig_jhyper == NULL) {
-			KeySym hyper2_keysym[] = { XK_Hyper_R };
+			KeySym hyper2_keysym[] = { XK_Hyper_R, XK_Meta_R };
+			int leftover = (jis_hyper_code ==
+					find_relabelled_keycode(XK_Hyper_R, 1, XK_Meta_R));
 			orig_jhyper = XGetKeyboardMapping(display, jis_hyper_code,
 							  1, &ks_p_kc_jhyper);
 			XChangeKeyboardMapping(display, jis_hyper_code,
-					       1, hyper2_keysym, 1);
+					       sizeof(hyper2_keysym)/sizeof(KeySym),
+					       hyper2_keysym, 1);
 			if (for_real_p) vwarn("cold load",
-					      "Your Hyper key now is on (right) Command");
+					      leftover
+					      ? "Adopting the (right) Command -> Hyper remap left by an earlier VLM"
+					      : "Your Hyper key now is on (right) Command");
 		}
 	}
 	// remove non-functional Hyper_L key
@@ -1547,11 +1631,16 @@ static void get_keyboard_modifier_codes (int for_real_p,
      are captured ONCE here from the pristine keymap, because make_map's later
      remaps make XKeysymToKeycode(XK_Meta_L) ambiguous (Option gets Meta_L too).
 
-     The detection is LATCHED on keyboardType: make_map's yen remap removes the
-     level-0 yen marker from the keymap, and this function runs again afterwards
+     The detection is LATCHED on keyboardType: make_map's yen remap moves the
+     level-0 yen marker aside, and this function runs again afterwards
      (from setup_modifier_mapping and on MappingNotify) -- re-probing then would
-     silently fall through to the DEC fallback. */
-  if (keyboardType == Apple_JIS || find_unshifted_keycode(XK_yen) != 0) {
+     silently fall through to the DEC fallback.  The latch only covers this
+     process, though, so the remap parks ¥ at JIS_YEN_MARKER_LEVEL instead of
+     discarding it and the probe below also accepts that: a keymap an earlier
+     VLM left behind by dying without close_display still reads as JIS. */
+  if (keyboardType == Apple_JIS ||
+      find_unshifted_keycode(XK_yen) != 0 ||
+      find_relabelled_keycode(XK_backslash, JIS_YEN_MARKER_LEVEL, XK_yen) != 0) {
 	  if (!did_show) {
 		  vwarn("cold load",
 		        "presuming an Apple JIS keyboard");
@@ -1563,8 +1652,16 @@ static void get_keyboard_modifier_codes (int for_real_p,
 	  /* ---*** TODO: Find out what KeySym is labelled CLEAR */
 	  skMap->keysym = 0;					/* Apple X11 */
 	  if (jis_super_code == 0) {
-		  jis_super_code = XKeysymToKeycode(display, XK_Meta_L); /* left  Command */
-		  jis_hyper_code = XKeysymToKeycode(display, XK_Meta_R); /* right Command */
+		  /* Prefer our own relabel: on a keymap left behind by an
+		     earlier VLM, XK_Meta_L is on Option too (the Alt -> Meta
+		     remap), so the pristine lookup would pick the wrong key
+		     and we would relabel Option as Super. */
+		  jis_super_code = find_relabelled_keycode(XK_Super_L, 1, XK_Meta_L);
+		  if (jis_super_code == 0)
+			  jis_super_code = XKeysymToKeycode(display, XK_Meta_L); /* left  Command */
+		  jis_hyper_code = find_relabelled_keycode(XK_Hyper_R, 1, XK_Meta_R);
+		  if (jis_hyper_code == 0)
+			  jis_hyper_code = XKeysymToKeycode(display, XK_Meta_R); /* right Command */
 	  }
 	  *control_r_code = 0;					/* no right Control */
 	  *meta_l_code = *alt_l_code;				/* Meta on Option */

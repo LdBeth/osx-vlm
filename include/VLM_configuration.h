@@ -118,9 +118,6 @@ typedef struct
 	char*		worldSearchPath;					/* -> Directories to search for worlds */
 	boolean		enableIDS;							/* TRUE => allow incremental disk saves */
 	size_t		virtualMemory;						/* Size of emulated virtual memory */
-	char		miniFileServerRoot[_POSIX_PATH_MAX+1];	/* SYS: root served by the embedded
-													   MINI cold-load file server; empty =>
-													   server disabled */
 #endif
 	XParams		coldLoadXParams;					/* X parameters for cold load window */
 	XParams		generaXParams;						/* X Parameters for the main screen */

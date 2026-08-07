@@ -239,6 +239,7 @@ inline u64 _CVTQS(int dr, int rv2, u64 v2)
     u64 l;
   } u;
   fregstate[dr] = FPS_S;
+  u.l = 0;	/* zero high word: arm64 leaves it indeterminate otherwise */
   u.f = (s64)v2;
 #ifdef LOUD
   if (subtrace) printf("_CVTQS: %p %g -> %p\n", (void *)v2, u.f, (void *)u.l);

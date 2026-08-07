@@ -43,7 +43,15 @@
 #if defined(OS_DARWIN)
 /* Serialises VMAttributeTable + mprotect mutations between the emulator
    thread (GC, interpreter, segv_handler) and life-support threads
-   (EnsureVirtualMemoryAccessible).  Recursive: EnsureVirtualMemoryAccessible
+   (EnsureVirtualMemoryAccessible).  INVARIANT: every read-modify-write of
+   a table entry -- snapshot, transform, store or AdjustProtection -- runs
+   under one acquisition of this lock, so no writer can revert another
+   thread's concurrent update.  AdjustProtection stores its caller's value
+   verbatim, so the caller's snapshot must be taken under the same
+   acquisition.  Plain reads (scans, lookups) stay unlocked: a byte read
+   is atomic, and acting on a stale value only defers work, because
+   concurrent grants only OR bits in.
+   Recursive: EnsureVirtualMemoryAccessible
    holds the lock across its loop body and AdjustProtection re-takes it;
    the segv_handler may interrupt a lock-holder on the same thread.
    The constructor init is needed because Darwin lacks a static initialiser
@@ -207,15 +215,21 @@ Boolean VirtualAddressWadMappedP (Integer vma)
 
 Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
 {
-  VMAttribute attr = VMAttributeTable[MemoryPageNumber(vma)];
+  VMAttribute attr;
 
+  /* The existing-page merge is a table RMW: hold the protection lock so
+     it cannot revert a concurrent life-support grant on the same page */
+  VM_PROTECTION_LOCK();
+  attr = VMAttributeTable[MemoryPageNumber(vma)];
   if (attr&VMAttribute_Exists)
   {
     /* All "created" pages are modified for our purposes */
     if (!(attr&VMAttribute_Modified))
       AdjustProtection(vma, attr|VMAttribute_Modified);
+    VM_PROTECTION_UNLOCK();
     return(MemoryPage_Size);
   }
+  VM_PROTECTION_UNLOCK();
 
   if(WadCreated(vma))
   {
@@ -247,7 +261,11 @@ Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
 	&& mprotect(data, sizeof(Integer[MemoryWad_Size]), prot))
     {
       verror (NULL, "Couldn't protect data wad at %lx for VMA %x", data, vma);
-      munmap(data, sizeof(Integer[MemoryWad_Size]));
+      /* Re-reserve rather than munmap: keeps the window claimed (see
+	 ReserveIvoryAddressSpace / DestroyVirtualAddress) */
+      if (data != mmap(data, sizeof(Integer[MemoryWad_Size]), PROT_NONE,
+		       MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0))
+	verror (NULL, "Couldn't re-reserve data wad at %lx", data);
       return(0);
     }
     if (tag != mmap(tag, sizeof(Tag[MemoryWad_Size]), PROT_READ|PROT_WRITE,
@@ -258,7 +276,16 @@ Integer EnsureVirtualAddress (Integer vma, Boolean faultp)
 #endif
     {
       verror (NULL, "Couldn't create tag wad at %lx for VMA %x", tag, vma);
+#if defined(OS_DARWIN)
+      /* Re-reserve rather than munmap: keeps the window claimed (see
+	 ReserveIvoryAddressSpace / DestroyVirtualAddress).  The failed
+	 MAP_FIXED tag mmap left the tag window's own reservation intact. */
+      if (data != mmap(data, sizeof(Integer[MemoryWad_Size]), PROT_NONE,
+		       MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED, -1, 0))
+	verror (NULL, "Couldn't re-reserve data wad at %lx", data);
+#else
       munmap(data, sizeof(Integer[MemoryWad_Size]));
+#endif
       return(0);
     }
 
@@ -621,6 +648,13 @@ void VirtualMemoryWrite (unsigned int address, LispObj object)
    host accesses to the data side never trapped at all -- even on armed
    pages -- so this reproduces the Linux port's semantics.)  Non-existent and
    access-faulted pages are left alone: EFAULT is then a genuine error.
+   The grant persists only as table bits: a scavenger update that completes
+   its scan of the page while the syscall is still in flight may recompute
+   them and downgrade the page below PROT_WRITE, EFAULTing the tail of the
+   transfer.  That residue is loud and diagnosable, never silent corruption
+   -- an interleaving that keeps the page writable also keeps it in the
+   scan set.  Closing it outright needs a grant-release call from the I/O
+   completion paths.
    A no-op on platforms that protect TagSpace, where DataSpace is always
    mapped read/write. */
 void EnsureVirtualMemoryAccessible (Integer vma, int count)
@@ -834,9 +868,12 @@ void VirtualMemoryEnable (register Integer vma, int count, Boolean faultp)
   {
     /* Ephemeral flip */
     for ( ; attr < eattr; attr++, vma += MemoryPage_Size)
+    {
+      /* Per-page RMW under the protection lock (see the lock's invariant) */
+      VM_PROTECTION_LOCK();
       if (VMExists(oa = *attr))
 	{
-	  /* On an ephemeral flip, we would like to not enable pages that can't 
+	  /* On an ephemeral flip, we would like to not enable pages that can't
 	   * possibly need scavenging, to minimize the number of read protects
 	   * we do.  But we have to be careful in copyspace, because those pages
 	   * can get enabled before the GC has actually copied the bits onto the
@@ -862,10 +899,14 @@ void VirtualMemoryEnable (register Integer vma, int count, Boolean faultp)
 	  if (a != oa)
 	    AdjustProtection(vma, a);
 	}
+      VM_PROTECTION_UNLOCK();
+    }
   }
   else {
     /* Dynamic flip */
     for ( ; attr < eattr; attr++, vma += MemoryPage_Size)
+    {
+      VM_PROTECTION_LOCK();
       if (VMExists(oa = *attr))
 	{
 #ifdef notdef					/* --- some day */
@@ -883,6 +924,8 @@ void VirtualMemoryEnable (register Integer vma, int count, Boolean faultp)
 	  if (a != oa)
 	    AdjustProtection(vma, a);
 	}
+      VM_PROTECTION_UNLOCK();
+    }
   }
 }
 
@@ -1169,8 +1212,15 @@ Boolean ScanPage(Integer scanvma, Integer *vma, int count, Boolean update)
       if (!MemoryPageOffset(endvma))
 #endif
       {
-	register VMAttribute oa = VMAttributeTable[MemoryPageNumber(scanvma)];
-	register VMAttribute a = oa;
+	register VMAttribute oa, a;
+
+	/* RMW under the protection lock: an update computed from a stale
+	   snapshot would revert a concurrent life-support grant, leaving
+	   the page hardware-writable with the table saying read-only and
+	   the write barrier permanently dead for it */
+	VM_PROTECTION_LOCK();
+	oa = VMAttributeTable[MemoryPageNumber(scanvma)];
+	a = oa;
   
 	/* We know we have completed scanning this page, so clear the fault bit */
 	ClearVMTransportFault(a);      
@@ -1184,6 +1234,7 @@ Boolean ScanPage(Integer scanvma, Integer *vma, int count, Boolean update)
   
 	if (a != oa)
 	  AdjustProtection(scanvma, a);
+	VM_PROTECTION_UNLOCK();
       }
 
       return(FALSE);
@@ -1228,9 +1279,19 @@ Boolean VirtualMemoryScan (Integer *vma, register int count, Boolean slowp)
 
   for ( ; count > 0; )
   {
-    register VMAttribute a = *attr;
+    register VMAttribute a;
 #ifdef DEBUGSCAN
-    VMAttribute oa = a;
+    VMAttribute oa;
+#endif
+    /* Snapshot and RMW under the protection lock (see the lock's
+       invariant).  The mask test below then acts on a value that may be
+       stale by one grant: benign, because grants only OR bits in, so at
+       worst the page is deferred to the next scan cycle with its bits
+       intact. */
+    VM_PROTECTION_LOCK();
+    a = *attr;
+#ifdef DEBUGSCAN
+    oa = a;
 #endif
     /* Always disable faults, even if you optimize out the scan */
     if (VMTransportFault(a) && !VMTransportDisable(a))
@@ -1238,6 +1299,7 @@ Boolean VirtualMemoryScan (Integer *vma, register int count, Boolean slowp)
       SetVMTransportDisable(a);
       AdjustProtection(scanvma, a);
     }
+    VM_PROTECTION_UNLOCK();
 
 #ifdef DEBUGSCAN
     if (VMExists(oa))
@@ -1269,9 +1331,17 @@ Boolean VirtualMemoryScan (Integer *vma, register int count, Boolean slowp)
     }
     else if (!slowp)
     {
-      /* We know we have completed scanning this page, so clear the fault bit */
+      /* We know we have completed scanning this page, so clear the fault
+         bit.  Reread under the lock: this store must not undo a grant made
+         since the snapshot above.  Clearing both transport bits together
+         never changes the derived protection (an armed fault bit always
+         has its disable set by the time this branch runs), so the plain
+         store needs no mprotect. */
+      VM_PROTECTION_LOCK();
+      a = *attr;
       ClearVMTransportFault(a);      
       *attr = ClearVMTransportDisable(a);
+      VM_PROTECTION_UNLOCK();
     }
 #ifdef DEBUGSCAN
     if (slowfound)
@@ -1429,11 +1499,19 @@ int VMCommand(int command)
 
    case VMOpcodeWriteAttributes:
    {
-     register VMAttribute attr = VMAttributeTable[VMCommandOperand(command)];
      register Integer vpn = VMCommandOperand(command);
      register Integer vma = PageNumberMemory(vpn);
+     register VMAttribute attr;
+     Boolean exists;
 
-     if VMExists(attr)
+     /* Merge with the CURRENT attributes under the protection lock: a
+        Modified granted by a life-support thread after Lisp read the
+        attributes must survive the merge.  (Ephemeral is Lisp's to set
+        here -- serialization, not preservation, is what the lock buys.) */
+     VM_PROTECTION_LOCK();
+     attr = VMAttributeTable[vpn];
+     exists = VMExists(attr) ? TRUE : FALSE;
+     if (exists)
      {
        register VMAttribute nattr = vm->AttributesRegister;
 
@@ -1443,10 +1521,9 @@ int VMCommand(int command)
        
        if (attr ^ nattr)
           AdjustProtection(vma, nattr);
-       return(SetVMReplyResult(command, TRUE));
      }
-     else
-       return(SetVMReplyResult(command, FALSE));
+     VM_PROTECTION_UNLOCK();
+     return(SetVMReplyResult(command, exists));
    }       
 
    case VMOpcodeFill:
@@ -2003,6 +2080,12 @@ void segv_handler (int sigval, register siginfo_t *si, void *uc_p)
 	}
 	ResidentPagesPointer = ptr;
 
+	/* The entry snapshot of attr is safe unlocked here, an intended
+	   exception to the lock's RMW invariant: this arm only ORs
+	   Ephemeral|Modified in, which commutes with a concurrent
+	   life-support grant's ORs, and a disable bit can appear
+	   concurrently only when the fault bit was already set -- a
+	   state this switch routes to the default arm without storing. */
 	AdjustProtection(vma, attr|(VMAttribute_Ephemeral|VMAttribute_Modified));
       }
       break;

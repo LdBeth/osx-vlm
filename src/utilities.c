@@ -303,7 +303,7 @@ static void MaybeReadConfigurationFile (VLMConfig* config, XrmDatabase* options,
 /* The command line arguments to a VLM command */
 
 #if defined(GENERA)
-#define BaseOptions 34
+#define BaseOptions 33
 
 #elif defined(MINIMA)
 #define BaseOptions 5
@@ -330,7 +330,6 @@ static XrmOptionDescRec OptionsTable[OptionsTableSize] = {
 #endif
 #ifdef GENERA
 	{"-debugger",				".debugger",				XrmoptionSepArg,	NULL},
-	{"-minifsroot",				".miniFileServerRoot",		XrmoptionSepArg,	NULL},
 	{"-ids",					".enableIDS",				XrmoptionSepArg,	NULL},
 	{"-vm",						".virtualMemory",			XrmoptionSepArg,	NULL},
 	{"-display",				".main.display",			XrmoptionSepArg,	NULL},
@@ -546,15 +545,6 @@ static void InterpretOptions (VLMConfig* config, XrmDatabase options)
 
 	GetOption (options, "worldSearchPath", "WorldSearchPath", value);
 	config->worldSearchPath = strdup (value);
-
-	/* SYS: root for the embedded MINI cold-load file server (network channel);
-	   absent (and no GENERA_SYS_ROOT in the environment) leaves it disabled */
-	if (GetOption (options, "miniFileServerRoot", "MiniFileServerRoot", value))
-		strcpy (config->miniFileServerRoot, value);
-	else if (getenv ("GENERA_SYS_ROOT") != NULL)
-		strcpy (config->miniFileServerRoot, getenv ("GENERA_SYS_ROOT"));
-	else
-		config->miniFileServerRoot[0] = 0;
 
 	InterpretXOptions (options, &config->generaXParams, "main X console", "main", "Main");
 	InterpretXOptions (options, &config->coldLoadXParams, "cold load", "coldLoad", "ColdLoad");

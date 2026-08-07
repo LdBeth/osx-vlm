@@ -46,8 +46,8 @@
 #include <xpc/xpc.h>
 #include <uuid/uuid.h>
 #endif
-/* Dispatch is used by both build flavors: the receiver thread's wakeup
-   semaphore also carries MINI file-server injections in the sink build. */
+/* Dispatch is used by both build flavors: the receiver thread waits on a
+   dispatch semaphore for its wakeups. */
 #include <dispatch/dispatch.h>
 
 #include "life_types.h"
@@ -58,7 +58,6 @@
 #include "FEPComm.h"
 #include "memory.h"
 #include "chaos.h"
-#include "mini-server.h"
 
 #ifndef ETHERTYPE_CHAOS
 #define ETHERTYPE_CHAOS ETH_P_CHAOS
@@ -172,8 +171,8 @@ static void InitializeNetChannelDarwin (VLMConfig* config, NetworkInterface* int
 #else
 	p->vmnetInterface = NULL;
 	p->vmnetQueue = NULL;
-	/* No vmnet events in the sink build, but the receiver still waits on the
-	   semaphore so MINI file-server injections are delivered promptly */
+	/* No vmnet events in the sink build; the receiver still waits on the
+	   semaphore (with a timeout) so shutdown stays responsive */
 	p->vmnetSem = (void*) dispatch_semaphore_create (0);
 	p->maxPacketSize = MaxEmbNetPacketSize;
 #endif
@@ -246,24 +245,7 @@ static void InitializeNetChannelDarwin (VLMConfig* config, NetworkInterface* int
 	p->addressString = MakeEmbString (addressAsString);
 	printf ("net #%d address %s\n", unitNumber, addressAsString);
 
-#ifdef GENERA
-	/* When the channel carries a chaos address and a SYS: root is configured,
-	   start the embedded MINI cold-load file server on it.  The server's own
-	   chaos address rides the spec's host= option (octal), defaulting to
-	   0401 -- the address LMINI worlds are patched to look for. */
-	if (config->miniFileServerRoot[0])
-		for (pInterface = interface; pInterface != NULL;
-			 pInterface = pInterface->anotherAddress)
-			if (pInterface->myProtocol == ETHERTYPE_CHAOS)
-			  {
-				unsigned short guestAddr =
-					(unsigned short) htonl (pInterface->myAddress.s_addr);
-				unsigned short serverAddr = (pInterface->myHostAddress.s_addr != 0)
-					? (unsigned short) pInterface->myHostAddress.s_addr : 0401;
-				MiniServerStart (p, serverAddr, guestAddr, config->miniFileServerRoot);
-				break;
-			  }
-#endif
+	(void) config;						/* Only the interface table is used here */
 
 	/* Start the receiver thread */
 
@@ -332,17 +314,6 @@ void NetworkChannelTransmitter (EmbNetChannel* pNetChannel)
 			nBytes = (ssize_t) netPacket->nBytes;
 			if (nBytes > 0)
 				EnsureVirtualMemoryAccessible (vma + 1, (int)((nBytes + 3) >> 2));
-
-			/* Frames for the embedded MINI file server never reach the wire:
-			   hand them to the server and return the buffer to the guest */
-			if (nBytes > 0 &&
-				MiniServerInterceptFrame (netChannel,
-										  (const unsigned char*) &netPacket->data[0],
-										  (size_t) nBytes))
-			  {
-				EmbQueuePutWord (returnQueue, netPacketPtr);
-				continue;
-			  }
 
 #ifdef USE_VMNET
 			if (netChannel->vmnetInterface != NULL && nBytes > 0)
@@ -414,9 +385,8 @@ void NetworkChannelTransmitter (EmbNetChannel* pNetChannel)
 
 /* Hand one Ethernet frame to the guest: take a buffer from the supply queue,
    copy the frame in (opening the GC barrier first -- this host thread writes
-   guest memory), and post it to the receive queue.  Extracted from the vmnet
-   drain loop so MINI file-server injections use the identical path.  Returns
-   FALSE when the frame had to be dropped (queues full or shutting down). */
+   guest memory), and post it to the receive queue.  Returns FALSE when the
+   frame had to be dropped (queues full or shutting down). */
 
 static boolean DeliverFrameToGuest (EmbNetChannel* netChannel,
 									const unsigned char* frame, size_t nBytes)
@@ -459,19 +429,6 @@ static boolean DeliverFrameToGuest (EmbNetChannel* netChannel,
 	return (TRUE);
 }
 
-/* Deliver any frames the MINI file server has queued for the guest.  The
-   server signals the channel's semaphore after queueing, so the receiver
-   wakes immediately rather than on its 250 ms timeout. */
-
-static void DrainMiniServerInjections (EmbNetChannel* netChannel)
-{
-  unsigned char frame[MaxEmbNetPacketSize];
-  size_t nBytes;
-
-	while (MiniServerTakeInjectedFrame (netChannel, frame, sizeof (frame), &nBytes))
-		DeliverFrameToGuest (netChannel, frame, nBytes);
-}
-
 void NetworkChannelReceiver (pthread_addr_t argument)
 {
   register EmbNetChannel* netChannel = (EmbNetChannel*) argument;
@@ -491,12 +448,10 @@ void NetworkChannelReceiver (pthread_addr_t argument)
 	while (!netChannel->receiverStop)
 	  {
 		/* Wait (with a short timeout, so shutdown stays responsive) for the
-		   vmnet event callback -- or the MINI file server -- to announce
-		   that packets are available. */
+		   vmnet event callback to announce that packets are available. */
 		boolean timedOut = dispatch_semaphore_wait (pktSem,
 				dispatch_time (DISPATCH_TIME_NOW, NSEC_PER_SEC / 4)) != 0;
 
-		DrainMiniServerInjections (netChannel);
 		if (timedOut || iface == NULL)		/* NULL: runtime sink mode */
 			continue;
 
@@ -530,17 +485,14 @@ void NetworkChannelReceiver (pthread_addr_t argument)
 	  }
   }
 #else
-	/* Sink: no wire frames are delivered, but the MINI file server (when
-	   configured) still injects its replies through the semaphore. */
+	/* Sink: no frames are ever delivered to the guest.  The thread just
+	   idles on the semaphore's timeout until shutdown sets receiverStop. */
   {
 	dispatch_semaphore_t pktSem = (dispatch_semaphore_t) netChannel->vmnetSem;
 
 	while (!netChannel->receiverStop)
-	  {
 		dispatch_semaphore_wait (pktSem,
 				dispatch_time (DISPATCH_TIME_NOW, NSEC_PER_SEC / 4));
-		DrainMiniServerInjections (netChannel);
-	  }
   }
 #endif
 }
@@ -702,8 +654,8 @@ static void StartVMNetInterface (EmbNetChannel* p, NetworkInterface* interface,
   char* maskp = subnetMask;
 
 	/* diagnostic: GENERA_VMNET_SINK forces sink mode at runtime -- the
-	   channel exists (guest boots normally, MINI server still injects)
-	   but no vmnet interface is started, so no root is needed. */
+	   channel exists (guest boots normally) but no vmnet interface is
+	   started, so no root is needed. */
 	if (getenv ("GENERA_VMNET_SINK") != NULL)
 	  {
 		xpc_release (interfaceDesc);
@@ -879,10 +831,6 @@ void TerminateNetworkChannels ()
   EmbNetChannel* netChannel;
   EmbPtr channel;
 
-	/* Stop the MINI file server first: its emit path signals a channel's
-	   semaphore, which must still exist. */
-	MiniServerStop ();
-
 	for (channel = EmbCommAreaPtr->channel_table; channel != NullEmbPtr;
 		 channel = netChannel->next)
 	  {
@@ -891,7 +839,3 @@ void TerminateNetworkChannels ()
 			TerminateNetChannelDarwin (netChannel);
 	  }
 }
-
-/* The MINI cold-load file server shares this translation unit (the same
-   composition idiom network.c uses to select this backend). */
-#include "mini-server.c"

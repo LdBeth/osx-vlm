@@ -88,6 +88,94 @@ To refresh one file later (e.g. a recompiled vbin):
     (fs:copyf "COSTUMEPARTY:/Users/ldbeth/Public/symbolics/rel-8-5/sys/DIR/FILE"
               "ETHERNAL:>sys>DIR>FILE")
 
+### Rebuild 2026-08-06: LMFS wipe recovery + SYSTEM set compiled
+
+The LMFS was accidentally wiped; after restore only the `>rel-8-5>sys>`
+master (5,510 files, still vbin-pruned) and `>sys>site>` (118 files, the
+stand-alone site data — exists in NO other tree, do not clobber) remained.
+The serving tree was rebuilt with **zero host→LMFS copies** this time:
+
+1. LMFS→LMFS mirror: per-file `fs:copyf` of `>rel-8-5>sys>**>*.*.newest`
+   into `>sys>` with `:create-directories t`, skipping `.directory`
+   pseudo-entries (5,010 files, 49 s, 0 failures; `>sys>site>` untouched).
+2. **The SYSTEM defsystem set was compiled on A itself** (402 vbins) —
+   closing the "SYSTEM set not compiled" wall of attempts 21-24.
+   `Compile System System` does NOT work: its plan builder (via
+   `SCT:MAKE-PLAN-FOR-SYSTEM-1`) probes the 3600-only, absent
+   `SYS:SYS;ARITHDEFS.LISP` even with `*current-machine-type*` = `:VLM`,
+   and errors out.  Instead the file list is computed host-side from
+   `sysdcl.lisp` (SYSTEM + its 33 component subsystems, machine-types
+   filtered to VLM, `:root-module nil` and 3600-only modules excluded,
+   plus straggler `SYS:SYS;MINI-ALISTS`) → `route-b/compile-list.txt`,
+   402 files in sysdcl dependency order, and driven by
+   `route-b/qld-compile-driver.lisp`: plain per-file `compile-file` in a
+   background process (every module is already loaded in A's world, so no
+   loads are needed), log at `route-b/qld-compile-log.txt`.  Result:
+   398 OK + 4 expected readtable failures, ~4 min wall clock.
+3. **SYS: flip discipline**: the whole compile ran with A's `SYS:`
+   temporarily translated to `ETHERNAL:>sys>**>` (saved/restored around
+   it), so vbins land in the serving tree, the master stays pristine, and
+   `SYS:IO;SYSHOST.VBIN` bakes `DIS-SYS-HOST :chaos-address "401"` with
+   `>sys>**>` translations — matching the fresh world's baked SYS:.
+4. The 4 `(:type :readtable)` modules (`io>rdtbl`, `clcp>readtable`,
+   `clcp>ansi-readtable`, `embedding>rpc>c-readtable`) refuse plain
+   compile-file by design; compile with
+   `(si:rtc-file "SYS:IO;RDTBL.LISP" "SYS:IO;RDTBL.VBIN")` etc.
+   (`RTC: WARNING! ... special case of some other token` chatter is
+   normal).
+5. Verified: 402/402 vbins probe in `>sys>`; `lambda-list.vbin` magic
+   `F013 0005 F012 A00C`; `>wobbly>` recreated; runbook triple
+   (my-address 257 / "Chaos Listen" / NFILE OPEN-STATE) green.
+
+### Addendum 2026-08-07: the 402 was short by 62 — full set is 464
+
+The 402-file list had a parser bug: sysdcl machine-type tokens read as
+`:VLM` (leading colon) but the host-side filter tested for `VLM`, so
+**every module with an explicit `:machine-types` was dropped** — the
+whole Ivory/VLM layer (`i-sys>float`, the i-compiler, `gc>igc`, itrap,
+the VLM disk drivers, deffepblock/disk-save, 62 files), including NINE
+files of the MINI alists (`i-sys>float` is entry #4 of
+INNER-SYSTEM-FILE-ALIST — QLD would have died almost immediately).
+SCT machine types are literal (`canonicalize-machine-types` never
+expands `:imach` to include `:vlm`): a module applies to the VLM iff
+its list contains `:VLM` or it has no list.  Corrected list =
+`compile-list.txt` (464 files); delta run: 61 OK + 1 fail, ~1 min.
+
+Findings beyond the count fix (oracle: the running dist world's
+`:file-id-package-alist` on each generic pathname — 471 of sysdcl's
+566 files are recorded loaded; probe script in the git history):
+
+- **`i-compiler>disassemble.lisp` references the AXPI package**
+  (Alpha-Ivory native code), which was Symbolics-internal and is in
+  neither the OG sources nor the dist world.  The band's own
+  `DISASSEMBLE.VBIN.9` contains no AXPI code — the two AXPI blocks in
+  the shipped source are `#+VLM`-guarded and postdate the band.
+  Band-faithful compile:
+  `(let ((cl:*features* (cl:remove :vlm cl:*features*))) (compile-file "SYS:I-COMPILER;DISASSEMBLE.LISP"))`
+  (the only other conditional in the file is a `#+3600`/`#-3600` pair,
+  unaffected; the "STACK-DESCRIPTION never used" warning is the AXPI
+  block's absence and is expected).
+- The five fep-fs files the band loads (`l-sys>band`,
+  `fep-access-paths`, `fep-fix-blocks`, `fep-salvage`, `fep-stream`)
+  are machine-typed `(:|3600| :imach)` in sysdcl so they're outside
+  the compile set, but their vbins (`.vbin.1`) ship on the
+  `>rel-8-5>sys>` master and the mirror carries them into `>sys>`.
+- **`i-sys>trap-dispatch-table.lisp` was never released** (its module
+  is `:lisp-load-only`, machine-types `(:imach :vlm)`; the band loaded
+  a 1993 `TRAP-DISPATCH-TABLE.VBIN.1` into package DBG).  Recovered
+  2026-08-07 by dumping the live `DBG:*TRAP-DISPATCH-TABLES*` (6-slot
+  vector; revisions 2/4/5 hold 2048-entry fixnum tables) and
+  `*TRAP-DISPATCH-TABLE-VERSIONS*` `#(NIL NIL 3 NIL 1 2)` from A into
+  `ETHERNAL:>sys>i-sys>trap-dispatch-table.lisp`, written on A itself.
+  Gotcha: package DEBUGGER resolves `make-array` to the ZL one — the
+  generated file must say `cl:make-array`/`cl:setf`/`cl:aref`.
+  Round-trip verified on A (loads under LET-shadowed specials,
+  `EQUALP` element-wise against the band, all 6 slots).  NFS backup:
+  `route-b/trap-dispatch-table.lisp`.
+- Final state: 464/464 vbins probe in `>sys>`, plus the 5 fep vbins,
+  `trap-dispatch-table.lisp`, and `pkgdcl.lisp` (loaded as source).
+  Logs: `qld-compile-log-1.txt` (402 run), `-2-delta.txt` (62 run).
+
 ## QLD guest
 
 The guest runs from its own instance dir `og2vlm-qld/` (genera +
@@ -101,9 +189,10 @@ the IP would collide):
     cd og2vlm-qld
     sudo GENERA_HALT_DUMP=fresh-qld.pmd ./genera
 
-**No `GENERA_SYS_ROOT`** — with the Lisp MINI server
-on A, the guest runs with no in-emulator interception at all; MINI and
-NFILE both cross the wire to A at 401.  **Boot A first** (the guest
+**No `GENERA_SYS_ROOT`** — the emulator no longer has a MINI server, or
+a `-minifsroot` / `GENERA_SYS_ROOT` option, to point at one (deleted
+2026-08-07).  The guest runs with no in-emulator interception at all;
+MINI and NFILE both cross the wire to A at 401.  **Boot A first** (the guest
 must ARP-resolve 401 before anything works).  The `CHAOS|402` spec
 component is still REQUIRED — it is where the cold world gets its own
 chaos address (SETUP-MY-CHAOS-ADDRESS reads the FEP boot option).  Do
@@ -126,9 +215,13 @@ FIND-FREE-EPHEMERAL-SPACE — see "Attempt 21 findings" below.)  The
 Lisp-MINI architecture removes the intercept/injection machinery from
 the guest entirely — the original Route-B plan, and a cleaner suspect
 list if a crash reproduces.  The coexist demux itself was deleted once
-that architecture was abandoned (it lived only in 94f8f46..7625509); the
-C MINI server remains for the rootless / no-second-VLM use case, but it
-owns chaos 401 outright again, so it cannot share the wire with A.
+that architecture was abandoned (it lived only in 94f8f46..7625509).  The
+C MINI server itself (`life-support/mini-server.c`, its header and its
+test harness) was **deleted 2026-08-07**: it owned chaos 401 outright, so
+it could never share the wire with A, and the rootless / no-second-VLM
+path it was kept for was explicitly closed with it.  The Lisp server on A
+is the only MINI server.  Its wire-contract documentation was salvaged
+into the header comment of `route-b/mini-server.lisp`.
 
 The fresh QLD world already bakes DIS-SYS-HOST = 401 (MINIFS/syshost),
 so no client-side namespace fix is needed.  Stock **dist-world** test

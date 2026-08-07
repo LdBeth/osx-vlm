@@ -1,13 +1,14 @@
 ;;; -*- Mode: LISP; Syntax: Common-Lisp; Package: CL-USER; Base: 10 -*-
 ;;;
 ;;; Route B: Lisp MINI cold-load file server, running on the server VLM
-;;; ("A", chaos #o401) next to the stock NFILE server.  Replaces the
-;;; in-emulator C MINI server (life-support/mini-server.c) for the QLD
-;;; guest: the guest now runs with NO GENERA_SYS_ROOT at all, and every
-;;; frame to 401 -- MINI and NFILE alike -- crosses the
-;;; vmnet wire to this machine.
+;;; ("A", chaos #o401) next to the stock NFILE server.  It replaced the
+;;; in-emulator C MINI server (life-support/mini-server.c, deleted
+;;; 2026-08-07) and is now the only MINI server: the guest runs with no
+;;; GENERA_SYS_ROOT at all, and every frame to 401 -- MINI and NFILE
+;;; alike -- crosses the vmnet wire to this machine.
 ;;;
-;;; Wire contract (reconstructed from SYS:IO;LMINI, same as the C server):
+;;; Wire contract (reconstructed from SYS:IO;LMINI, same as the C server;
+;;; all client constants octal):
 ;;;   - Client RFCs contact "MINI" (RFC string "MINI LISPM ").  Window 1,
 ;;;     STS-ack per controlled packet -- the real NCP handles all of that.
 ;;;   - Requests are packets of opcode 0200 (character) / 0201 (binary)
@@ -16,10 +17,21 @@
 ;;;   - Reply 0202 (won) / 0203 (lost): truename + #o215 (Lispm Return) +
 ;;;     32-bit universal time as four raw bytes, little-endian (low
 ;;;     16-bit half first, each half low byte first).  A lost reply
-;;;     echoes the request string with a zero date.
+;;;     echoes the request string with a zero date.  Those four RAW bytes
+;;;     are the Genera 8.5 delta from the CADR-era MINI servers, which
+;;;     sent a textual date here.
 ;;;   - File data: opcode 0200 packets (character files, Lispm charset
 ;;;     bytes verbatim) or 0300 packets (binary files, 16-bit words),
 ;;;     then a chaos EOF (014).  The connection persists across files.
+;;;
+;;; Below the NCP, for anyone who has to read frames on the wire (this
+;;; server never sees this layer -- the retired C server built it by hand):
+;;;   - Chaos-over-Ethernet is ethertype 0x0804, with its own chaos ARP at
+;;;     ethertype 0x0806 (hardware type 1, protocol type 0x0804).
+;;;   - The chaos header is 8 little-endian 16-bit words: opcode<<8,
+;;;     length (low 12 bits, in bytes), dest, dest-index, source,
+;;;     source-index, packet#, ack#.  Data starts at byte 16 and is at
+;;;     most 488 bytes.
 ;;;
 ;;; The serving tree is ETHERNAL:>sys>**> (the full QLD serving copy WITH
 ;;; vbins) -- NOT this world's SYS: translation, which points at the
@@ -200,8 +212,7 @@ background typeout would block the server process.")
             (#o200 (mini-serve-request conn (string (chaos::pkt-string pkt)) nil))
             (#o201 (mini-serve-request conn (string (chaos::pkt-string pkt)) t))
             ((#o003 #o011)              ; CLS / LOS: client is gone
-             (chaos::return-pkt pkt)
-             (return))
+             (return))                  ; pkt freed by the cleanup below
             (otherwise
               (when *mini-verbose*
                 (format *mini-log* "~&MINI: ignoring opcode ~O~%" opcode))))
@@ -214,13 +225,24 @@ background typeout would block the server process.")
 ;;; server (live-debugged 2026-08-01: "did not respond to a MINI
 ;;; request" on the NEXT connection).  Parked processes from dead
 ;;; connections are a deliberate, bounded leak (one per guest boot).
+;;;
+;;; The catch-all matters: fs:file-error covers only the OPEN, and
+;;; pathname parse conditions aren't even fs:file-errors.  Anything that
+;;; escaped here would park this process in the debugger WITHOUT
+;;; unwinding -- connection, LMFS stream, and pkt all leaked, client
+;;; blocked forever, nothing in (mini-log).  So: log, CLS the client,
+;;; and let the cleanups tear the connection down.
 (defun mini-serve-connection-top (conn)
   (unwind-protect
       (condition-case (err)
           (mini-serve-connection conn)
         (sys:network-error
           (when *mini-verbose*
-            (format *mini-log* "~&MINI: connection ended: ~A~%" err))))
+            (format *mini-log* "~&MINI: connection ended: ~A~%" err)))
+        (error
+          (format *mini-log* "~&MINI: error serving connection: ~A~%" err)
+          (condition-case () (chaos::close-conn conn "MINI server error")
+            (error nil))))
     (condition-case () (chaos::remove-conn conn) (error nil))))
 
 (defun mini-server-top-level ()
