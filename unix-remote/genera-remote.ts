@@ -1365,16 +1365,21 @@ export class GeneraSession {
   }
 
   /**
-   * Type a form, wait for the next prompt, and return exactly what the
-   * Listener printed in between.
+   * Type a form and wait for the next prompt.  What the Listener printed is
+   * on the screen; read it from there.
    *
-   * The echoed form is stripped from the first line; the trailing prompt line
-   * is excluded by construction (we slice up to it).
+   * This deliberately does not try to carve the output back out of the
+   * transcript.  The server paints an echo that it has already wrapped to a
+   * width we do not reliably know (Genera picks its own when NAWS is refused,
+   * and marks the break with a character of its choosing), so any such
+   * reconstruction is guesswork about someone else's display decisions — and
+   * it showed: a long form's continuation rows read as if the Listener had
+   * printed them.  The screen is the ground truth and already correct.
    */
   async evalForm(
     form: string,
     timeoutMs = 30_000,
-  ): Promise<{ output: string; timedOut: boolean; elapsedMs: number }> {
+  ): Promise<{ timedOut: boolean; elapsedMs: number }> {
     this.#requireConnection();
     const start = Date.now();
     const mark = this.screen.absLine(this.screen.cursorRow);
@@ -1393,31 +1398,113 @@ export class GeneraSession {
       await sleep(15);
     }
 
-    const promptAbs = this.screen.absLine(this.screen.cursorRow);
-    const all = this.screen.transcript();
-    const end = timedOut ? all.length : Math.max(mark, promptAbs);
-    const lines = all.slice(mark, end);
-
-    if (lines.length) {
-      const i = lines[0].indexOf(form);
-      // The prompt and the echoed form share the first line; drop both.
-      if (i >= 0) lines[0] = lines[0].slice(i + form.length);
-      else lines.shift();
-    }
-    const output = lines.join("\n").replace(/^\s*\n/, "").replace(/\s+$/, "");
+    const elapsedMs = Date.now() - start;
     this.note(
       `eval ${JSON.stringify(form)}`,
       timedOut
-        ? `TIMED OUT after ${Date.now() - start}ms`
-        : `ok (${output.length} chars)`,
+        ? `TIMED OUT after ${elapsedMs}ms`
+        : `prompt back in ${elapsedMs}ms`,
     );
-    return { output, timedOut, elapsedMs: Date.now() - start };
+    return { timedOut, elapsedMs };
   }
 
   resize(cols: number, rows: number): void {
     this.screen.resize(cols, rows);
     this.telnet?.sendWindowSize(cols, rows);
   }
+}
+
+// ---------------------------------------------------------------------------
+// MCP result rendering — deliberately terse
+// ---------------------------------------------------------------------------
+//
+// Every tool result used to be pretty-printed JSON carrying the action log
+// entry, the full session state and the whole 24x80 grid — roughly 400 tokens
+// per call, most of it unchanged from the call before.  The rules now:
+//
+//   * results are plain text, not JSON (no quoting, no \n escaping, no indent);
+//   * the screen is emitted as a diff against what the caller was last shown,
+//     so a repaint costs the grid and a one-line answer costs one line;
+//   * state collapses to a one-line footer; the full dump moved to a tool of
+//     its own, so nothing is lost — it is just no longer paid for every call.
+
+export type ScreenMode = "auto" | "full" | "changed" | "none";
+
+/** Drop blank rows at both ends; interior blank rows are content. */
+export function trimBlankEdges(lines: string[]): string[] {
+  let a = 0, b = lines.length;
+  while (a < b && lines[a] === "") a++;
+  while (b > a && lines[b - 1] === "") b--;
+  return lines.slice(a, b);
+}
+
+/**
+ * Renders the grid against the last version the caller actually saw.
+ *
+ * "auto" picks per call: unchanged → a one-liner, a few changed rows → those
+ * rows with 0-based row numbers, otherwise the whole screen.  Modes that emit
+ * nothing leave the baseline alone — the caller has not seen those lines, so
+ * the next diff must still be measured from the last screen they did see.
+ *
+ * "full" is the escape hatch and is answered literally: a caller who asks for
+ * the whole grid has decided the diff is not what they need — typically a new
+ * caller with no baseline, or one diagnosing a stall — so the unchanged
+ * short-circuit must not swallow it.
+ */
+export class ScreenRenderer {
+  #last: string[] | null = null;
+
+  reset(): void {
+    this.#last = null;
+  }
+
+  render(lines: string[], mode: ScreenMode = "auto"): string | null {
+    if (mode === "none") return null;
+    const prev = this.#last;
+    this.#last = lines.slice();
+
+    const full = trimBlankEdges(lines).join("\n");
+    if (mode === "full") return full;
+
+    if (
+      prev && prev.length === lines.length &&
+      prev.every((l, i) => l === lines[i])
+    ) {
+      return "(screen unchanged)";
+    }
+
+    if (!prev) return full;
+
+    const changed: number[] = [];
+    const n = Math.max(prev.length, lines.length);
+    for (let i = 0; i < n; i++) {
+      if ((prev[i] ?? "") !== (lines[i] ?? "")) changed.push(i);
+    }
+    const diff = "changed:\n" +
+      changed.map((i) => `${String(i).padStart(2)}| ${lines[i] ?? ""}`)
+        .join("\n");
+    // Cheapest faithful rendering wins; "changed" forces the diff regardless.
+    if (mode === "changed" || diff.length < full.length) return diff;
+    return full;
+  }
+}
+
+/**
+ * Long output, head- and tail-biased: a Listener transcript keeps its value on
+ * the last line, so a plain head truncation would drop the very thing asked
+ * for.  Returns the text unchanged when it fits.
+ */
+export function clampLines(text: string, max: number): string {
+  const lines = text.split("\n");
+  if (max <= 0 || lines.length <= max) return text;
+  const head = Math.min(20, Math.floor(max / 4));
+  const tail = max - head;
+  const omitted = lines.length - max;
+  return [
+    ...lines.slice(0, head),
+    `... ${omitted} lines omitted (raise max_lines) ...`,
+    ...lines.slice(lines.length - tail),
+  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -1438,40 +1525,55 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
   const { z } = await import(ZOD);
 
   const server = new McpServer({ name: "genera-remote", version: "1.0.0" });
+  const rendered = new ScreenRenderer();
 
-  // Every tool result carries the current state, its own action-log entry,
-  // and (usually) the screen — so the caller always knows where things stand.
-  const ok = (
-    entry: ActionLogEntry,
-    extra: Record<string, unknown> = {},
-    screen = true,
-  ) => {
-    const payload: Record<string, unknown> = {
-      action: entry,
-      state: session.state(),
-      ...extra,
-    };
-    if (screen) {
-      payload.screen = session.screen.text();
-      payload.cursor = {
-        row: session.screen.cursorRow,
-        col: session.screen.cursorCol,
-      };
-    }
-    return {
-      content: [{
-        type: "text" as const,
-        text: JSON.stringify(payload, null, 2),
-      }],
-    };
-  };
-  const fail = (message: string) => ({
-    isError: true,
+  /** Text result; empty/absent parts drop out. */
+  const reply = (parts: Array<string | null | undefined>, isError = false) => ({
+    ...(isError ? { isError: true } : {}),
     content: [{
       type: "text" as const,
-      text: JSON.stringify({ error: message, state: session.state() }, null, 2),
+      text: parts.filter((p) => p !== null && p !== undefined && p !== "")
+        .join("\n"),
     }],
   });
+
+  /**
+   * Exceptions only.  The nominal case — connected, sitting at a prompt — has
+   * nothing worth saying, so it says nothing; cursor, host/port, terminal type
+   * and negotiation flags all live in genera_state now.  "no-prompt" is kept
+   * because it is the one bit a caller must act on: either the Listener has
+   * not come back yet, or an input line is still open.
+   */
+  const footer = (...extra: string[]) => {
+    const bits = [...extra];
+    if (!session.connected) bits.push("DISCONNECTED");
+    else if (!bits.length && !session.atPrompt()) bits.push("no-prompt");
+    return bits.length ? `[${bits.join(" ")}]` : null;
+  };
+
+  const screenOf = (mode: ScreenMode) =>
+    rendered.render(session.screen.lines(), mode);
+
+  const fail = (message: string) =>
+    reply([`error: ${message}`, footer()], true);
+
+  const modeArg = (def: ScreenMode) =>
+    z.enum(["auto", "full", "changed", "none"]).optional().describe(
+      `screen rendering: auto = diff vs what you last saw, full = whole grid, changed = rows only, none = omit (default ${def})`,
+    );
+
+  // Typing and pressing a key return the screen the echo has yet to reach, so
+  // they settle briefly first.  One slightly slower call beats a call plus a
+  // genera_wait to see its effect.
+  const settleArg = z.number().int().optional().describe(
+    "ms of quiet to wait for before reading the screen (default 300, 0 = read immediately)",
+  );
+  const settle = async (ms?: number) => {
+    const q = ms ?? 300;
+    if (q > 0) {
+      await session.wait({ stableMs: q, timeoutMs: Math.max(q * 8, 2000) });
+    }
+  };
 
   server.registerTool("genera_connect", {
     title: "Connect to Genera",
@@ -1488,29 +1590,50 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     if (!session.connected) return fail(entry.outcome);
     // Give the herald a moment to paint before the first screen read.
     await session.wait({ stableMs: 400, timeoutMs: 4000 });
-    return ok(session.note("connect", "settled"), {});
+    session.note("connect", "settled");
+    rendered.reset(); // fresh login: the caller has seen nothing yet
+    return reply([screenOf("full"), footer()]);
   });
 
   server.registerTool("genera_disconnect", {
     title: "Disconnect",
     description: "Close the telnet session.",
     inputSchema: {},
-  }, () => ok(session.disconnect(), {}, false));
+  }, () => {
+    const entry = session.disconnect();
+    rendered.reset();
+    return reply([entry.outcome]);
+  });
 
   server.registerTool("genera_screen", {
     title: "Read the screen",
     description:
-      "Return the current character grid as text, plus cursor position and connection state.",
-    inputSchema: {},
-  }, () => ok(session.note("screen", "read"), {}));
+      "Return the character grid as text. By default only what changed since the screen you were last shown; pass mode=full for the whole grid.",
+    inputSchema: { mode: modeArg("auto") },
+  }, ({ mode }: { mode?: ScreenMode }) => {
+    session.note("screen", "read");
+    return reply([screenOf(mode ?? "auto"), footer()]);
+  });
 
   server.registerTool("genera_type", {
     title: "Type text",
     description: "Send literal text to Genera (no newline appended).",
-    inputSchema: { text: z.string().describe("text to send verbatim") },
-  }, ({ text }: { text: string }) => {
+    inputSchema: {
+      text: z.string().describe("text to send verbatim"),
+      mode: modeArg("auto"),
+      settle_ms: settleArg,
+    },
+  }, async (
+    { text, mode, settle_ms }: {
+      text: string;
+      mode?: ScreenMode;
+      settle_ms?: number;
+    },
+  ) => {
     try {
-      return ok(session.type(text));
+      session.type(text);
+      await settle(settle_ms);
+      return reply([screenOf(mode ?? "auto"), footer()]);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -1521,10 +1644,20 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     description: `Send a named Genera key. Known: ${keyNames().join(", ")}.`,
     inputSchema: {
       name: z.string().describe("key name, e.g. Return, Rubout, Abort"),
+      mode: modeArg("auto"),
+      settle_ms: settleArg,
     },
-  }, ({ name }: { name: string }) => {
+  }, async (
+    { name, mode, settle_ms }: {
+      name: string;
+      mode?: ScreenMode;
+      settle_ms?: number;
+    },
+  ) => {
     try {
-      return ok(session.key(name));
+      session.key(name);
+      await settle(settle_ms);
+      return reply([screenOf(mode ?? "auto"), footer()]);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -1535,7 +1668,7 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     {
       title: "Wait for the screen",
       description:
-        "Wait until a regex appears on screen, OR the screen is unchanged for stable_ms. Always returns the final screen. Fails closed on timeout.",
+        "Wait until a regex appears on screen, OR the screen is unchanged for stable_ms. Returns the screen (diffed by default). Fails closed on timeout.",
       inputSchema: {
         pattern: z.string().optional().describe("regex to wait for"),
         stable_ms: z.number().int().optional().describe(
@@ -1544,13 +1677,15 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
         timeout_ms: z.number().int().optional().describe(
           "give up after this many ms",
         ),
+        mode: modeArg("auto"),
       },
     },
     async (
-      { pattern, stable_ms, timeout_ms }: {
+      { pattern, stable_ms, timeout_ms, mode }: {
         pattern?: string;
         stable_ms?: number;
         timeout_ms?: number;
+        mode?: ScreenMode;
       },
     ) => {
       if (!session.connected) return fail("not connected");
@@ -1559,59 +1694,85 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
         stableMs: stable_ms,
         timeoutMs: timeout_ms,
       });
-      const entry = session.note(
+      const verdict = r.matched
+        ? "matched"
+        : r.stable
+        ? "settled"
+        : "TIMED OUT";
+      session.note(
         `wait ${pattern ? JSON.stringify(pattern) : "(stable)"}`,
-        r.matched ? "matched" : r.stable ? "settled" : "TIMED OUT",
+        verdict,
       );
-      const res = ok(entry, { wait: r });
-      if (r.timedOut) (res as { isError?: boolean }).isError = true;
-      return res;
+      // Silent when the wait did what was asked; loud when it did not — a
+      // pattern that never matched is a settled screen, not a success.
+      const notes = r.timedOut
+        ? [`TIMED OUT ${r.elapsedMs}ms`]
+        : pattern !== undefined && !r.matched
+        ? [`no match, settled ${r.elapsedMs}ms`]
+        : [];
+      return reply([screenOf(mode ?? "auto"), footer(...notes)], r.timedOut);
     },
   );
 
   server.registerTool("genera_eval", {
     title: "Evaluate a form",
     description:
-      "Type a Lisp form + Return, wait for the next prompt, and return exactly the output printed in between.",
+      "Type a Lisp form + Return, wait for the next prompt, and return the screen — the echoed form, whatever the Listener printed, and the new prompt, exactly as they were painted. Output that scrolls past the top of the 24-row screen is gone, as it would be for anyone at the terminal.",
     inputSchema: {
       form: z.string().describe("the form to evaluate"),
       timeout_ms: z.number().int().optional().describe(
         "give up after this many ms",
       ),
+      max_lines: z.number().int().optional().describe(
+        "truncate past this many lines, keeping head and tail (default 200, 0 = unlimited)",
+      ),
+      mode: modeArg("auto"),
     },
-  }, async ({ form, timeout_ms }: { form: string; timeout_ms?: number }) => {
+  }, async (
+    { form, timeout_ms, max_lines, mode }: {
+      form: string;
+      timeout_ms?: number;
+      max_lines?: number;
+      mode?: ScreenMode;
+    },
+  ) => {
     if (!session.connected) return fail("not connected");
     const r = await session.evalForm(form, timeout_ms ?? 30_000);
-    const entry = session.note(
-      `eval ${JSON.stringify(form)}`,
-      r.timedOut ? "TIMED OUT" : "ok",
+    const screen = screenOf(mode ?? "auto");
+    const notes: string[] = [];
+    if (r.timedOut) notes.push(`TIMED OUT ${r.elapsedMs}ms`);
+    return reply(
+      [
+        screen === null ? null : clampLines(screen, max_lines ?? 200),
+        footer(...notes),
+      ],
+      r.timedOut,
     );
-    const res = ok(entry, {
-      output: r.output,
-      timedOut: r.timedOut,
-      elapsedMs: r.elapsedMs,
-    });
-    if (r.timedOut) (res as { isError?: boolean }).isError = true;
-    return res;
   });
+
+  server.registerTool("genera_state", {
+    title: "Session state",
+    description:
+      "Full connection/terminal/negotiation state as JSON. Other tools report only a one-line summary; call this when that is not enough.",
+    inputSchema: {},
+  }, () => reply([JSON.stringify(session.state())]));
 
   server.registerTool("genera_log", {
     title: "Session action log",
     description:
-      "Return the in-memory action log (timestamp, intent, outcome per entry).",
+      "Return the in-memory action log, one line per entry (time, intent, outcome).",
     inputSchema: {
-      limit: z.number().int().optional().describe("last N entries"),
+      limit: z.number().int().optional().describe(
+        "last N entries (default 20, 0 = all)",
+      ),
     },
   }, ({ limit }: { limit?: number }) => {
-    const log = limit
-      ? session.actionLog.slice(-limit)
-      : session.actionLog.slice();
-    return {
-      content: [{
-        type: "text" as const,
-        text: JSON.stringify({ log, count: log.length }, null, 2),
-      }],
-    };
+    const n = limit ?? 20;
+    const log = n > 0 ? session.actionLog.slice(-n) : session.actionLog.slice();
+    return reply([
+      log.map((e) => `${e.time.slice(11, 19)} ${e.intent} -> ${e.outcome}`)
+        .join("\n"),
+    ]);
   });
 
   const transport = new StdioServerTransport();
@@ -1750,11 +1911,7 @@ async function cliMain(verb: string, opts: CliOpts): Promise<number> {
               opts.rest.join(" "),
               opts.timeoutMs ?? 30_000,
             );
-            result = {
-              output: r.output,
-              timedOut: r.timedOut,
-              screen: session.screen.text(),
-            };
+            result = { timedOut: r.timedOut, screen: session.screen.text() };
             if (r.timedOut) code = 2;
             break;
           }

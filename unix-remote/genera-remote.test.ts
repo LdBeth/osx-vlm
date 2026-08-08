@@ -27,12 +27,15 @@ function assertStringIncludes(haystack: string, needle: string): void {
 }
 
 import {
+  clampLines,
   DEFAULT_PROMPT_PATTERN,
   GeneraSession,
   keyNames,
   lookupKey,
   Screen,
+  ScreenRenderer,
   TelnetClient,
+  trimBlankEdges,
 } from "./genera-remote.ts";
 
 import { FAKE_PROMPT, FakeGeneraServer } from "./genera-remote-test.ts";
@@ -222,7 +225,7 @@ Deno.test("session: prompt pattern matches Genera-style prompts", () => {
   assert(!re.test("loading..."));
 });
 
-Deno.test("session: eval extracts exactly the printed output", async () => {
+Deno.test("session: eval leaves the answer on the screen", async () => {
   const server = new FakeGeneraServer();
   server.listen();
   try {
@@ -232,10 +235,15 @@ Deno.test("session: eval extracts exactly the printed output", async () => {
 
     const r1 = await s.evalForm("(+ 1 2)", 5000);
     assertEquals(r1.timedOut, false);
-    assertEquals(r1.output, "3");
+    // eval's job is to get back to a prompt; the screen carries the answer.
+    assert(s.atPrompt(), "should be back at a prompt");
+    assertStringIncludes(s.screen.text(), `${FAKE_PROMPT}(+ 1 2)\n3`);
 
-    const r2 = await s.evalForm("(machine-type)", 5000);
-    assertEquals(r2.output, '"Symbolics Virtual Lisp Machine"');
+    await s.evalForm("(machine-type)", 5000);
+    assertStringIncludes(
+      s.screen.text(),
+      `${FAKE_PROMPT}(machine-type)\n"Symbolics Virtual Lisp Machine"`,
+    );
     s.disconnect();
   } finally {
     server.close();
@@ -357,6 +365,74 @@ Deno.test("session: key sends the mapped bytes", async () => {
 });
 
 // ===========================================================================
+// MCP result rendering — what keeps tool results small
+// ===========================================================================
+
+Deno.test("render: blank edges go, interior blank rows stay", () => {
+  assertEquals(
+    trimBlankEdges(["", "", "a", "", "b", "", ""]),
+    ["a", "", "b"],
+  );
+  assertEquals(trimBlankEdges(["", ""]), []);
+});
+
+Deno.test("render: first screen is full, an idle screen is one line", () => {
+  const r = new ScreenRenderer();
+  assertEquals(r.render(["", "hello", "world", ""]), "hello\nworld");
+  assertEquals(r.render(["", "hello", "world", ""]), "(screen unchanged)");
+});
+
+Deno.test("render: mode full answers with the grid even when idle", () => {
+  const r = new ScreenRenderer();
+  r.render(["", "hello", "world", ""]);
+  // "auto" is right to collapse this; "full" was asked for the grid.
+  assertEquals(r.render(["", "hello", "world", ""]), "(screen unchanged)");
+  assertEquals(r.render(["", "hello", "world", ""], "full"), "hello\nworld");
+  // "changed" with nothing changed still has nothing to list.
+  assertEquals(
+    r.render(["", "hello", "world", ""], "changed"),
+    "(screen unchanged)",
+  );
+});
+
+Deno.test("render: a small change comes back as numbered rows", () => {
+  const r = new ScreenRenderer();
+  const base = Array.from({ length: 24 }, (_, i) => `row ${i} filler text`);
+  r.render(base);
+  const next = base.slice();
+  next[7] = "Command: (* 6 7)";
+  assertEquals(r.render(next), "changed:\n 7| Command: (* 6 7)");
+});
+
+Deno.test("render: a repainted screen falls back to the full grid", () => {
+  const r = new ScreenRenderer();
+  r.render(Array.from({ length: 24 }, (_, i) => `old ${i}`));
+  const fresh = Array.from({ length: 24 }, (_, i) => `new ${i}`);
+  const out = r.render(fresh)!;
+  assert(!out.startsWith("changed:"), "expected the full grid, got a diff");
+  assertEquals(out.split("\n").length, 24);
+});
+
+Deno.test("render: mode none emits nothing and keeps the baseline", () => {
+  const r = new ScreenRenderer();
+  r.render(["a"]);
+  assertEquals(r.render(["b"], "none"), null);
+  // The caller never saw "b", so "b" must still read as a change.
+  assertEquals(r.render(["b"]), "b");
+});
+
+Deno.test("render: long output keeps its head and its tail", () => {
+  const text = Array.from({ length: 500 }, (_, i) => `line ${i}`).join("\n");
+  assertEquals(clampLines(text, 0), text);
+  assertEquals(clampLines("short", 200), "short");
+  const out = clampLines(text, 100).split("\n");
+  assertEquals(out.length, 101); // 100 kept + the omission marker
+  assertEquals(out[0], "line 0");
+  assertEquals(out[out.length - 1], "line 499");
+  assertStringIncludes(out[20], "400 lines omitted");
+});
+
+// ===========================================================================
 // MCP: real SDK transport, one round trip
 // ===========================================================================
 
@@ -405,6 +481,7 @@ Deno.test({
           "genera_key",
           "genera_log",
           "genera_screen",
+          "genera_state",
           "genera_type",
           "genera_wait",
         ]
@@ -423,21 +500,41 @@ Deno.test({
         (connectRes.content as Array<{ type: string; text: string }>)[0].text;
       assertStringIncludes(connectText, "Symbolics Virtual Lisp Machine");
 
+      // Results are plain text now, and eval's is the screen: the echoed form,
+      // what the Listener printed, and the new prompt — diffed against what
+      // this caller was last shown (see ScreenRenderer / footer()).
       const evalRes = await client.callTool({
         name: "genera_eval",
         arguments: { form: "(* 6 7)" },
       });
       const evalText =
         (evalRes.content as Array<{ type: string; text: string }>)[0].text;
-      const parsed = JSON.parse(evalText);
-      assertEquals(parsed.output, "42");
+      assertStringIncludes(evalText, "Command: (* 6 7)");
+      assertStringIncludes(evalText, "42");
+
+      // The metadata the other tools stopped carrying is still reachable.
+      const stateRes = await client.callTool({
+        name: "genera_state",
+        arguments: {},
+      });
+      const state = JSON.parse(
+        (stateRes.content as Array<{ type: string; text: string }>)[0].text,
+      );
+      assertEquals(state.connected, true);
+
+      // A second read of an idle screen must not repeat the grid.
+      await client.callTool({ name: "genera_screen", arguments: {} });
+      const againRes = await client.callTool({
+        name: "genera_screen",
+        arguments: {},
+      });
+      assertEquals(
+        (againRes.content as Array<{ type: string; text: string }>)[0].text,
+        "(screen unchanged)",
+      );
     } finally {
       await client.close();
       server.close();
     }
   },
 });
-
-// Keep a reference so the linter doesn't flag the imported constant as unused
-// in case a future edit drops its only use.
-export const _fakePrompt = FAKE_PROMPT;

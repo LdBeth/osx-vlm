@@ -239,7 +239,7 @@ specifier and imported lazily, so `deno test` and the CLI never touch it).
 
     # CLI: each verb connects, acts, disconnects (fresh Listener each time)
     ./genera-remote.ts screen                         # print the screen
-    ./genera-remote.ts eval '(+ 1 2)'                 # eval a form, print output
+    ./genera-remote.ts eval '(+ 1 2)'                 # eval a form, print screen
     ./genera-remote.ts type 'Show Herald'             # type literal text
     ./genera-remote.ts key Abort                      # press a named key
     ./genera-remote.ts wait --pattern 'Command: '     # wait for the prompt
@@ -278,23 +278,61 @@ Use `repl`, or the MCP server's persistent session, when you need continuity.
 Registered on the stdio server (`McpServer` + `StdioServerTransport`):
 
   * `genera_connect {host?, port?}` / `genera_disconnect`
-  * `genera_screen` → the character grid as text + cursor + connection state
-  * `genera_type {text}` → literal text, no newline appended
-  * `genera_key {name}` → a named Genera key (see the table below)
-  * `genera_wait {pattern?, stable_ms?, timeout_ms?}` → returns when a regex
-    appears **or** the screen is unchanged for `stable_ms`; always returns the
-    final screen; fails closed (error flag) on timeout. Stability is measured
-    from the moment the call begins, so an in-flight repaint always gets a
-    chance to land before the screen is declared settled.
-  * `genera_eval {form, timeout_ms?}` → types the form + Return, waits for the
-    next prompt, and returns **exactly** the text the Listener printed in
-    between (the echoed form and the trailing prompt are stripped).
-  * `genera_log {limit?}` → the in-memory action log
+  * `genera_screen {mode?}` → the character grid as text
+  * `genera_type {text, mode?, settle_ms?}` → literal text, no newline appended
+  * `genera_key {name, mode?, settle_ms?}` → a named Genera key (table below)
+  * `genera_wait {pattern?, stable_ms?, timeout_ms?, mode?}` → returns when a
+    regex appears **or** the screen is unchanged for `stable_ms`; fails closed
+    (error flag) on timeout. Stability is measured from the moment the call
+    begins, so an in-flight repaint always gets a chance to land before the
+    screen is declared settled.
+  * `genera_eval {form, timeout_ms?, max_lines?, mode?}` → types the form +
+    Return, waits for the next prompt, and returns **the screen**: the echoed
+    form, whatever the Listener printed, and the new prompt, exactly as they
+    were painted.
+  * `genera_state` → the full connection/terminal/negotiation state, as JSON
+  * `genera_log {limit?}` → the in-memory action log, one line per entry
 
-Every tool result carries an `action` entry (ISO timestamp, intent, outcome),
-the current `state`, and (for most) the `screen` — so a caller always knows
-where the session stands. The session also keeps a rolling action log
-retrievable via `genera_log`.
+### What a tool result contains
+
+Results are **plain text, not JSON**, and carry as little as the call allows —
+an agent pays for every byte of every result, and the old envelope (action
+entry + full state + full grid, pretty-printed) repeated itself on every call.
+
+  * **Screen.** `mode` selects the rendering: `auto` (the default) diffs
+    against the screen the caller was *last shown* — unchanged prints
+    `(screen unchanged)`, a few changed rows print as `NN| text` with 0-based
+    row numbers, and a repaint prints the whole grid; `full` forces the grid,
+    `changed` forces the diff, `none` omits it. A mode that emits nothing does
+    not move the diff baseline, so the next diff is still measured against
+    what the caller actually saw.
+  * **`genera_eval` returns the screen**, through the same `mode` machinery as
+    everything else (`auto` by default, so you normally get just the rows that
+    changed: the echo, the output, the new prompt). It does *not* try to carve
+    the output back out. The server echoes a line it has already wrapped to a
+    width we do not reliably know — Genera picks its own when NAWS is refused,
+    and marks the break itself — so reconstructing "just the output" means
+    guessing at someone else's display decisions, and a form wider than the
+    line came back with its own tail masquerading as printed output. The
+    screen is ground truth. `max_lines` (default 200) still truncates from the
+    middle, keeping head and tail.
+
+    The cost is the honest one: output that scrolls past the top of the
+    24-row screen is gone, exactly as it would be for anyone at the terminal.
+    Use `genera_wait`/`genera_screen` while something long is printing.
+  * **Footer.** One bracketed line, and only when something is off-nominal:
+    `[no-prompt]` (connected, but the Listener has not come back — or an
+    input line is still open), `[DISCONNECTED]`,
+    `[TIMED OUT 30000ms]`, `[no match, settled 400ms]`, `[no output]`. A
+    nominal call has no footer at all.
+  * **Everything else moved.** Cursor, host/port, terminal type and the
+    negotiation flags are in `genera_state`; the per-call intent/outcome trail
+    is in `genera_log`. Nothing was dropped — it is just no longer paid for on
+    every call.
+
+`genera_type` and `genera_key` settle for `settle_ms` (default 300) before
+reading, so the echo they provoke is in the result rather than needing a
+second `genera_wait` call to see.
 
 ### Registering with Claude Code
 
@@ -408,7 +446,7 @@ A fake Genera telnet server (`genera-remote-test.ts`) stands in for the VLM
 (which needs sudo to boot): it speaks the same negotiation, paints a herald
 with X3.64 sequences, echoes typed characters, and answers a small canned set
 of forms. The suite covers the negotiation transcript, screen-model rendering
-(golden screens as plain text), wait semantics, eval output extraction, the
+(golden screens as plain text), wait semantics, eval's return-to-prompt, the
 key table, and — over the **real** MCP SDK transport — the handshake plus a
 `tools/call` round trip:
 
@@ -417,13 +455,13 @@ key table, and — over the **real** MCP SDK transport — the handshake plus a
 `--allow-run` is needed because the MCP round-trip test spawns the server as a
 child process; the other flags mirror the driver's own. The SDK must already
 be in the Deno npm cache (it is; the tests run fully offline). As of the last
-run: **23 passed, 0 failed** (`deno test` exit 0), `deno lint` and `deno check`
+run: **30 passed, 0 failed** (`deno test` exit 0), `deno lint` and `deno check`
 clean.
 
 You can also drive the fake server by hand:
 
     ./genera-remote-test.ts --port 2323 &
-    ./genera-remote.ts eval '(* 6 7)' --host 127.0.0.1 --port 2323   # -> 42
+    ./genera-remote.ts eval '(* 6 7)' --host 127.0.0.1 --port 2323   # screen + 42
 
 ## Live verification (against the real VLM)
 
@@ -433,7 +471,8 @@ Once the VLM is booted (it binds `192.168.2.2:23` while running):
      login, a `Command: ` prompt. If instead you see “Type :Set Remote Terminal
      Options to set the terminal type”, you are in printing mode (fine for
      eval; see below for X3.64).
-  2. `./genera-remote.ts eval '(+ 1 2)'` — expect `3`. Try
+  2. `./genera-remote.ts eval '(+ 1 2)'` — expect the screen to show the
+     echoed form and `3` below it. Try
      `'(lisp-implementation-version)'` and `'(machine-type)'`.
   3. `./genera-remote.ts key Abort` after starting something — expect it to
      interrupt back to a `Command: ` prompt (this exercises `c-_ A`, the one
@@ -442,8 +481,11 @@ Once the VLM is booted (it binds `192.168.2.2:23` while running):
      `:Set Remote Terminal Options`, confirm X3.64, and run e.g.
      `Show Directory` — the screen model should track cursor addressing.
   5. Register the MCP server (snippet above) and, from Claude Code, call
-     `genera_connect` then `genera_eval` — confirm the JSON result carries the
-     output, the screen, and an action-log entry.
+     `genera_connect` then `genera_eval` — the eval result should be the
+     changed screen rows (echoed form, output, new prompt); a second
+     `genera_screen` on an idle Listener should come back
+     `(screen unchanged)`, and `genera_screen {mode: "full"}` should still
+     print the whole grid.
 
 ## Security
 
