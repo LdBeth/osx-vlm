@@ -16,8 +16,9 @@ over the network:
 
 The VLM has no tape driver. Genera reaches a tape by opening a BSD `rexec`
 connection (TCP **512**) to a host carrying the `(:TAPE :TCP :UNIX-REXEC)`
-service, running `/usr/sbin/rmt`, and speaking the BSD remote-magtape (`rmt`)
-protocol. (Sources: `sys.sct/embedding/ux/{unix-protocols,unix-tape}.lisp`.)
+service, running `/etc/rmt` there, and speaking the BSD remote-magtape (`rmt`)
+protocol. (Sources: `sys.sct/embedding/ux/{unix-protocols,unix-tape}.lisp` in
+`/opt/symbolics/lib/rel-9-0`, the Portable Genera source tree.)
 
 `rmtd` is a single process that impersonates all of it — rexecd + `/etc/rmt` +
 the drive. The "tape" is a regular file in **SIMH `.tap`** format, so filemarks
@@ -46,23 +47,50 @@ root-owned and will now fail a startup check; `chown` it to yourself.
 
 ## Genera namespace setup (important)
 
-Register the server's host object with **Machine Type `DEC-AXP`** — *not* Sun.
-DEC-AXP selects the only rmt dialect that both:
-
-  * never issues the binary `S` (status) command — which would need a real
-    `struct mtget`, and
-  * sets `allow-short-input-records-p` true, so a real per-record tape isn't
-    mistaken for EOF on the first short read.
-
-Add the `(:TAPE :TCP :UNIX-REXEC)` service to that host and set
+Add the `(:TAPE :TCP :UNIX-REXEC)` service to the Mac's host object and set
 `tape:*default-tape-host*` to it. The username/password Genera prompts for are
 ignored by `rmtd`.
 
-**Device name must be `mt<unit><density>`** (e.g. `mt0h`), NOT `Cart`. Under the
-DEC-AXP dialect Genera strictly parses the device string (`unix-tape.lisp:301`):
-it must start with `mt`, a unit number 0–31, and end in a density letter
-`a`/`l`/`m`/`h`. Anything else (like `Cart`) errors with "Invalid device name".
-`rmtd` ignores the name, so unit/density are cosmetic — they just have to parse.
+**Leave the Machine Type alone.** Portable Genera creates its own embedding
+host with Machine Type `Macintosh` and System Type `macOS`
+(`namespaces.lisp`, `emb-host-machine-type` / `emb-host-system-type`; the
+`darwin-arm-vlm` arm of each `system-case`). Earlier notes here said to
+register the tape host as `DEC-AXP`; do **not** do that to a Portable Genera
+emb host — `DEC-AXP` is a machine type, `macOS` is the system type, and the
+two are not interchangeable.
+
+Genera picks the rmt dialect from that Machine Type
+(`unix-tape.lisp`, `sun-host-p` / `dec-axp-host-p`). `Macintosh` is neither
+Sun nor DEC, so the tape stream takes the default ("vax") branch, which differs
+from the DEC-AXP branch in four ways — `rmtd` implements all four:
+
+  * it **does** issue the binary `S` (status) command, at mount and on every
+    ready/BOT check. `rmtd` answers with a real `struct mtget` prefix: drive
+    type `0x03` (Unibus TM-11), which is the one type whose status Genera can
+    actually decode, plus the online / BOT / EOF / EOT bits
+    (`vax-unibus-tm-11-status`);
+  * `allow-short-input-records-p` is NIL, so **a short read means EOF**.
+    `rmtd` fills each `R` from as many `.tap` records as it takes, stopping only
+    at a filemark or end of medium, and splits a record that overruns the
+    request. Returning one record per `R` — which is what a DEC-AXP host wants —
+    would end every file after its first record;
+  * the rexec command is `/etc/rmt`, not `/usr/sbin/rmt`. That is how `rmtd`
+    names the dialect in its log (`-v`), which is the quickest way to catch a
+    host registered as the wrong machine type;
+  * the device string is parsed differently — see below.
+
+A host registered as `DEC-AXP` still works: `rmtd` serves both dialects, and the
+read semantics above (never cross a filemark; the following zero-length read
+steps over it) are the ones a real Unix tape driver has.
+
+**Device name must be `mt0`**, NOT `mt0h` and never `Cart`. The default dialect
+parses the device string as *prefix* + *unit* (`unix-tape.lisp`, the `t` branch
+of the `make-instance :after` `cond`): it takes the digits after the last
+non-digit as the unit and requires `0 ≤ unit ≤ 3`, so a trailing density letter
+(`mt0h`, the DEC-AXP form) leaves no digits to parse and errors. Density comes
+from the tape spec, not the name, and must be 800, 1600 or 6250 — it defaults
+to 1600 (`lmtape/tape-host.lisp`, `default-tape-density`). `rmtd` ignores the
+name it is sent, so unit and density are cosmetic; they just have to parse.
 
 ## Inspecting a tape image
 
@@ -79,7 +107,7 @@ tape: `Show Tape Directory`, `Restore Distribution`, `Restore File`, etc.
 
 ## What's implemented
 
-rexec handshake; rmt `O`pen/`C`lose/`R`ead/`W`rite/`L`seek; MTIOCTOP
+rexec handshake; rmt `O`pen/`C`lose/`R`ead/`W`rite/`L`seek/`S`tatus; MTIOCTOP
 `WEOF/FSF/BSF/FSR/BSR/REW/OFFL/EOM/ERASE/NOP/RETEN`. Reverse-skip is
 best-effort (Genera flags it unsupported for this stream). Writing truncates
 the image past the write point, matching tape semantics.

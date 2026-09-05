@@ -10,9 +10,27 @@ This one process impersonates all of it: rexecd + /etc/rmt + the tape drive.
 The "tape" is a regular file in SIMH .tap format, so filemarks / multi-file
 tapes work and images interchange with other tools.
 
-  Register the tape host in the Genera namespace with MACHINE TYPE "DEC-AXP"
-  (NOT Sun).  DEC-AXP selects the rmt dialect that (a) never issues the binary
-  `S` status command and (b) allows short input records -- both required here.
+  Genera picks one of three rmt dialects from the tape host's namespace MACHINE
+  TYPE (unix-tape.lisp: sun-host-p / dec-axp-host-p).  Portable Genera registers
+  its own embedding host as machine type Macintosh, system type macOS
+  (namespaces.lisp: emb-host-machine-type / emb-host-system-type), which is
+  neither Sun nor DEC-AXP, so the tape stream gets the DEFAULT ("vax") dialect:
+
+    * it does issue the binary `S` status command, so rmtd answers with a real
+      struct mtget prefix -- drive type 0x03, Unibus TM-11, one of the only two
+      types Genera has a status decoder for (vax-unibus-tm-11-status);
+    * allow-short-input-records-p is NIL, so a read returning fewer bytes than
+      were asked for means END OF FILE.  rmtd therefore satisfies each `R` from
+      as many tape records as it takes, stopping only at a filemark or at end
+      of medium, and splitting a record if one overruns the request;
+    * the device string is parsed as <prefix><unit 0-3> -- use "mt0", NOT the
+      DEC-AXP "mt0h" form, and never "Cart";
+    * the rexec command is /etc/rmt rather than DEC-AXP's /usr/sbin/rmt, which
+      is how rmtd tells the two dialects apart in the log.
+
+  A host registered as DEC-AXP still works: rmtd serves both dialects, and the
+  read semantics below (never cross a filemark; a zero-length read consumes it)
+  are the ones a real Unix tape driver has, which is what each dialect expects.
 
 SECURITY: rexec credentials are accepted and ignored (Genera sends none that
 mean anything here), so anyone who can open the port can read the tape image
@@ -46,6 +64,17 @@ _OP_NAME = {MTWEOF: "WEOF", MTFSF: "FSF", MTBSF: "BSF", MTFSR: "FSR", MTBSR: "BS
            MTREW: "REW", MTOFFL: "OFFL", MTNOP: "NOP", MTRETEN: "RETEN",
            MTERASE: "ERASE", MTEOM: "EOM"}
 
+# struct mtget prefix for the `S` (status) reply, as Genera decodes it
+# (unix-tape.lisp rmt-read-status): mt_type, mt_dsreg, mt_erreg, 2 bytes each.
+# A zero first byte tells Genera the reply is big-endian.  Only drive types
+# 0x03 and 0x14 have a status decoder; 0x03 is the one that decodes anything.
+MT_TYPE_TM11 = 0x03
+
+# mt_erreg bits, per vax-unibus-tm-11-status.  ONLINE is inverted there: with
+# it clear the drive reads as offline and Genera waits for an operator.
+ER_EOF, ER_HARD_ERROR, ER_EOT = 0x4000, 0x1000, 0x0400
+ER_ONLINE, ER_BOT, ER_WRITE_LOCK, ER_REWINDING = 0x0040, 0x0020, 0x0004, 0x0002
+
 # SIMH .tap metadata markers (4-byte little-endian record headers/trailers).
 TAPEMARK = 0x00000000        # tape mark (filemark)
 EOM_MARK = 0xFFFFFFFF        # end of medium
@@ -67,6 +96,19 @@ class Tape:
             open(path, "wb").close()
             log.info("created empty tape image %s", path)
         self.f = open(path, "r+b")
+        # Bytes of a record that overran the last `R` request, still owed to
+        # the client, and the sticky "last read hit a filemark" status bit.
+        self.pending = b""
+        self.saw_filemark = False
+
+    def reposition(self):
+        """Any tape motion drops a half-delivered record and the EOF bit."""
+        self.pending = b""
+        self.saw_filemark = False
+
+    def reopen(self):
+        """The rmt `O` command on a no-rewind device: keeps position."""
+        self.saw_filemark = False
 
     def close(self):
         try:
@@ -103,7 +145,67 @@ class Tape:
         self.f.read(4)                      # trailer
         return ("data", data)
 
+    def read_data(self, count):
+        """Return up to `count` bytes, never crossing a filemark.
+
+        This is what read(2) does on a Unix tape, and both rmt dialects are
+        written against it: a short return means "the file ends here", and the
+        filemark itself is stepped over by the following zero-length read.  A
+        host with allow-short-input-records-p NIL (anything not DEC-AXP, which
+        includes Portable Genera's own macOS host) treats ANY short return as
+        EOF, so records have to be coalesced up to `count` -- returning one
+        record per call would end every file after its first record.
+        """
+        out = bytearray()
+        while len(out) < count:
+            need = count - len(out)
+            if self.pending:
+                out += self.pending[:need]
+                self.pending = self.pending[need:]
+                continue
+            pos = self.f.tell()
+            kind, data = self.read_block()
+            if kind == "mark":
+                if out:
+                    self.f.seek(pos)        # leave it for the next, empty read
+                else:
+                    self.saw_filemark = True    # zero-length read consumes it
+                break
+            if kind == "eom":               # read_block left us on the marker
+                break
+            self.saw_filemark = False
+            if len(data) > need:
+                out += data[:need]
+                self.pending = data[need:]
+            else:
+                out += data
+        return bytes(out)
+
+    # --- status -----------------------------------------------------------
+    def at_eom(self):
+        if self.pending:
+            return False
+        pos = self.f.tell()
+        hdr = self.f.read(4)
+        self.f.seek(pos)
+        if len(hdr) < 4:
+            return True
+        (n,) = struct.unpack("<I", hdr)
+        return n == EOM_MARK
+
+    def status_erreg(self):
+        """mt_erreg for the `S` reply (vax-unibus-tm-11-status decodes it)."""
+        bits = ER_ONLINE
+        if self.f.tell() == 0 and not self.pending:
+            bits |= ER_BOT
+        if self.saw_filemark:
+            bits |= ER_EOF
+        if self.at_eom():
+            bits |= ER_EOT
+        return bits
+
     def fsf(self, count):
+        self.reposition()
         for _ in range(count):
             while True:
                 kind, _ = self.read_block()
@@ -113,6 +215,7 @@ class Tape:
                     return
 
     def fsr(self, count):
+        self.reposition()
         for _ in range(count):
             kind, _ = self.read_block()
             if kind in ("mark", "eom"):
@@ -135,6 +238,7 @@ class Tape:
         return "data"
 
     def bsf(self, count):
+        self.reposition()
         for _ in range(count):
             while True:
                 kind = self._back_one()
@@ -144,19 +248,23 @@ class Tape:
                     break
 
     def bsr(self, count):
+        self.reposition()
         for _ in range(count):
             if self._back_one() == "bot":
                 return
 
     def rewind(self):
+        self.reposition()
         self.f.seek(0)
 
     def seek_eom(self):
+        self.reposition()
         while self.read_block()[0] != "eom":
             pass
 
     # --- writing ----------------------------------------------------------
     def write_block(self, data):
+        self.reposition()
         n = len(data)
         self.f.write(struct.pack("<I", n))
         self.f.write(data)
@@ -167,11 +275,13 @@ class Tape:
         self.f.flush()
 
     def write_mark(self):
+        self.reposition()
         self.f.write(struct.pack("<I", TAPEMARK))
         self.f.truncate()
         self.f.flush()
 
     def erase(self):
+        self.reposition()
         self.f.seek(0)
         self.f.truncate()
 
@@ -207,7 +317,14 @@ def handle(conn, tape_path):
     user = _read_cstr(rf).decode("latin-1")
     _passwd = _read_cstr(rf)
     command = _read_cstr(rf).decode("latin-1")
-    log.info("rexec: user=%r command=%r (creds ignored)", user, command)
+    # net:define-protocol :unix-rexec runs /usr/sbin/rmt for a DEC-AXP host and
+    # /etc/rmt for everything else, so the command names the dialect Genera
+    # chose from the namespace machine type.  Worth logging: a host that should
+    # be the default (Portable Genera macOS) dialect but asks for /usr/sbin/rmt
+    # has been registered as a DEC Alpha by mistake, and vice versa.
+    dialect = "DEC-AXP" if command.endswith("/usr/sbin/rmt") else "default (vax)"
+    log.info("rexec: user=%r command=%r -> %s dialect (creds ignored)",
+             user, command, dialect)
     wf.write(b"\x00")                       # success
     wf.flush()
 
@@ -230,6 +347,7 @@ def handle(conn, tape_path):
                 dev = rf.readline().rstrip(b"\n")
                 mode = rf.readline().rstrip(b"\n")
                 log.debug("O dev=%r mode=%r", dev, mode)
+                tape.reopen()
                 reply("A0\n")
 
             elif cmd == b"C":               # C<device>\n  -- close
@@ -237,19 +355,15 @@ def handle(conn, tape_path):
                 log.debug("C dev=%r", dev)
                 reply("A0\n")
 
-            elif cmd == b"R":               # R<count>\n  -- read one record
+            elif cmd == b"R":               # R<count>\n  -- read up to count bytes
                 count = int(rf.readline())
-                kind, data = tape.read_block()
-                if kind == "data":
-                    if len(data) > count:
-                        log.warning("record %d > requested %d; returning full record",
-                                    len(data), count)
-                    reply("A%d\n", len(data))
+                data = tape.read_data(count)
+                if not data:                # filemark or eom -> EOF to Genera
+                    log.debug("R %d -> A0 (end of file)", count)
+                reply("A%d\n", len(data))
+                if data:
                     wf.write(data)
                     wf.flush()
-                else:                       # mark or eom -> 0 bytes == EOF to Genera
-                    log.debug("R: %s -> A0", kind)
-                    reply("A0\n")
 
             elif cmd == b"W":               # W<count>\n + <count> bytes  -- write
                 count = int(rf.readline())
@@ -260,6 +374,7 @@ def handle(conn, tape_path):
             elif cmd == b"L":               # L<offset>\n<whence>\n  -- lseek
                 off = int(rf.readline())
                 whence = int(rf.readline())
+                tape.reposition()
                 tape.f.seek(off, whence)    # Genera only ever rewinds (0,0); this is general
                 reply("A%d\n", tape.f.tell())
 
@@ -290,10 +405,18 @@ def handle(conn, tape_path):
                     log.warning("unhandled ioctl op %d", op)
                 reply("A0\n")
 
-            elif cmd == b"S":               # status -- DEC-AXP host never sends this
-                log.warning("unexpected S (status) command; host machine-type "
-                            "should be DEC-AXP. Replying empty status.")
-                reply("A0\n")
+            elif cmd == b"S":               # status -- struct mtget, no newline
+                # Genera only ever looks at the first 6 bytes: mt_type,
+                # mt_dsreg (which its TM-11 decoder ignores) and mt_erreg.
+                erreg = tape.status_erreg()
+                blob = struct.pack(">HHH", MT_TYPE_TM11, 0, erreg)
+                log.debug("S -> type=%#04x erreg=%#06x%s%s%s", MT_TYPE_TM11, erreg,
+                          " bot" if erreg & ER_BOT else "",
+                          " eof" if erreg & ER_EOF else "",
+                          " eot" if erreg & ER_EOT else "")
+                reply("A%d\n", len(blob))
+                wf.write(blob)
+                wf.flush()
 
             else:
                 log.error("unknown rmt command %r; closing", cmd)
