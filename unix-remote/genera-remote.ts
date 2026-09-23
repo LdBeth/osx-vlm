@@ -1,1132 +1,130 @@
 #!/usr/bin/env -S deno run --allow-net --allow-env --allow-read
 /**
- * genera-remote — drive a Genera Lisp Listener over telnet, from the host.
+ * genera-remote — drive Genera from the host, as an MCP server or a CLI.
  *
- * Three layers, bottom up:
+ * Two of Genera's own network services, no telnet:
  *
- *   1. Telnet client   — raw TCP + the IAC negotiation Genera's server expects.
- *   2. Screen model    — an in-memory character grid fed by an X3.64/ANSI parser.
- *   3. MCP / CLI       — tools and subcommands that read the grid and type at it.
+ *   rsh, TCP 514          evaluate one form, or run one CP command, and get
+ *                         its output back whole (genera-rsh.ts).  No login
+ *                         needed; nothing is lost to a 24-row screen.
+ *   3600-LOGIN, TCP 57    Genera's native remote terminal (genera-3600.ts):
+ *                         full Genera characters in (Function, Select, any
+ *                         bucky bits), a small op set out, live resize.
  *
- * The telnet client and the screen model are dependency-free; only the MCP
- * layer reaches for npm.  See README.md for the protocol findings this is
- * built on.
+ * Layers, bottom up:
+ *
+ *   1. Codecs          — genera-rsh.ts and genera-3600.ts (no I/O policy).
+ *   2. GeneraSession   — a 3600 login held open, its Screen grid, and the
+ *                        wait/prompt logic; eval and command go over rsh.
+ *   3. MCP / CLI       — tools and subcommands on top of the session, plus
+ *                        `repl`, an interactive full-screen 3600 terminal.
+ *
+ * The first version of this tool spoke telnet and screen-scraped the
+ * Listener; that layer is gone.  Only the MCP layer reaches for npm.  See
+ * README.md for the protocol notes and what Genera must have enabled.
  */
 
-// ---------------------------------------------------------------------------
-// Telnet protocol constants (RFC 854 and friends)
-// ---------------------------------------------------------------------------
+import {
+  DEFAULT_RSH_PORT,
+  evalForm as rshEvalForm,
+  type EvalResult,
+  runCommand as rshRunCommand,
+} from "./genera-rsh.ts";
+import {
+  ansiSink,
+  Decoder3600,
+  encodeChar,
+  encodeSize,
+  encodeText,
+  KEY_CODES,
+  keyNames,
+  LOGOUT,
+  parseKey,
+  Screen,
+} from "./genera-3600.ts";
 
-export const IAC = 255;
-export const DONT = 254;
-export const DO = 253;
-export const WONT = 252;
-export const WILL = 251;
-export const SB = 250;
-export const GA = 249;
-export const EL = 248;
-export const EC = 247;
-export const AYT = 246;
-export const AO = 245;
-export const IP = 244;
-export const BRK = 243;
-export const DM = 242;
-export const NOP = 241;
-export const SE = 240;
-
-export const OPT_BINARY = 0;
-export const OPT_ECHO = 1;
-export const OPT_SGA = 3;
-export const OPT_STATUS = 5;
-export const OPT_TIMING_MARK = 6;
-export const OPT_TTYPE = 24;
-export const OPT_EOR = 25;
-export const OPT_NAWS = 31;
-export const OPT_TSPEED = 32;
-export const OPT_LFLOW = 33;
-export const OPT_LINEMODE = 34;
-export const OPT_NEW_ENVIRON = 39;
-
-const TTYPE_IS = 0;
-const TTYPE_SEND = 1;
-
-/** Option negotiation state, per RFC 1143's "Q method" (simplified). */
-const NO = 0, YES = 1, WANTYES = 2, WANTNO = 3;
-
-export const OPTION_NAMES: Record<number, string> = {
-  [OPT_BINARY]: "BINARY",
-  [OPT_ECHO]: "ECHO",
-  [OPT_SGA]: "SGA",
-  [OPT_STATUS]: "STATUS",
-  [OPT_TIMING_MARK]: "TIMING-MARK",
-  [OPT_TTYPE]: "TTYPE",
-  [OPT_EOR]: "EOR",
-  [OPT_NAWS]: "NAWS",
-  [OPT_TSPEED]: "TSPEED",
-  [OPT_LFLOW]: "LFLOW",
-  [OPT_LINEMODE]: "LINEMODE",
-  [OPT_NEW_ENVIRON]: "NEW-ENVIRON",
-};
-
-const CMD_NAMES: Record<number, string> = {
-  [WILL]: "WILL",
-  [WONT]: "WONT",
-  [DO]: "DO",
-  [DONT]: "DONT",
-  [SB]: "SB",
-  [SE]: "SE",
-  [NOP]: "NOP",
-  [DM]: "DM",
-  [BRK]: "BRK",
-  [IP]: "IP",
-  [AO]: "AO",
-  [AYT]: "AYT",
-  [EC]: "EC",
-  [EL]: "EL",
-  [GA]: "GA",
-};
-
-export function optionName(o: number): string {
-  return OPTION_NAMES[o] ?? `OPT-${o}`;
-}
-export function commandName(c: number): string {
-  return CMD_NAMES[c] ?? `CMD-${c}`;
-}
+export { keyNames, parseKey, Screen };
 
 // ---------------------------------------------------------------------------
-// Telnet option policy
+// Defaults
 // ---------------------------------------------------------------------------
-//
-// "us" = options we are willing to turn on for ourselves (we send WILL).
-// "him" = options we are willing to let the server turn on (we send DO).
-//
-// Genera's server drives a full-duplex character-at-a-time session: it echoes
-// (WILL ECHO) and suppresses go-ahead (WILL SGA / DO SGA).  We must not echo
-// locally, and we must not line-buffer.
 
-const WE_SUPPORT = new Set([OPT_TTYPE, OPT_NAWS, OPT_SGA, OPT_BINARY]);
-const WE_WANT_HIM = new Set([OPT_ECHO, OPT_SGA, OPT_BINARY]);
+export const DEFAULT_HOST = "192.168.2.2";
+export const DEFAULT_LOGIN_PORT = 57;
+export { DEFAULT_RSH_PORT };
 
-/** Terminal types offered, in order.  See README for why x3.64 wins. */
-export const DEFAULT_TERMINAL_TYPES = ["x3.64", "ansi", "vt100", "UNKNOWN"];
+/** How long to wait for a TCP connection to the login server. */
+const CONNECT_TIMEOUT_MS = 5000;
 
-export interface TelnetEvents {
-  onData(bytes: Uint8Array): void;
-  onNegotiation?(line: string): void;
-  onClose?(): void;
+/** Said whenever the 3600-LOGIN server cannot be reached. */
+export const LOGIN_REQUIREMENTS =
+  "Genera's 3600-LOGIN server answers only while remote login is on and " +
+  "this host is trusted (Secure Subnets).";
+
+const errText = (e: unknown) => e instanceof Error ? e.message : String(e);
+
+// ---------------------------------------------------------------------------
+// Eval errors: show the user their form, not our wrapper
+// ---------------------------------------------------------------------------
+
+/** The quoted wrapper, as Genera prints it back in a read error. */
+const WRAPPER_ECHO_RE =
+  /\(CONDITIONS:HANDLER-CASE[\s\S]*?RSH[0-9a-f]{16}E~A~%" E\)\)\)\)/i;
+const NONCE_RE = /RSH[0-9a-f]{16}/g;
+
+/**
+ * Tidy an error from `evalForm` for display.  A read error quotes the whole
+ * wrapper (nonce included): put the caller's form back in its place.  More
+ * than one form lands in MULTIPLE-VALUE-LIST's argument list: say so plainly.
+ */
+export function tidyEvalError(error: string, form: string): string {
+  if (/Incorrect arguments to MULTIPLE-VALUE-LIST/i.test(error)) {
+    return "eval takes a single form; wrap several in (progn ...).\n" +
+      `Genera said: ${error.replace(NONCE_RE, "…")}`;
+  }
+  return error.replace(WRAPPER_ECHO_RE, form.trim()).replace(NONCE_RE, "…");
 }
 
 /**
- * Minimal telnet client.  Parses the IAC stream, answers negotiation, and
- * hands the application only real data bytes.
+ * Check a form's parentheses before sending it.  An extra `)` would close
+ * the wrapper early and Genera would report nonsense about the wrapper, so
+ * that one is caught here.  Knows strings, `|symbols|`, `\` escapes (so
+ * `#\(` is fine), `;` and `#| |#` comments.  Returns an error or null.
  */
-export class TelnetClient {
-  #conn: Deno.Conn | null = null;
-  #us = new Map<number, number>();
-  #him = new Map<number, number>();
-  #ttypeIndex = 0;
-  #events: TelnetEvents;
-  #closed = false;
-
-  /** Parser state for the incoming byte stream. */
-  #state: "data" | "iac" | "will" | "wont" | "do" | "dont" | "sb" | "sb-iac" =
-    "data";
-  #sbOption = 0;
-  #sbBuf: number[] = [];
-
-  terminalTypes: string[];
-  windowSize: { cols: number; rows: number };
-  /** Transcript of negotiation, for tests and troubleshooting. */
-  readonly negotiationLog: string[] = [];
-
-  constructor(
-    events: TelnetEvents,
-    opts: { terminalTypes?: string[]; cols?: number; rows?: number } = {},
-  ) {
-    this.#events = events;
-    this.terminalTypes = opts.terminalTypes ?? [...DEFAULT_TERMINAL_TYPES];
-    this.windowSize = { cols: opts.cols ?? 80, rows: opts.rows ?? 24 };
+export function checkForm(form: string): string | null {
+  let depth = 0;
+  let sawAny = false;
+  for (let i = 0; i < form.length; i++) {
+    const c = form[i];
+    if (c === "\\") {
+      i++;
+      sawAny = true;
+    } else if (c === ";") {
+      while (i < form.length && form[i] !== "\n") i++;
+    } else if (c === "#" && form[i + 1] === "|") {
+      const end = form.indexOf("|#", i + 2);
+      if (end < 0) return "unterminated #| comment";
+      i = end + 1;
+    } else if (c === '"' || c === "|") {
+      let j = i + 1;
+      while (j < form.length && form[j] !== c) j += form[j] === "\\" ? 2 : 1;
+      if (j >= form.length) return `unterminated ${c}`;
+      i = j;
+      sawAny = true;
+    } else if (c === "(") {
+      depth++;
+      sawAny = true;
+    } else if (c === ")") {
+      if (--depth < 0) return "unbalanced parentheses: an extra ')'";
+    } else if (!/\s/.test(c)) sawAny = true;
   }
-
-  get connected(): boolean {
-    return this.#conn !== null && !this.#closed;
-  }
-
-  /** True once the server has told us it will echo. */
-  get serverEchoes(): boolean {
-    return this.#him.get(OPT_ECHO) === YES;
-  }
-  get binaryMode(): boolean {
-    return this.#him.get(OPT_BINARY) === YES &&
-      this.#us.get(OPT_BINARY) === YES;
-  }
-  get nawsAccepted(): boolean {
-    return this.#us.get(OPT_NAWS) === YES;
-  }
-  /** The terminal type the server actually took (the last one we sent). */
-  get negotiatedTerminalType(): string | null {
-    return this.#sentTerminalType;
-  }
-  #sentTerminalType: string | null = null;
-
-  async connect(hostname: string, port: number): Promise<void> {
-    this.#conn = await Deno.connect({ hostname, port });
-    this.#closed = false;
-    // Offer what we support up front.  Genera's real telnet server negotiates
-    // almost nothing: it sends only IAC WILL ECHO and silently ignores DO/
-    // WILL/WONT/DONT for everything else (network/network-terminal.lisp).  So
-    // against the real server these offers go unanswered and stay pending —
-    // harmless.  They matter for well-behaved servers and for our test rig.
-    this.#sendWill(OPT_TTYPE);
-    this.#sendWill(OPT_NAWS);
-    this.#sendDo(OPT_SGA);
-    this.#sendWill(OPT_SGA);
-    this.#readLoop();
-  }
-
-  async #readLoop(): Promise<void> {
-    const conn = this.#conn!;
-    const buf = new Uint8Array(4096);
-    try {
-      while (true) {
-        const n = await conn.read(buf);
-        if (n === null) break;
-        this.feed(buf.subarray(0, n));
-      }
-    } catch (_e) {
-      // Connection reset / closed underneath us — treated as a close.
-    }
-    this.#closed = true;
-    this.#conn = null;
-    this.#events.onClose?.();
-  }
-
-  /**
-   * Push raw bytes through the IAC parser.  Exposed for tests so the protocol
-   * can be exercised without a socket.
-   */
-  feed(bytes: Uint8Array): void {
-    const data: number[] = [];
-    const flush = () => {
-      if (data.length) {
-        this.#events.onData(new Uint8Array(data));
-        data.length = 0;
-      }
-    };
-
-    for (const b of bytes) {
-      switch (this.#state) {
-        case "data":
-          if (b === IAC) this.#state = "iac";
-          else data.push(b);
-          break;
-
-        case "iac":
-          if (b === IAC) {
-            data.push(IAC); // escaped 255
-            this.#state = "data";
-          } else if (b === WILL) this.#state = "will";
-          else if (b === WONT) this.#state = "wont";
-          else if (b === DO) this.#state = "do";
-          else if (b === DONT) this.#state = "dont";
-          else if (b === SB) {
-            this.#state = "sb";
-            this.#sbOption = -1;
-            this.#sbBuf = [];
-          } else {
-            // Standalone command: NOP, DM, GA, AYT, ...
-            flush();
-            this.#handleCommand(b);
-            this.#state = "data";
-          }
-          break;
-
-        case "will":
-          flush();
-          this.#recvWill(b);
-          this.#state = "data";
-          break;
-        case "wont":
-          flush();
-          this.#recvWont(b);
-          this.#state = "data";
-          break;
-        case "do":
-          flush();
-          this.#recvDo(b);
-          this.#state = "data";
-          break;
-        case "dont":
-          flush();
-          this.#recvDont(b);
-          this.#state = "data";
-          break;
-
-        case "sb":
-          if (b === IAC) this.#state = "sb-iac";
-          else if (this.#sbOption < 0) this.#sbOption = b;
-          else this.#sbBuf.push(b);
-          break;
-
-        case "sb-iac":
-          if (b === IAC) {
-            this.#sbBuf.push(IAC);
-            this.#state = "sb";
-          } else if (b === SE) {
-            flush();
-            this.#handleSubnegotiation(this.#sbOption, this.#sbBuf);
-            this.#state = "data";
-          } else {
-            // Malformed; resynchronise rather than die.
-            this.#note(`malformed SB terminated by ${commandName(b)}`);
-            this.#state = "data";
-          }
-          break;
-      }
-    }
-    flush();
-  }
-
-  #note(line: string): void {
-    this.negotiationLog.push(line);
-    this.#events.onNegotiation?.(line);
-  }
-
-  #handleCommand(cmd: number): void {
-    this.#note(`RECV ${commandName(cmd)}`);
-    if (cmd === AYT) {
-      // Be polite: something must come back so the peer knows we live.
-      this.#writeRaw(new TextEncoder().encode("\r\n[genera-remote alive]\r\n"));
-    }
-    // NOP / DM / GA need no reply.  We do not implement out-of-band SYNCH;
-    // Genera's server does not require the client to generate it.
-  }
-
-  #handleSubnegotiation(option: number, payload: number[]): void {
-    if (option === OPT_TTYPE && payload[0] === TTYPE_SEND) {
-      const list = this.terminalTypes;
-      const name = list[Math.min(this.#ttypeIndex, list.length - 1)];
-      this.#ttypeIndex++;
-      this.#sentTerminalType = name;
-      const bytes = new TextEncoder().encode(name);
-      this.#writeRaw(
-        new Uint8Array([IAC, SB, OPT_TTYPE, TTYPE_IS, ...bytes, IAC, SE]),
-      );
-      this.#note(`SEND SB TTYPE IS ${name}`);
-      return;
-    }
-    this.#note(
-      `RECV SB ${optionName(option)} (${payload.length} bytes, ignored)`,
-    );
-  }
-
-  // -- negotiation state machine -------------------------------------------
-
-  #recvDo(opt: number): void {
-    this.#note(`RECV DO ${optionName(opt)}`);
-    const st = this.#us.get(opt) ?? NO;
-    if (st === WANTYES) {
-      this.#us.set(opt, YES);
-      this.#afterUsEnabled(opt);
-    } else if (st === NO) {
-      if (WE_SUPPORT.has(opt)) {
-        this.#us.set(opt, YES);
-        this.#send(WILL, opt);
-        this.#afterUsEnabled(opt);
-      } else {
-        this.#send(WONT, opt);
-      }
-    } else if (st === WANTNO) {
-      this.#us.set(opt, NO);
-    }
-    // st === YES: no state change, no reply.
-  }
-
-  #recvDont(opt: number): void {
-    this.#note(`RECV DONT ${optionName(opt)}`);
-    const st = this.#us.get(opt) ?? NO;
-    if (st === YES) {
-      this.#us.set(opt, NO);
-      this.#send(WONT, opt);
-    } else if (st === WANTYES || st === WANTNO) {
-      this.#us.set(opt, NO);
-    }
-  }
-
-  #recvWill(opt: number): void {
-    this.#note(`RECV WILL ${optionName(opt)}`);
-    const st = this.#him.get(opt) ?? NO;
-    if (st === WANTYES) {
-      this.#him.set(opt, YES);
-    } else if (st === NO) {
-      if (WE_WANT_HIM.has(opt)) {
-        this.#him.set(opt, YES);
-        this.#send(DO, opt);
-      } else {
-        this.#send(DONT, opt);
-      }
-    } else if (st === WANTNO) {
-      this.#him.set(opt, NO);
-    }
-  }
-
-  #recvWont(opt: number): void {
-    this.#note(`RECV WONT ${optionName(opt)}`);
-    const st = this.#him.get(opt) ?? NO;
-    if (st === YES) {
-      this.#him.set(opt, NO);
-      this.#send(DONT, opt);
-    } else if (st === WANTYES || st === WANTNO) {
-      this.#him.set(opt, NO);
-    }
-  }
-
-  #afterUsEnabled(opt: number): void {
-    if (opt === OPT_NAWS) this.sendWindowSize();
-  }
-
-  #sendWill(opt: number): void {
-    if ((this.#us.get(opt) ?? NO) === NO) {
-      this.#us.set(opt, WANTYES);
-      this.#send(WILL, opt);
-    }
-  }
-  #sendDo(opt: number): void {
-    if ((this.#him.get(opt) ?? NO) === NO) {
-      this.#him.set(opt, WANTYES);
-      this.#send(DO, opt);
-    }
-  }
-
-  #send(cmd: number, opt: number): void {
-    this.#note(`SEND ${commandName(cmd)} ${optionName(opt)}`);
-    this.#writeRaw(new Uint8Array([IAC, cmd, opt]));
-  }
-
-  sendWindowSize(cols?: number, rows?: number): void {
-    if (cols !== undefined) this.windowSize.cols = cols;
-    if (rows !== undefined) this.windowSize.rows = rows;
-    const { cols: c, rows: r } = this.windowSize;
-    const raw = [c >> 8, c & 0xff, r >> 8, r & 0xff];
-    // NAWS payload bytes equal to 255 must be doubled.
-    const esc: number[] = [];
-    for (const b of raw) {
-      esc.push(b);
-      if (b === IAC) esc.push(IAC);
-    }
-    this.#writeRaw(new Uint8Array([IAC, SB, OPT_NAWS, ...esc, IAC, SE]));
-    this.#note(`SEND SB NAWS ${c}x${r}`);
-  }
-
-  /** Write application data, escaping IAC. */
-  write(bytes: Uint8Array): void {
-    const out: number[] = [];
-    for (const b of bytes) {
-      out.push(b);
-      if (b === IAC) out.push(IAC);
-    }
-    this.#writeRaw(new Uint8Array(out));
-  }
-
-  writeText(text: string): void {
-    this.write(new TextEncoder().encode(text));
-  }
-
-  #pending: Promise<void> = Promise.resolve();
-  #writeRaw(bytes: Uint8Array): void {
-    const conn = this.#conn;
-    if (!conn) return;
-    // Serialise writes; Deno.Conn.write may short-write.
-    this.#pending = this.#pending.then(async () => {
-      let off = 0;
-      while (off < bytes.length) {
-        off += await conn.write(bytes.subarray(off));
-      }
-    }).catch(() => {});
-  }
-
-  async flush(): Promise<void> {
-    await this.#pending;
-  }
-
-  close(): void {
-    this.#closed = true;
-    try {
-      this.#conn?.close();
-    } catch (_e) { /* already gone */ }
-    this.#conn = null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Screen model — an X3.64 / ANSI character grid
-// ---------------------------------------------------------------------------
-
-export interface ScreenOptions {
-  cols?: number;
-  rows?: number;
-  scrollbackLimit?: number;
-  onUnknown?: (seq: string) => void;
-  /** Sink for replies the terminal owes the host (e.g. cursor position). */
-  onReply?: (text: string) => void;
-}
-
-/**
- * A character grid driven by the escape sequences Genera emits.
- *
- * Deliberately narrow: characters only, no attribute buffer.  SGR is parsed
- * and dropped.  Anything unrecognised is logged and ignored — never fatal,
- * because a mis-parse must not take down a live session.
- */
-export class Screen {
-  cols: number;
-  rows: number;
-  grid: string[][];
-  cursorRow = 0;
-  cursorCol = 0;
-  scrollback: string[] = [];
-  scrollbackLimit: number;
-  /** Bumped on every change; `waitStable` watches it. */
-  version = 0;
-  readonly unknownSequences: string[] = [];
-
-  #savedCursor: { row: number; col: number } | null = null;
-  #scrollTop = 0;
-  #scrollBottom: number;
-  #onUnknown?: (seq: string) => void;
-  #onReply?: (text: string) => void;
-
-  // Parser state
-  #state: "ground" | "esc" | "csi" | "osc" | "charset" = "ground";
-  #params = "";
-  #intermediates = "";
-  #oscBuf = "";
-  /** Pending wrap: cursor sits past the last column (DEC-style deferred wrap). */
-  #wrapPending = false;
-
-  constructor(opts: ScreenOptions = {}) {
-    this.cols = opts.cols ?? 80;
-    this.rows = opts.rows ?? 24;
-    this.scrollbackLimit = opts.scrollbackLimit ?? 2000;
-    this.#onUnknown = opts.onUnknown;
-    this.#onReply = opts.onReply;
-    this.#scrollBottom = this.rows - 1;
-    this.grid = this.#blankGrid();
-  }
-
-  #blankGrid(): string[][] {
-    return Array.from(
-      { length: this.rows },
-      () => Array.from({ length: this.cols }, () => " "),
-    );
-  }
-
-  #touch(): void {
-    this.version++;
-  }
-
-  resize(cols: number, rows: number): void {
-    const old = this.grid;
-    this.cols = cols;
-    this.rows = rows;
-    this.#scrollTop = 0;
-    this.#scrollBottom = rows - 1;
-    this.grid = this.#blankGrid();
-    for (let r = 0; r < Math.min(rows, old.length); r++) {
-      for (let c = 0; c < Math.min(cols, old[r].length); c++) {
-        this.grid[r][c] = old[r][c];
-      }
-    }
-    this.cursorRow = Math.min(this.cursorRow, rows - 1);
-    this.cursorCol = Math.min(this.cursorCol, cols - 1);
-    this.#touch();
-  }
-
-  // -- text access ---------------------------------------------------------
-
-  /** The visible grid, one string per row, trailing blanks trimmed. */
-  lines(): string[] {
-    return this.grid.map((r) => r.join("").replace(/\s+$/, ""));
-  }
-
-  /**
-   * The visible screen as text, with trailing all-blank rows dropped.  The
-   * grid is a fixed 24 rows; keeping the empty tail just pads every read with
-   * newlines, so it is trimmed for readability.  Interior blank lines stay.
-   */
-  text(): string {
-    const rows = this.lines();
-    let end = rows.length;
-    while (end > 0 && rows[end - 1] === "") end--;
-    return rows.slice(0, end).join("\n");
-  }
-
-  /** Scrollback plus the visible screen — a stable, growing transcript. */
-  transcript(): string[] {
-    return [...this.scrollback, ...this.lines()];
-  }
-
-  /**
-   * Absolute index (into `transcript()`) of a visible row.  Stable as lines
-   * scroll off, which is what makes eval's output extraction reliable.
-   */
-  absLine(row: number): number {
-    return this.scrollback.length + row;
-  }
-
-  // -- the parser ----------------------------------------------------------
-
-  write(text: string): void {
-    for (const ch of text) this.#putChar(ch);
-  }
-
-  writeBytes(bytes: Uint8Array): void {
-    // Genera speaks 8-bit; decode leniently so a stray high byte cannot throw.
-    this.write(new TextDecoder("utf-8", { fatal: false }).decode(bytes));
-  }
-
-  #putChar(ch: string): void {
-    const code = ch.codePointAt(0)!;
-    switch (this.#state) {
-      case "ground":
-        this.#ground(ch, code);
-        break;
-      case "esc":
-        this.#escape(ch, code);
-        break;
-      case "csi":
-        this.#csi(ch, code);
-        break;
-      case "osc":
-        // Terminated by BEL or ST (ESC \).
-        if (code === 0x07) {
-          this.#state = "ground";
-          this.#oscBuf = "";
-        } else if (ch === "\\" && this.#oscBuf.endsWith("\x1b")) {
-          this.#state = "ground";
-          this.#oscBuf = "";
-        } else {
-          this.#oscBuf += ch;
-          if (this.#oscBuf.length > 512) { // runaway guard
-            this.#unknown(`OSC overflow`);
-            this.#state = "ground";
-            this.#oscBuf = "";
-          }
-        }
-        break;
-      case "charset":
-        // ESC ( X , ESC ) X — designate character set; consume and ignore.
-        this.#state = "ground";
-        break;
-    }
-  }
-
-  #ground(ch: string, code: number): void {
-    switch (code) {
-      case 0x00:
-        return; // NUL padding
-      case 0x07:
-        return; // BEL — nothing audible here
-      case 0x08: // BS
-        this.#wrapPending = false;
-        if (this.cursorCol > 0) this.cursorCol--;
-        this.#touch();
-        return;
-      case 0x09: { // TAB — 8-column stops
-        this.#wrapPending = false;
-        const next = Math.min(((this.cursorCol >> 3) + 1) << 3, this.cols - 1);
-        this.cursorCol = next;
-        this.#touch();
-        return;
-      }
-      case 0x0a: // LF
-      case 0x0b: // VT
-      case 0x0c: // FF — Genera uses this as "clear screen" on some streams,
-        // but as a terminal control it is a line feed; ED handles clearing.
-        this.#wrapPending = false;
-        this.#lineFeed();
-        return;
-      case 0x0d: // CR
-        this.#wrapPending = false;
-        this.cursorCol = 0;
-        this.#touch();
-        return;
-      case 0x1b:
-        this.#state = "esc";
-        this.#params = "";
-        this.#intermediates = "";
-        return;
-      case 0x7f:
-        return; // DEL as output — ignore
-    }
-    if (code < 0x20) return; // other C0: ignore
-    this.#printable(ch);
-  }
-
-  #printable(ch: string): void {
-    if (this.#wrapPending) {
-      this.cursorCol = 0;
-      this.#lineFeed();
-      this.#wrapPending = false;
-    }
-    this.grid[this.cursorRow][this.cursorCol] = ch;
-    if (this.cursorCol === this.cols - 1) {
-      this.#wrapPending = true; // defer the wrap until the next printable
-    } else {
-      this.cursorCol++;
-    }
-    this.#touch();
-  }
-
-  #lineFeed(): void {
-    if (this.cursorRow === this.#scrollBottom) this.#scrollUp(1);
-    else if (this.cursorRow < this.rows - 1) this.cursorRow++;
-    this.#touch();
-  }
-
-  #scrollUp(n: number): void {
-    for (let i = 0; i < n; i++) {
-      const gone = this.grid.splice(this.#scrollTop, 1)[0];
-      // Only lines leaving the top of the *screen* enter scrollback.
-      if (this.#scrollTop === 0) {
-        this.scrollback.push(gone.join("").replace(/\s+$/, ""));
-        if (this.scrollback.length > this.scrollbackLimit) {
-          this.scrollback.splice(
-            0,
-            this.scrollback.length - this.scrollbackLimit,
-          );
-        }
-      }
-      this.grid.splice(
-        this.#scrollBottom,
-        0,
-        Array.from({ length: this.cols }, () => " "),
-      );
-    }
-    this.#touch();
-  }
-
-  #scrollDown(n: number): void {
-    for (let i = 0; i < n; i++) {
-      this.grid.splice(this.#scrollBottom, 1);
-      this.grid.splice(
-        this.#scrollTop,
-        0,
-        Array.from({ length: this.cols }, () => " "),
-      );
-    }
-    this.#touch();
-  }
-
-  #escape(ch: string, code: number): void {
-    switch (ch) {
-      case "[":
-        this.#state = "csi";
-        this.#params = "";
-        this.#intermediates = "";
-        return;
-      case "]":
-        this.#state = "osc";
-        this.#oscBuf = "";
-        return;
-      case "7":
-        this.#savedCursor = { row: this.cursorRow, col: this.cursorCol };
-        this.#state = "ground";
-        return;
-      case "8":
-        if (this.#savedCursor) {
-          this.cursorRow = this.#savedCursor.row;
-          this.cursorCol = this.#savedCursor.col;
-          this.#touch();
-        }
-        this.#state = "ground";
-        return;
-      case "D": // IND — index
-        this.#lineFeed();
-        this.#state = "ground";
-        return;
-      case "M": // RI — reverse index
-        if (this.cursorRow === this.#scrollTop) this.#scrollDown(1);
-        else if (this.cursorRow > 0) this.cursorRow--;
-        this.#touch();
-        this.#state = "ground";
-        return;
-      case "E": // NEL — next line
-        this.cursorCol = 0;
-        this.#lineFeed();
-        this.#state = "ground";
-        return;
-      case "c": // RIS — full reset
-        this.reset();
-        this.#state = "ground";
-        return;
-      case "(":
-      case ")":
-      case "*":
-      case "+":
-        this.#state = "charset";
-        return;
-      case "=": // DECKPAM
-      case ">": // DECKPNM
-        this.#state = "ground";
-        return;
-      case "\\": // ST with no OSC open
-        this.#state = "ground";
-        return;
-    }
-    if (code >= 0x20 && code <= 0x2f) {
-      this.#intermediates += ch; // collect and keep waiting for the final
-      return;
-    }
-    this.#unknown(`ESC ${this.#intermediates}${ch}`);
-    this.#state = "ground";
-  }
-
-  #csi(ch: string, code: number): void {
-    // Parameter bytes 0x30-0x3f, intermediate 0x20-0x2f, final 0x40-0x7e.
-    if (code >= 0x30 && code <= 0x3f) {
-      this.#params += ch;
-      if (this.#params.length > 64) { // runaway guard
-        this.#unknown("CSI parameter overflow");
-        this.#state = "ground";
-      }
-      return;
-    }
-    if (code >= 0x20 && code <= 0x2f) {
-      this.#intermediates += ch;
-      return;
-    }
-    this.#dispatchCsi(ch);
-    this.#state = "ground";
-  }
-
-  #nums(def = 0): number[] {
-    const raw = this.#params.replace(/^[?<>=]/, "");
-    if (raw === "") return [def];
-    return raw.split(";").map((p) => (p === "" ? def : parseInt(p, 10) || 0));
-  }
-
-  #dispatchCsi(final: string): void {
-    const priv = /^[?<>=]/.test(this.#params);
-    const p = this.#nums(0);
-    const p1 = (i = 0) => (p[i] === undefined || p[i] === 0 ? 1 : p[i]);
-    this.#wrapPending = false;
-
-    if (priv) {
-      // DEC private modes (?25h cursor visibility, ?7h autowrap, ...).
-      // None of them change the character grid; accept silently.
-      if (final === "h" || final === "l") return;
-      this.#unknown(`CSI ${this.#params}${final}`);
-      return;
-    }
-
-    switch (final) {
-      case "A": // CUU
-        this.cursorRow = Math.max(0, this.cursorRow - p1());
-        break;
-      case "B": // CUD
-        this.cursorRow = Math.min(this.rows - 1, this.cursorRow + p1());
-        break;
-      case "C": // CUF
-        this.cursorCol = Math.min(this.cols - 1, this.cursorCol + p1());
-        break;
-      case "D": // CUB
-        this.cursorCol = Math.max(0, this.cursorCol - p1());
-        break;
-      case "E": // CNL
-        this.cursorRow = Math.min(this.rows - 1, this.cursorRow + p1());
-        this.cursorCol = 0;
-        break;
-      case "F": // CPL
-        this.cursorRow = Math.max(0, this.cursorRow - p1());
-        this.cursorCol = 0;
-        break;
-      case "G": // CHA
-      case "`": // HPA
-        this.cursorCol = this.#clampCol(p1() - 1);
-        break;
-      case "d": // VPA
-        this.cursorRow = this.#clampRow(p1() - 1);
-        break;
-      case "H": // CUP
-      case "f": // HVP
-        this.cursorRow = this.#clampRow(p1(0) - 1);
-        this.cursorCol = this.#clampCol(p1(1) - 1);
-        break;
-      case "J":
-        this.#eraseDisplay(p[0] ?? 0);
-        break;
-      case "K":
-        this.#eraseLine(p[0] ?? 0);
-        break;
-      case "L":
-        this.#insertLines(p1());
-        break;
-      case "M":
-        this.#deleteLines(p1());
-        break;
-      case "@":
-        this.#insertChars(p1());
-        break;
-      case "P":
-        this.#deleteChars(p1());
-        break;
-      case "X": { // ECH — erase characters
-        const n = Math.min(p1(), this.cols - this.cursorCol);
-        for (let i = 0; i < n; i++) {
-          this.grid[this.cursorRow][this.cursorCol + i] = " ";
-        }
-        break;
-      }
-      case "S":
-        this.#scrollUp(p1());
-        break;
-      case "T":
-        this.#scrollDown(p1());
-        break;
-      case "r": { // DECSTBM
-        const top = (p[0] ?? 1) - 1;
-        const bot = (p[1] ?? this.rows) - 1;
-        if (top >= 0 && bot < this.rows && top < bot) {
-          this.#scrollTop = top;
-          this.#scrollBottom = bot;
-        } else {
-          this.#scrollTop = 0;
-          this.#scrollBottom = this.rows - 1;
-        }
-        this.cursorRow = this.#scrollTop;
-        this.cursorCol = 0;
-        break;
-      }
-      case "m": // SGR — parsed, deliberately not rendered
-        break;
-      case "n": // DSR
-        if ((p[0] ?? 0) === 6) {
-          this.#onReply?.(
-            `\x1b[${this.cursorRow + 1};${this.cursorCol + 1}R`,
-          );
-        } else if ((p[0] ?? 0) === 5) {
-          this.#onReply?.("\x1b[0n");
-        }
-        break;
-      case "s":
-        this.#savedCursor = { row: this.cursorRow, col: this.cursorCol };
-        break;
-      case "u":
-        if (this.#savedCursor) {
-          this.cursorRow = this.#savedCursor.row;
-          this.cursorCol = this.#savedCursor.col;
-        }
-        break;
-      case "c": // DA — device attributes; claim to be a plain VT100
-        this.#onReply?.("\x1b[?1;0c");
-        break;
-      case "g": // TBC — tab clear; we use fixed stops
-        break;
-      case "h":
-      case "l": // ANSI modes (IRM etc.) — no grid effect here
-        break;
-      default:
-        this.#unknown(`CSI ${this.#params}${this.#intermediates}${final}`);
-        return;
-    }
-    this.#touch();
-  }
-
-  #clampRow(r: number): number {
-    return Math.max(0, Math.min(this.rows - 1, r));
-  }
-  #clampCol(c: number): number {
-    return Math.max(0, Math.min(this.cols - 1, c));
-  }
-
-  #blankRow(): string[] {
-    return Array.from({ length: this.cols }, () => " ");
-  }
-
-  #eraseDisplay(mode: number): void {
-    if (mode === 0) {
-      this.#eraseLine(0);
-      for (let r = this.cursorRow + 1; r < this.rows; r++) {
-        this.grid[r] = this.#blankRow();
-      }
-    } else if (mode === 1) {
-      this.#eraseLine(1);
-      for (let r = 0; r < this.cursorRow; r++) this.grid[r] = this.#blankRow();
-    } else {
-      // mode 2 (and 3): clear the whole screen.  Genera repaints from
-      // scratch often; pushing the old screen to scrollback would double
-      // every line, so the cleared content is simply dropped.
-      for (let r = 0; r < this.rows; r++) this.grid[r] = this.#blankRow();
-    }
-  }
-
-  #eraseLine(mode: number): void {
-    const row = this.grid[this.cursorRow];
-    if (mode === 0) {
-      for (let c = this.cursorCol; c < this.cols; c++) row[c] = " ";
-    } else if (mode === 1) {
-      for (let c = 0; c <= this.cursorCol && c < this.cols; c++) row[c] = " ";
-    } else for (let c = 0; c < this.cols; c++) row[c] = " ";
-  }
-
-  #insertLines(n: number): void {
-    if (
-      this.cursorRow < this.#scrollTop || this.cursorRow > this.#scrollBottom
-    ) {
-      return;
-    }
-    for (let i = 0; i < n; i++) {
-      this.grid.splice(this.#scrollBottom, 1);
-      this.grid.splice(this.cursorRow, 0, this.#blankRow());
-    }
-  }
-
-  #deleteLines(n: number): void {
-    if (
-      this.cursorRow < this.#scrollTop || this.cursorRow > this.#scrollBottom
-    ) {
-      return;
-    }
-    for (let i = 0; i < n; i++) {
-      this.grid.splice(this.cursorRow, 1);
-      this.grid.splice(this.#scrollBottom, 0, this.#blankRow());
-    }
-  }
-
-  #insertChars(n: number): void {
-    const row = this.grid[this.cursorRow];
-    for (let i = 0; i < n; i++) {
-      row.splice(this.cursorCol, 0, " ");
-      row.length = this.cols;
-    }
-  }
-
-  #deleteChars(n: number): void {
-    const row = this.grid[this.cursorRow];
-    for (let i = 0; i < n; i++) {
-      row.splice(this.cursorCol, 1);
-      row.push(" ");
-    }
-  }
-
-  #unknown(seq: string): void {
-    const printable = seq.split("\x1b").join("ESC");
-    this.unknownSequences.push(printable);
-    if (this.unknownSequences.length > 200) this.unknownSequences.shift();
-    this.#onUnknown?.(printable);
-  }
-
-  reset(): void {
-    this.grid = this.#blankGrid();
-    this.cursorRow = 0;
-    this.cursorCol = 0;
-    this.#savedCursor = null;
-    this.#scrollTop = 0;
-    this.#scrollBottom = this.rows - 1;
-    this.#wrapPending = false;
-    this.#touch();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Key map — Genera keys reachable from an ASCII keyboard
-// ---------------------------------------------------------------------------
-//
-// See the README for where each of these comes from.  Entries carry their
-// provenance so a wrong guess is visible rather than folklore.
-
-export interface KeyDef {
-  bytes: number[];
-  note: string;
-}
-
-// The mapping is exact, from the Genera server's own input filter:
-//   network/remote-terminal.lisp — CONVERT-ASCII-TO-LISPM (control codes),
-//   ASCII-TERMINAL-FILTER + SPECIAL-KEYS (the c-_ table), CONTROL-ESCAPE &c.
-// A special key is the prefix c-_ (0x1F) followed by a letter; the lookup is
-// case-insensitive on the server.  Modifier prefixes toggle a Bucky bit for
-// the *next* character sent, so `genera_key Control` then `genera_type "a"`
-// yields Control-A.  Notes cite the behaviour so a wrong guess is visible.
-const SK = 0x1f; // c-_  SPECIAL-KEY-ESCAPE
-
-export const KEY_MAP: Record<string, KeyDef> = {
-  // -- plain control codes (CONVERT-ASCII-TO-LISPM) ------------------------
-  Return: { bytes: [0x0d], note: "CR 0x0D -> #\\RETURN" },
-  Line: { bytes: [0x0a], note: "LF 0x0A -> #\\LINE" },
-  Tab: { bytes: [0x09], note: "HT 0x09 -> #\\TAB" },
-  Rubout: {
-    bytes: [0x7f],
-    note: "DEL 0x7F -> #\\RUBOUT (verified interactively)",
-  },
-
-  // -- special keys: c-_ (0x1F) + letter (SPECIAL-KEYS table) --------------
-  Help: { bytes: [SK, 0x48], note: "c-_ H -> #\\HELP" },
-  End: { bytes: [SK, 0x45], note: "c-_ E -> #\\END (bare 0x08 also -> End)" },
-  Abort: { bytes: [SK, 0x41], note: "c-_ A -> #\\ABORT (the interrupt char)" },
-  Suspend: { bytes: [SK, 0x53], note: "c-_ S -> #\\SUSPEND" },
-  Resume: { bytes: [SK, 0x52], note: "c-_ R -> #\\RESUME" },
-  Complete: { bytes: [SK, 0x43], note: "c-_ C -> #\\COMPLETE" },
-  "Clear-Input": { bytes: [SK, 0x49], note: "c-_ I -> #\\CLEAR-INPUT" },
-  Escape: {
-    bytes: [SK, 0x58],
-    note: "c-_ X -> #\\ESCAPE (bare 0x1B is the Meta prefix)",
-  },
-  Page: { bytes: [SK, 0x50], note: "c-_ P -> #\\PAGE" },
-  Refresh: { bytes: [SK, 0x46], note: "c-_ F -> #\\REFRESH" },
-  Backspace: {
-    bytes: [SK, 0x42],
-    note: "c-_ B -> #\\BACKSPACE (bare 0x08 maps to End!)",
-  },
-  Network: { bytes: [SK, 0x4e], note: "c-_ N -> #\\NETWORK" },
-  Square: { bytes: [SK, 0x31], note: "c-_ 1 -> #\\SQUARE" },
-  Circle: { bytes: [SK, 0x32], note: "c-_ 2 -> #\\CIRCLE" },
-  Triangle: { bytes: [SK, 0x33], note: "c-_ 3 -> #\\TRIANGLE" },
-  Status: { bytes: [SK, 0x57], note: "c-_ W -> refresh who-line/status" },
-
-  // -- modifier prefixes: toggle a Bucky bit for the next char sent --------
-  Meta: {
-    bytes: [0x1b],
-    note: "ESC 0x1B -> Meta prefix (toggles for next char)",
-  },
-  Control: {
-    bytes: [0x1e],
-    note: "c-^ 0x1E -> Control prefix (toggles for next char)",
-  },
-  Super: {
-    bytes: [0x1d],
-    note: "c-] 0x1D -> Super prefix (toggles for next char)",
-  },
-  Hyper: {
-    bytes: [0x1c],
-    note: "c-\\ 0x1C -> Hyper prefix (toggles for next char)",
-  },
-  Shift: {
-    bytes: [0x00],
-    note: "c-@ 0x00 -> Shift prefix (toggles for next char)",
-  },
-  Symbol: {
-    bytes: [SK, SK],
-    note: "c-_ c-_ -> Symbol prefix (next char from symbol table)",
-  },
-  // NOTE: Genera's #\FUNCTION and #\SELECT keys have NO byte sequence in the
-  // server's SPECIAL-KEYS table, so they are deliberately absent here.
-};
-
-export function keyNames(): string[] {
-  return Object.keys(KEY_MAP).sort();
-}
-
-export function lookupKey(name: string): KeyDef | null {
-  const k = name.toLowerCase();
-  for (const [n, d] of Object.entries(KEY_MAP)) {
-    if (n.toLowerCase() === k) return d;
-  }
+  if (!sawAny) return "empty form";
+  if (depth > 0) return `unbalanced parentheses: ${depth} unclosed '('`;
   return null;
 }
 
 // ---------------------------------------------------------------------------
-// Session — telnet + screen, with wait/eval semantics on top
+// Session — a 3600-LOGIN connection + screen; eval/command over rsh
 // ---------------------------------------------------------------------------
 
 export interface ActionLogEntry {
@@ -1137,16 +135,13 @@ export interface ActionLogEntry {
 
 export interface SessionOptions {
   host?: string;
-  port?: number;
+  loginPort?: number;
+  rshPort?: number;
   cols?: number;
   rows?: number;
-  terminalTypes?: string[];
   promptPattern?: RegExp;
   logLimit?: number;
 }
-
-export const DEFAULT_HOST = "192.168.2.2";
-export const DEFAULT_PORT = 23;
 
 /**
  * Genera's command loop paints a prompt and leaves the cursor just past it.
@@ -1158,159 +153,213 @@ export const DEFAULT_PROMPT_PATTERN =
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const octBytes = (b: number[]) =>
+  b.map((x) => x.toString(8).padStart(3, "0")).join(" ");
+
+export interface SessionEvalResult extends EvalResult {
+  elapsedMs: number;
+}
+
+export interface SessionCommandResult {
+  output: string;
+  error?: string;
+  timedOut?: boolean;
+  elapsedMs: number;
+}
+
 export class GeneraSession {
   screen: Screen;
-  telnet: TelnetClient | null = null;
   host: string;
-  port: number;
+  loginPort: number;
+  rshPort: number;
   promptPattern: RegExp;
   readonly actionLog: ActionLogEntry[] = [];
+  /** Called when the login connection comes up or goes away, for any reason. */
+  onConnectionChange?: (connected: boolean) => void;
+  #conn: Deno.TcpConn | null = null;
+  #sending: Promise<void> = Promise.resolve();
   #logLimit: number;
-  #opts: SessionOptions;
   #lastChangeAt = 0;
   #connectedAt: string | null = null;
   #closeReason: string | null = null;
 
   constructor(opts: SessionOptions = {}) {
-    this.#opts = opts;
     this.host = opts.host ?? DEFAULT_HOST;
-    this.port = opts.port ?? DEFAULT_PORT;
+    this.loginPort = opts.loginPort ?? DEFAULT_LOGIN_PORT;
+    this.rshPort = opts.rshPort ?? DEFAULT_RSH_PORT;
     this.promptPattern = opts.promptPattern ?? DEFAULT_PROMPT_PATTERN;
     this.#logLimit = opts.logLimit ?? 500;
-    this.screen = new Screen({
-      cols: opts.cols ?? 80,
-      rows: opts.rows ?? 24,
-      onReply: (t) => this.telnet?.writeText(t),
-    });
+    this.screen = new Screen({ cols: opts.cols ?? 80, rows: opts.rows ?? 24 });
     this.#lastChangeAt = Date.now();
   }
 
   get connected(): boolean {
-    return this.telnet?.connected ?? false;
+    return this.#conn !== null;
   }
 
   note(intent: string, outcome: string): ActionLogEntry {
-    const entry = {
-      time: new Date().toISOString(),
-      intent,
-      outcome,
-    };
+    const entry = { time: new Date().toISOString(), intent, outcome };
     this.actionLog.push(entry);
     if (this.actionLog.length > this.#logLimit) this.actionLog.shift();
     return entry;
   }
 
-  async connect(host?: string, port?: number): Promise<ActionLogEntry> {
+  /**
+   * Open the 3600-LOGIN connection and send the screen size at once (the
+   * server gives the client about two seconds to do so).
+   */
+  async connect(
+    host?: string,
+    port?: number,
+    size?: { cols?: number; rows?: number },
+  ): Promise<ActionLogEntry> {
     if (this.connected) {
       return this.note(
         "connect",
-        `already connected to ${this.host}:${this.port}`,
+        `already connected to ${this.host}:${this.loginPort}`,
       );
     }
     this.host = host ?? this.host;
-    this.port = port ?? this.port;
+    this.loginPort = port ?? this.loginPort;
+    const cols = size?.cols ?? this.screen.cols;
+    const rows = size?.rows ?? this.screen.rows;
+    this.screen.resize(cols, rows);
     this.screen.reset();
-    this.screen.scrollback.length = 0;
     this.#closeReason = null;
-    const tn = new TelnetClient({
-      onData: (b) => {
-        this.screen.writeBytes(b);
-        this.#lastChangeAt = Date.now();
-      },
-      onClose: () => {
-        this.#closeReason = "peer closed the connection";
-        this.#lastChangeAt = Date.now();
-      },
-    }, {
-      terminalTypes: this.#opts.terminalTypes,
-      cols: this.screen.cols,
-      rows: this.screen.rows,
-    });
+    const where = `connect ${this.host}:${this.loginPort}`;
+    let conn: Deno.TcpConn;
     try {
-      await tn.connect(this.host, this.port);
+      conn = await Deno.connect({
+        hostname: this.host,
+        port: this.loginPort,
+        signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+      });
     } catch (e) {
-      return this.note(
-        `connect ${this.host}:${this.port}`,
-        `FAILED: ${e instanceof Error ? e.message : String(e)}`,
-      );
+      const why = e instanceof Deno.errors.ConnectionRefused
+        ? `connection refused. ${LOGIN_REQUIREMENTS}`
+        : e instanceof DOMException && e.name === "TimeoutError"
+        ? `no answer in ${CONNECT_TIMEOUT_MS}ms`
+        : errText(e);
+      return this.note(where, `FAILED: ${why}`);
     }
-    this.telnet = tn;
+    this.#conn = conn;
+    this.#sending = Promise.resolve();
     this.#connectedAt = new Date().toISOString();
     this.#lastChangeAt = Date.now();
-    return this.note(
-      `connect ${this.host}:${this.port}`,
-      "connected",
-    );
+    this.#readLoop(conn);
+    try {
+      await this.#send(encodeSize(cols, rows));
+    } catch (e) {
+      this.#drop(`write failed: ${errText(e)}`);
+      return this.note(where, `FAILED: ${errText(e)}`);
+    }
+    this.onConnectionChange?.(true);
+    return this.note(where, `connected, size ${cols}x${rows} sent`);
   }
 
-  disconnect(): ActionLogEntry {
-    if (!this.telnet) return this.note("disconnect", "was not connected");
-    this.telnet.close();
-    this.telnet = null;
+  async #readLoop(conn: Deno.TcpConn): Promise<void> {
+    const buf = new Uint8Array(8192);
+    let reason = "peer closed the connection";
+    try {
+      while (true) {
+        const n = await conn.read(buf);
+        if (n === null) break;
+        this.screen.writeBytes(buf.subarray(0, n));
+        this.#lastChangeAt = Date.now();
+      }
+    } catch (e) {
+      reason = `read failed: ${errText(e)}`;
+    }
+    if (this.#conn === conn) this.#drop(reason);
+  }
+
+  #drop(reason: string): void {
+    const conn = this.#conn;
+    this.#conn = null;
     this.#connectedAt = null;
-    return this.note("disconnect", "closed");
+    this.#closeReason = reason;
+    this.#lastChangeAt = Date.now();
+    try {
+      conn?.close();
+    } catch { /* already closed */ }
+    if (conn) this.onConnectionChange?.(false);
   }
 
-  /** State summary shared by every tool result. */
+  /** Queue bytes on the login connection, in order. */
+  #send(bytes: readonly number[]): Promise<void> {
+    const conn = this.#conn;
+    if (!conn) return Promise.reject(new Error("not connected"));
+    const data = Uint8Array.from(bytes);
+    const p = this.#sending.then(async () => {
+      let off = 0;
+      while (off < data.length) off += await conn.write(data.subarray(off));
+    });
+    this.#sending = p.catch(() => {});
+    return p;
+  }
+
+  /** Send logout, then close. */
+  async disconnect(): Promise<ActionLogEntry> {
+    if (!this.#conn) return this.note("disconnect", "was not connected");
+    let outcome = "logged out";
+    try {
+      await this.#send(LOGOUT);
+    } catch (e) {
+      outcome = `logout not sent (${errText(e)}); closed`;
+    }
+    this.#drop("disconnected by us");
+    return this.note("disconnect", outcome);
+  }
+
+  /** State summary for genera_state. */
   state(): Record<string, unknown> {
     return {
       connected: this.connected,
       host: this.host,
-      port: this.port,
+      loginPort: this.loginPort,
+      rshPort: this.rshPort,
       connectedAt: this.#connectedAt,
       closeReason: this.#closeReason,
       cols: this.screen.cols,
       rows: this.screen.rows,
       cursor: { row: this.screen.cursorRow, col: this.screen.cursorCol },
-      terminalType: this.telnet?.negotiatedTerminalType ?? null,
-      serverEchoes: this.telnet?.serverEchoes ?? false,
-      nawsAccepted: this.telnet?.nawsAccepted ?? false,
       atPrompt: this.atPrompt(),
-      scrollbackLines: this.screen.scrollback.length,
+      beeps: this.screen.beeps,
+      unknownOpBytes: this.screen.unknownBytes.length,
     };
   }
 
   #requireConnection(): void {
     if (!this.connected) {
       throw new Error(
-        `not connected (host ${this.host}:${this.port}) — call genera_connect first`,
+        `not connected (login ${this.host}:${this.loginPort}) — call genera_connect first`,
       );
     }
   }
 
-  type(text: string): ActionLogEntry {
+  /** Type text: printable ASCII, newline = Return, tab = Tab, SAIL glyphs. */
+  async type(text: string): Promise<ActionLogEntry> {
     this.#requireConnection();
-    this.telnet!.writeText(text);
+    const bytes = encodeText(text);
+    await this.#send(bytes);
     return this.note(
       `type ${JSON.stringify(text)}`,
-      `sent ${text.length} chars`,
+      `sent ${bytes.length / 3} chars`,
     );
   }
 
-  key(name: string): ActionLogEntry {
+  /** Press one key, e.g. `Return`, `c-m-Abort`, `m-X`, `Select`. */
+  async key(spec: string): Promise<ActionLogEntry> {
     this.#requireConnection();
-    const def = lookupKey(name);
-    if (!def) {
-      throw new Error(
-        `unknown key ${JSON.stringify(name)}; known keys: ${
-          keyNames().join(", ")
-        }`,
-      );
-    }
-    this.telnet!.write(new Uint8Array(def.bytes));
-    return this.note(
-      `key ${name}`,
-      `sent ${
-        def.bytes.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")
-      } (${def.note})`,
-    );
+    const bytes = parseKey(spec);
+    await this.#send(bytes);
+    return this.note(`key ${spec}`, `sent ${octBytes(bytes)} (octal)`);
   }
 
   /** Text of the cursor row up to the cursor — where a prompt would sit. */
   promptLine(): string {
-    return this.screen.grid[this.screen.cursorRow]
-      .join("")
-      .slice(0, this.screen.cursorCol);
+    const row = this.screen.grid[this.screen.cursorRow] ?? [];
+    return row.join("").slice(0, this.screen.cursorCol);
   }
 
   atPrompt(): boolean {
@@ -1365,52 +414,91 @@ export class GeneraSession {
   }
 
   /**
-   * Type a form and wait for the next prompt.  What the Listener printed is
-   * on the screen; read it from there.
-   *
-   * This deliberately does not try to carve the output back out of the
-   * transcript.  The server paints an echo that it has already wrapped to a
-   * width we do not reliably know (Genera picks its own when NAWS is refused,
-   * and marks the break with a character of its choosing), so any such
-   * reconstruction is guesswork about someone else's display decisions — and
-   * it showed: a long form's continuation rows read as if the Listener had
-   * printed them.  The screen is the ground truth and already correct.
+   * After connect: Genera paints the herald only once its init window has
+   * passed (over a second), so wait for a prompt, then for quiet.
    */
-  async evalForm(
-    form: string,
-    timeoutMs = 30_000,
-  ): Promise<{ timedOut: boolean; elapsedMs: number }> {
-    this.#requireConnection();
+  async awaitHerald(timeoutMs = 6000): Promise<{ atPrompt: boolean }> {
     const start = Date.now();
-    const mark = this.screen.absLine(this.screen.cursorRow);
-    this.telnet!.writeText(form + "\r");
-    this.note(`eval ${JSON.stringify(form)}`, "form sent, awaiting prompt");
-
-    let timedOut = false;
-    while (true) {
-      const here = this.screen.absLine(this.screen.cursorRow);
-      if (this.atPrompt() && here > mark) break;
-      if (Date.now() - start >= timeoutMs) {
-        timedOut = true;
-        break;
-      }
-      if (!this.connected) break;
+    while (
+      this.connected && !this.atPrompt() && Date.now() - start < timeoutMs
+    ) {
       await sleep(15);
     }
-
-    const elapsedMs = Date.now() - start;
-    this.note(
-      `eval ${JSON.stringify(form)}`,
-      timedOut
-        ? `TIMED OUT after ${elapsedMs}ms`
-        : `prompt back in ${elapsedMs}ms`,
-    );
-    return { timedOut, elapsedMs };
+    const left = timeoutMs - (Date.now() - start);
+    await this.wait({ stableMs: 300, timeoutMs: Math.max(left, 1000) });
+    return { atPrompt: this.atPrompt() };
   }
 
-  resize(cols: number, rows: number): void {
-    this.screen.resize(cols, rows);
-    this.telnet?.sendWindowSize(cols, rows);
+  /**
+   * Evaluate one form over rsh (read in CL-USER).  Needs no login.  Returns
+   * what it printed and its values, or the error.  On timeout only the
+   * socket is closed: the form keeps running in Genera.
+   */
+  async evalForm(form: string, timeoutMs = 30_000): Promise<SessionEvalResult> {
+    const start = Date.now();
+    const intent = `eval ${JSON.stringify(form)}`;
+    const bad = checkForm(form);
+    if (bad) {
+      this.note(intent, `not sent: ${bad}`);
+      return { output: "", error: bad, elapsedMs: 0 };
+    }
+    let r: EvalResult;
+    try {
+      r = await rshEvalForm(this.host, this.rshPort, form, { timeoutMs });
+    } catch (e) {
+      r = {
+        output: "",
+        error: `rsh ${this.host}:${this.rshPort}: ${errText(e)}`,
+      };
+    }
+    if (r.error !== undefined) {
+      r = { ...r, error: tidyEvalError(r.error, form) };
+    }
+    const elapsedMs = Date.now() - start;
+    this.note(
+      intent,
+      r.timedOut
+        ? `TIMED OUT after ${elapsedMs}ms`
+        : r.error !== undefined
+        ? `error: ${r.error.split("\n")[0]}`
+        : `${r.values?.length ?? 0} value(s) in ${elapsedMs}ms`,
+    );
+    return { ...r, elapsedMs };
+  }
+
+  /** Run CP command text (e.g. "Show Herald") over rsh.  Needs no login. */
+  async command(
+    text: string,
+    timeoutMs = 30_000,
+  ): Promise<SessionCommandResult> {
+    const start = Date.now();
+    let r: { output: string; error?: string; timedOut?: boolean };
+    try {
+      r = await rshRunCommand(this.host, this.rshPort, text, { timeoutMs });
+    } catch (e) {
+      r = {
+        output: "",
+        error: `rsh ${this.host}:${this.rshPort}: ${errText(e)}`,
+      };
+    }
+    const elapsedMs = Date.now() - start;
+    this.note(
+      `command ${JSON.stringify(text)}`,
+      r.timedOut
+        ? `TIMED OUT after ${elapsedMs}ms`
+        : r.error !== undefined
+        ? `error: ${r.error.split("\n")[0]}`
+        : `${r.output.length} chars in ${elapsedMs}ms`,
+    );
+    return { ...r, elapsedMs };
+  }
+
+  /** Resize the grid and, when logged in, tell Genera the new size. */
+  async resize(cols: number, rows: number): Promise<void> {
+    const [, c, r] = encodeSize(cols, rows);
+    this.screen.resize(c, r);
+    if (this.connected) await this.#send(encodeSize(c, r));
+    this.note(`resize ${c}x${r}`, this.connected ? "sent" : "local only");
   }
 }
 
@@ -1508,12 +596,40 @@ export function clampLines(text: string, max: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// Eval / command results as text
+// ---------------------------------------------------------------------------
+
+/**
+ * Plain-text rendering of an eval result: what the form printed, then one
+ * `=> value` line per value, or the error.  Shared by MCP and the CLI.
+ */
+export function formatEval(r: EvalResult & { elapsedMs?: number }): string {
+  const parts: string[] = [];
+  const out = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+  if (out) parts.push(out);
+  if (r.timedOut) {
+    parts.push(
+      `TIMED OUT${
+        r.elapsedMs !== undefined ? ` after ${r.elapsedMs}ms` : ""
+      } (only our socket was closed; the form may still be running in Genera)`,
+    );
+  } else if (r.error !== undefined) {
+    parts.push(`error: ${r.error}`);
+  } else if (r.values && r.values.length) {
+    for (const v of r.values) parts.push(`=> ${v}`);
+  } else {
+    parts.push("=> (no values)");
+  }
+  return parts.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // MCP stdio server
 // ---------------------------------------------------------------------------
 //
-// The SDK is imported dynamically so that the telnet client and screen model
-// above stay dependency-free: `deno test` never pulls npm, and a bad SDK can
-// only break the MCP entry point, not the core.
+// The SDK is imported dynamically so that the session and codecs stay
+// dependency-free: `deno test` never pulls npm, and a bad SDK can only break
+// the MCP entry point, not the core.
 
 /** Pin the SDK version we verified in the Deno cache. */
 const MCP_SDK = "npm:@modelcontextprotocol/sdk@1.29.0";
@@ -1524,7 +640,7 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
   const { StdioServerTransport } = await import(`${MCP_SDK}/server/stdio.js`);
   const { z } = await import(ZOD);
 
-  const server = new McpServer({ name: "genera-remote", version: "1.0.0" });
+  const server = new McpServer({ name: "genera-remote", version: "2.0.0" });
   const rendered = new ScreenRenderer();
 
   /** Text result; empty/absent parts drop out. */
@@ -1539,10 +655,10 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
 
   /**
    * Exceptions only.  The nominal case — connected, sitting at a prompt — has
-   * nothing worth saying, so it says nothing; cursor, host/port, terminal type
-   * and negotiation flags all live in genera_state now.  "no-prompt" is kept
-   * because it is the one bit a caller must act on: either the Listener has
-   * not come back yet, or an input line is still open.
+   * nothing worth saying, so it says nothing; cursor, host/ports and the rest
+   * live in genera_state.  "no-prompt" is kept because it is the one bit a
+   * caller must act on: either Genera has not come back yet, or an input
+   * line is still open.
    */
   const footer = (...extra: string[]) => {
     const bits = [...extra];
@@ -1575,37 +691,96 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     }
   };
 
+  const maxLinesArg = z.number().int().optional().describe(
+    "truncate past this many lines, keeping head and tail (default 200, 0 = unlimited)",
+  );
+  const timeoutArg = z.number().int().optional().describe(
+    "give up after this many ms (default 30000); only our socket closes, the work keeps running in Genera",
+  );
+
+  // Everything but connect/state/log is listed only while the login is up:
+  // before that the tools have nothing to act on.  The SDK drops a disabled
+  // tool from tools/list and sends notifications/tools/list_changed on every
+  // toggle, so the client's tool list follows the connection.
+  // deno-lint-ignore no-explicit-any
+  const gated: any[] = [];
+  // deno-lint-ignore no-explicit-any
+  const registerGated = (...args: any[]) => {
+    const tool = server.registerTool(...args);
+    if (!session.connected) tool.disable();
+    gated.push(tool);
+  };
+  session.onConnectionChange = (up) => {
+    for (const tool of gated) up ? tool.enable() : tool.disable();
+  };
+
   server.registerTool("genera_connect", {
-    title: "Connect to Genera",
+    title: "Log in to Genera",
     description:
-      "Open a telnet session to the Genera Lisp Listener. Defaults to the vmnet bridge guest address.",
+      `Open a 3600-LOGIN session (Genera's native remote terminal, TCP ${DEFAULT_LOGIN_PORT}) and return the screen. The other genera_* tools (screen, type, key, wait, eval, command, disconnect) appear only once this succeeds, and go away again when the session ends. When already connected, cols/rows resize the live session.`,
     inputSchema: {
-      host: z.string().optional().describe(`host (default ${DEFAULT_HOST})`),
+      host: z.string().optional().describe(`host (default ${session.host})`),
       port: z.number().int().optional().describe(
-        `port (default ${DEFAULT_PORT})`,
+        `login port (default ${session.loginPort})`,
+      ),
+      cols: z.number().int().optional().describe(
+        `columns (default ${session.screen.cols})`,
+      ),
+      rows: z.number().int().optional().describe(
+        `rows (default ${session.screen.rows})`,
       ),
     },
-  }, async ({ host, port }: { host?: string; port?: number }) => {
-    const entry = await session.connect(host, port);
+  }, async (
+    { host, port, cols, rows }: {
+      host?: string;
+      port?: number;
+      cols?: number;
+      rows?: number;
+    },
+  ) => {
+    if (session.connected) {
+      if (cols === undefined && rows === undefined) {
+        return reply([
+          `already connected to ${session.host}:${session.loginPort}`,
+          screenOf("auto"),
+          footer(),
+        ]);
+      }
+      try {
+        await session.resize(
+          cols ?? session.screen.cols,
+          rows ?? session.screen.rows,
+        );
+      } catch (e) {
+        return fail(errText(e));
+      }
+      await settle(400);
+      return reply([
+        `resized to ${session.screen.cols}x${session.screen.rows}`,
+        screenOf("auto"),
+        footer(),
+      ]);
+    }
+    const entry = await session.connect(host, port, { cols, rows });
     if (!session.connected) return fail(entry.outcome);
-    // Give the herald a moment to paint before the first screen read.
-    await session.wait({ stableMs: 400, timeoutMs: 4000 });
+    // The herald paints only after the server's init window.
+    await session.awaitHerald();
     session.note("connect", "settled");
     rendered.reset(); // fresh login: the caller has seen nothing yet
     return reply([screenOf("full"), footer()]);
   });
 
-  server.registerTool("genera_disconnect", {
-    title: "Disconnect",
-    description: "Close the telnet session.",
+  registerGated("genera_disconnect", {
+    title: "Log out",
+    description: "Send logout on the 3600-LOGIN session and close it.",
     inputSchema: {},
-  }, () => {
-    const entry = session.disconnect();
+  }, async () => {
+    const entry = await session.disconnect();
     rendered.reset();
     return reply([entry.outcome]);
   });
 
-  server.registerTool("genera_screen", {
+  registerGated("genera_screen", {
     title: "Read the screen",
     description:
       "Return the character grid as text. By default only what changed since the screen you were last shown; pass mode=full for the whole grid.",
@@ -1615,11 +790,12 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     return reply([screenOf(mode ?? "auto"), footer()]);
   });
 
-  server.registerTool("genera_type", {
+  registerGated("genera_type", {
     title: "Type text",
-    description: "Send literal text to Genera (no newline appended).",
+    description:
+      "Type text on the 3600 session (no Return appended). Printable ASCII as is; a newline is Return, a tab is Tab; SAIL glyphs such as λ or ≠ type their Genera characters. The Listener runs a form as soon as its closing paren is typed, so a form needs no Return.",
     inputSchema: {
-      text: z.string().describe("text to send verbatim"),
+      text: z.string().describe("text to type"),
       mode: modeArg("auto"),
       settle_ms: settleArg,
     },
@@ -1631,19 +807,22 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     },
   ) => {
     try {
-      session.type(text);
+      await session.type(text);
       await settle(settle_ms);
       return reply([screenOf(mode ?? "auto"), footer()]);
     } catch (e) {
-      return fail(e instanceof Error ? e.message : String(e));
+      return fail(errText(e));
     }
   });
 
-  server.registerTool("genera_key", {
-    title: "Press a named key",
-    description: `Send a named Genera key. Known: ${keyNames().join(", ")}.`,
+  registerGated("genera_key", {
+    title: "Press a key",
+    description:
+      `Press one Genera key on the 3600 session. Grammar: optional prefixes c- m- s- h- (control, meta, super, hyper) and sh- (shift a letter), then a single character or a key name: ${
+        keyNames().join(", ")
+      }. Examples: Return, c-m-Abort, m-X, c-sh-a, Select.`,
     inputSchema: {
-      name: z.string().describe("key name, e.g. Return, Rubout, Abort"),
+      name: z.string().describe("key spec, e.g. Return, Abort, c-m-Abort, m-X"),
       mode: modeArg("auto"),
       settle_ms: settleArg,
     },
@@ -1655,15 +834,15 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     },
   ) => {
     try {
-      session.key(name);
+      await session.key(name);
       await settle(settle_ms);
       return reply([screenOf(mode ?? "auto"), footer()]);
     } catch (e) {
-      return fail(e instanceof Error ? e.message : String(e));
+      return fail(errText(e));
     }
   });
 
-  server.registerTool(
+  registerGated(
     "genera_wait",
     {
       title: "Wait for the screen",
@@ -1714,46 +893,66 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     },
   );
 
-  server.registerTool("genera_eval", {
+  registerGated("genera_eval", {
     title: "Evaluate a form",
     description:
-      "Type a Lisp form + Return, wait for the next prompt, and return the screen — the echoed form, whatever the Listener printed, and the new prompt, exactly as they were painted. Output that scrolls past the top of the 24-row screen is gone, as it would be for anyone at the terminal.",
+      `Evaluate ONE Lisp form over rsh (TCP ${session.rshPort}; read in CL-USER) and return what it printed, then one "=> value" line per value (printed with ~S), or "error: ..." with the error report. Nothing is lost to the screen size.`,
     inputSchema: {
-      form: z.string().describe("the form to evaluate"),
-      timeout_ms: z.number().int().optional().describe(
-        "give up after this many ms",
+      form: z.string().describe(
+        "a single form; wrap several in (progn ...)",
       ),
-      max_lines: z.number().int().optional().describe(
-        "truncate past this many lines, keeping head and tail (default 200, 0 = unlimited)",
-      ),
-      mode: modeArg("auto"),
+      timeout_ms: timeoutArg,
+      max_lines: maxLinesArg,
     },
   }, async (
-    { form, timeout_ms, max_lines, mode }: {
+    { form, timeout_ms, max_lines }: {
       form: string;
       timeout_ms?: number;
       max_lines?: number;
-      mode?: ScreenMode;
     },
   ) => {
-    if (!session.connected) return fail("not connected");
     const r = await session.evalForm(form, timeout_ms ?? 30_000);
-    const screen = screenOf(mode ?? "auto");
-    const notes: string[] = [];
-    if (r.timedOut) notes.push(`TIMED OUT ${r.elapsedMs}ms`);
     return reply(
-      [
-        screen === null ? null : clampLines(screen, max_lines ?? 200),
-        footer(...notes),
-      ],
-      r.timedOut,
+      [clampLines(formatEval(r), max_lines ?? 200)],
+      r.error !== undefined || !!r.timedOut,
+    );
+  });
+
+  registerGated("genera_command", {
+    title: "Run a CP command",
+    description:
+      `Run Command Processor text (e.g. "Show Herald", "Show Users") over rsh (TCP ${session.rshPort}) and return its output. A command's own error report comes back as ordinary output.`,
+    inputSchema: {
+      text: z.string().describe("the command line, as typed at Command:"),
+      timeout_ms: timeoutArg,
+      max_lines: maxLinesArg,
+    },
+  }, async (
+    { text, timeout_ms, max_lines }: {
+      text: string;
+      timeout_ms?: number;
+      max_lines?: number;
+    },
+  ) => {
+    const r = await session.command(text, timeout_ms ?? 30_000);
+    const out = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+    const tail = r.timedOut
+      ? `TIMED OUT after ${r.elapsedMs}ms (only our socket was closed)`
+      : r.error !== undefined
+      ? `error: ${r.error}`
+      : out
+      ? null
+      : "(no output)";
+    return reply(
+      [clampLines([out, tail].filter(Boolean).join("\n"), max_lines ?? 200)],
+      r.error !== undefined,
     );
   });
 
   server.registerTool("genera_state", {
     title: "Session state",
     description:
-      "Full connection/terminal/negotiation state as JSON. Other tools report only a one-line summary; call this when that is not enough.",
+      "Full session state as JSON: login connection, ports, screen size, cursor, prompt. Other tools report only a one-line summary; call this when that is not enough.",
     inputSchema: {},
   }, () => reply([JSON.stringify(session.state())]));
 
@@ -1785,6 +984,429 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
       Deno.addSignalListener("SIGTERM", shutdown);
     } catch (_e) { /* signals unavailable; rely on stdin EOF */ }
   });
+  if (session.connected) await session.disconnect();
+}
+
+// ---------------------------------------------------------------------------
+// repl: an interactive full-screen 3600 terminal
+// ---------------------------------------------------------------------------
+
+export const ANSI_AUTOWRAP_OFF = "\x1b[?7l";
+export const ANSI_AUTOWRAP_ON = "\x1b[?7h";
+
+const ESCAPE_KEY = 0x1d; // Ctrl-]: local escape, like telnet's
+const C = 1, M = 2; // control, meta bits
+
+const key = (name: string, bits = 0) => encodeChar(KEY_CODES[name], bits);
+const ctl = (ch: string) => encodeChar(ch.charCodeAt(0), C);
+const meta = (ch: string) => encodeChar(ch.charCodeAt(0), M);
+
+/** CSI/SS3 final byte (no numeric parameter) -> key bytes. */
+const CSI_FINAL: Record<string, readonly number[]> = {
+  A: ctl("P"), // up
+  B: ctl("N"), // down
+  C: ctl("F"), // right
+  D: ctl("B"), // left
+  H: meta("<"), // Home
+  F: key("End"), // End
+  P: key("Help"), // F1 (SS3 P / CSI 1;mP)
+  Q: key("Suspend"), // F2
+  R: key("Resume"), // F3
+  S: key("Abort"), // F4
+};
+
+/** CSI n ~ -> key bytes. */
+const CSI_TILDE: Record<number, readonly number[]> = {
+  1: meta("<"), // Home
+  7: meta("<"),
+  4: key("End"), // End
+  8: key("End"),
+  5: meta("V"), // PgUp
+  6: ctl("V"), // PgDn
+  11: key("Help"), // F1
+  12: key("Suspend"), // F2
+  13: key("Resume"), // F3
+  14: key("Abort"), // F4
+  15: key("Refresh"), // F5
+  17: key("Clear-Input"), // F6
+  18: key("Function"), // F7
+  19: key("End"), // F8
+  20: key("Network"), // F9
+};
+
+/** Ctrl-] menu: next key -> bytes to send. */
+const MENU: Record<string, readonly number[]> = {
+  h: key("Help"),
+  a: key("Abort"),
+  e: key("End"),
+  s: key("Suspend"),
+  r: key("Resume"),
+  c: key("Clear-Input"),
+  f: key("Function"),
+  n: key("Network"),
+  l: key("Refresh"),
+  x: key("Complete"),
+  S: key("Select"),
+  [String.fromCharCode(ESCAPE_KEY)]: ctl("]"),
+};
+
+export const MENU_HELP = [
+  "genera-remote escape (Ctrl-]) commands:",
+  "  q       quit (log out and close)",
+  "  h       Help           a  Abort",
+  "  e       End            s  Suspend",
+  "  r       Resume         c  Clear-Input",
+  "  f       Function       n  Network",
+  "  l       Refresh        x  Complete",
+  "  S       Select         ?  this list",
+  "  Ctrl-]  send c-]",
+  "Other keys: Return, Rubout (Delete), Tab; Ctrl-letter = c-letter;",
+  "Esc-prefix/Option = Meta; arrows = c-P/c-N/c-F/c-B; Home = m-<,",
+  "End = End, PgUp/PgDn = m-V/c-V; F1 Help, F2 Suspend, F3 Resume,",
+  "F4 Abort, F5 Refresh, F6 Clear-Input, F7 Function, F8 End, F9 Network.",
+].join("\r\n");
+
+export interface KeyResult {
+  /** Bytes to send to Genera. */
+  bytes: Uint8Array;
+  /** The user asked to quit (logout bytes are already in `bytes`). */
+  quit: boolean;
+  /** The user asked for the local escape-menu help. */
+  help: boolean;
+}
+
+/**
+ * Encode one local ASCII byte with extra bucky bits (0 or meta).  Return,
+ * Rubout and Tab are Genera keys of their own; any other control byte is
+ * control + the uppercase character, so Ctrl-H is c-H (not Backspace).
+ * Letters with bits follow Genera's rule: unshifted sends the uppercase
+ * code, shifted the lowercase.
+ */
+function encodeByte(b: number, extra: number): number[] {
+  if (b === 0x0d) return key("Return", extra);
+  if (b === 0x7f) return key("Rubout", extra);
+  if (b === 0x09) return key("Tab", extra);
+  if (b === 0x1b) return key("Escape", extra);
+  if (b < 0x20) return encodeChar(b + 0x40, C | extra);
+  if (!extra) return encodeChar(b);
+  const isLetter = /[A-Za-z]/.test(String.fromCharCode(b));
+  return encodeChar(isLetter ? b ^ 0x20 : b, extra);
+}
+
+/** Bytes in the UTF-8 sequence that starts with `lead`. */
+function utf8Length(lead: number): number {
+  if (lead >= 0xf0) return 4;
+  if (lead >= 0xe0) return 3;
+  if (lead >= 0xc0) return 2;
+  return 1;
+}
+
+/**
+ * Stateful key encoder for the local tty.  The only state carried between
+ * reads is "Ctrl-] was the last key"; ESC-as-Meta and CSI parsing work
+ * within one read, as a terminal delivers a whole key sequence in one write.
+ */
+export class KeyEncoder3600 {
+  #menu = false;
+
+  feed(chunk: Uint8Array): KeyResult {
+    const out: number[] = [];
+    let quit = false, help = false;
+    let i = 0;
+    while (i < chunk.length && !quit) {
+      const b = chunk[i];
+      if (this.#menu) {
+        this.#menu = false;
+        i++;
+        const k = String.fromCharCode(b);
+        if (k === "q" || k === "Q") {
+          out.push(...LOGOUT);
+          quit = true;
+        } else if (k === "?") help = true;
+        else if (MENU[k]) out.push(...MENU[k]);
+        continue;
+      }
+      if (b === ESCAPE_KEY) {
+        this.#menu = true;
+        i++;
+        continue;
+      }
+      if (b >= 0x80) {
+        // UTF-8: a SAIL glyph types its Genera character; anything else
+        // has no Genera code and is dropped.
+        const n = utf8Length(b);
+        const ch = new TextDecoder().decode(chunk.subarray(i, i + n));
+        try {
+          out.push(...encodeText(ch));
+        } catch { /* no Genera code */ }
+        i += n;
+        continue;
+      }
+      if (b !== 0x1b) {
+        out.push(...encodeByte(b, 0));
+        i++;
+        continue;
+      }
+      // ESC: lone (Escape), CSI/SS3, or Meta prefix.
+      if (i + 1 >= chunk.length) {
+        out.push(...key("Escape"));
+        i++;
+        continue;
+      }
+      const n = chunk[i + 1];
+      if ((n === 0x5b || n === 0x4f) && i + 2 < chunk.length) {
+        // CSI (ESC [) or SS3 (ESC O): params 0x30-0x3F, intermediates
+        // 0x20-0x2F, final 0x40-0x7E.
+        let j = i + 2;
+        while (j < chunk.length && chunk[j] >= 0x20 && chunk[j] <= 0x3f) j++;
+        if (j >= chunk.length) break; // truncated: drop the rest
+        const final = String.fromCharCode(chunk[j]);
+        const params = new TextDecoder().decode(chunk.subarray(i + 2, j));
+        out.push(...lookupSequence(final, params));
+        i = j + 1;
+        continue;
+      }
+      // Meta prefix (Option-as-Meta).
+      if (n === ESCAPE_KEY) out.push(...encodeChar(0x5d, C | M)); // c-m-]
+      else if (n < 0x80) out.push(...encodeByte(n, M));
+      i += 2;
+    }
+    return { bytes: new Uint8Array(out), quit, help };
+  }
+}
+
+/** Map a CSI/SS3 sequence to key bytes; unknown sequences map to nothing. */
+function lookupSequence(final: string, params: string): readonly number[] {
+  if (final === "~") {
+    const n = parseInt(params.split(";")[0], 10);
+    return CSI_TILDE[n] ?? [];
+  }
+  return CSI_FINAL[final] ?? [];
+}
+
+/** Convenience: encode a whole string/bytes with a fresh encoder. */
+export function encodeKeys(input: string | Uint8Array): KeyResult {
+  const bytes = typeof input === "string"
+    ? new TextEncoder().encode(input)
+    : input;
+  return new KeyEncoder3600().feed(bytes);
+}
+
+export interface TerminalIO {
+  /** The TCP connection (or a fake). */
+  net: {
+    readable: ReadableStream<Uint8Array>;
+    writable: WritableStream<Uint8Array>;
+  };
+  /** Local keyboard bytes (the raw tty), or null for none. */
+  keys: ReadableStream<Uint8Array> | null;
+  /** Receives the rendered xterm output. */
+  write: (s: string) => void | Promise<void>;
+  /** Local notices (the escape-menu help); written to stderr by the CLI. */
+  note: (s: string) => void;
+  cols: number;
+  rows: number;
+}
+
+/**
+ * One interactive 3600-LOGIN session: sends the size, then pumps both
+ * directions through `ansiSink` and `KeyEncoder3600` until the server
+ * closes or the user quits.  `resize` sends a live size change.
+ */
+export class Terminal3600 {
+  #io: TerminalIO;
+  #writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  #sending: Promise<void> = Promise.resolve();
+
+  constructor(io: TerminalIO) {
+    this.#io = io;
+  }
+
+  #send(bytes: ArrayLike<number>): Promise<void> {
+    const w = this.#writer;
+    if (!w) return Promise.resolve();
+    const data = Uint8Array.from(bytes);
+    const p = this.#sending.then(() => w.write(data));
+    this.#sending = p.catch(() => {});
+    return p;
+  }
+
+  /** Tell Genera the window is now cols x rows. */
+  resize(cols: number, rows: number): Promise<void> {
+    return this.#send(encodeSize(cols, rows));
+  }
+
+  async run(): Promise<"closed" | "quit"> {
+    const io = this.#io;
+    const writer = io.net.writable.getWriter();
+    this.#writer = writer;
+    await this.#send(encodeSize(io.cols, io.rows));
+
+    let done = false;
+    let keyReader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    const netReader = io.net.readable.getReader();
+
+    const fromNet = (async () => {
+      const dec = new Decoder3600();
+      let text = "";
+      const sink = ansiSink((s) => {
+        text += s;
+      });
+      try {
+        while (true) {
+          const { value, done: eof } = await netReader.read();
+          if (eof || !value) break;
+          for (const op of dec.feed(value)) sink(op);
+          if (text) {
+            const s = text;
+            text = "";
+            await io.write(s);
+          }
+        }
+      } catch (e) {
+        if (!done) throw e;
+      }
+      return "closed" as const;
+    })();
+
+    const fromKeys = (async () => {
+      if (!io.keys) return new Promise<never>(() => {});
+      keyReader = io.keys.getReader();
+      const enc = new KeyEncoder3600();
+      while (true) {
+        const { value, done: eof } = await keyReader.read();
+        if (eof || !value) return new Promise<never>(() => {}); // keep net open
+        const r = enc.feed(value);
+        if (r.bytes.length) await this.#send(r.bytes);
+        if (r.help) {
+          io.note(
+            `\r\n${MENU_HELP}\r\n(Type Ctrl-] l to have Genera refresh the screen.)\r\n`,
+          );
+        }
+        if (r.quit) return "quit" as const;
+      }
+    })();
+
+    const how = await Promise.race([fromNet, fromKeys]);
+    done = true;
+    this.#writer = null;
+    try {
+      await this.#sending;
+      await writer.close();
+    } catch { /* already closed */ }
+    if (how === "quit") {
+      try {
+        await netReader.cancel();
+      } catch { /* ignore */ }
+    }
+    try {
+      await (keyReader as ReadableStreamDefaultReader<Uint8Array> | null)
+        ?.cancel();
+    } catch { /* ignore */ }
+    return how;
+  }
+}
+
+const encoder = new TextEncoder();
+const stderr = (s: string) => Deno.stderr.writeSync(encoder.encode(s));
+
+async function cliRepl(opts: CliOpts): Promise<number> {
+  let rows = 24, cols = 80;
+  try {
+    ({ rows, columns: cols } = Deno.consoleSize());
+  } catch { /* not a tty: keep 80x24 */ }
+
+  let conn: Deno.TcpConn;
+  try {
+    conn = await Deno.connect({
+      hostname: opts.host,
+      port: opts.loginPort,
+      signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+    });
+  } catch (e) {
+    stderr(
+      e instanceof Deno.errors.ConnectionRefused
+        ? `genera-remote: connection to ${opts.host} port ${opts.loginPort} refused.\n${LOGIN_REQUIREMENTS}\n`
+        : `genera-remote: ${opts.host} port ${opts.loginPort}: ${errText(e)}\n`,
+    );
+    return 1;
+  }
+  stderr(
+    `Connected to ${opts.host}. Escape character is '^]' (^] ? for help).\r\n`,
+  );
+
+  const isTty = Deno.stdin.isTerminal();
+  let restored = false;
+  const restore = () => {
+    if (restored) return;
+    restored = true;
+    try {
+      Deno.stdout.writeSync(encoder.encode(ANSI_AUTOWRAP_ON));
+    } catch { /* ignore */ }
+    if (isTty) {
+      try {
+        Deno.stdin.setRaw(false);
+      } catch { /* ignore */ }
+    }
+  };
+
+  const term = new Terminal3600({
+    net: conn,
+    keys: Deno.stdin.readable,
+    write: (s) => {
+      Deno.stdout.writeSync(encoder.encode(s));
+    },
+    note: stderr,
+    rows,
+    cols,
+  });
+
+  const onWinch = () => {
+    try {
+      const { rows, columns } = Deno.consoleSize();
+      term.resize(columns, rows).catch(() => {});
+    } catch { /* not a tty */ }
+  };
+  const onFatal = () => {
+    restore();
+    try {
+      conn.close();
+    } catch { /* ignore */ }
+    Deno.exit(1);
+  };
+  const signals: Deno.Signal[] = ["SIGTERM", "SIGHUP", "SIGINT", "SIGQUIT"];
+  try {
+    Deno.addSignalListener("SIGWINCH", onWinch);
+  } catch { /* ignore */ }
+  for (const s of signals) {
+    try {
+      Deno.addSignalListener(s, onFatal);
+    } catch { /* ignore */ }
+  }
+  globalThis.addEventListener("unhandledrejection", restore);
+  globalThis.addEventListener("unload", restore);
+
+  let code = 0;
+  try {
+    if (isTty) Deno.stdin.setRaw(true);
+    Deno.stdout.writeSync(encoder.encode(ANSI_AUTOWRAP_OFF));
+    const how = await term.run();
+    restore();
+    stderr(how === "quit" ? "\nLogged out.\n" : "\nConnection closed.\n");
+  } catch (e) {
+    restore();
+    stderr(`\ngenera-remote: ${errText(e)}\n`);
+    code = 1;
+  } finally {
+    restore();
+    try {
+      Deno.removeSignalListener("SIGWINCH", onWinch);
+    } catch { /* ignore */ }
+    try {
+      conn.close();
+    } catch { /* ignore */ }
+  }
+  return code;
 }
 
 // ---------------------------------------------------------------------------
@@ -1793,7 +1415,8 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
 
 interface CliOpts {
   host: string;
-  port: number;
+  loginPort: number;
+  rshPort: number;
   json: boolean;
   pattern?: string;
   stableMs?: number;
@@ -1801,11 +1424,17 @@ interface CliOpts {
   rest: string[];
 }
 
+function envPort(name: string, def: number): number {
+  const v = Deno.env.get(name);
+  return v ? parseInt(v, 10) : def;
+}
+
 function parseCli(argv: string[]): { verb: string; opts: CliOpts } {
   const rest: string[] = [];
   const opts: CliOpts = {
     host: Deno.env.get("GENERA_HOST") ?? DEFAULT_HOST,
-    port: parseInt(Deno.env.get("GENERA_PORT") ?? String(DEFAULT_PORT), 10),
+    loginPort: envPort("GENERA_LOGIN_PORT", DEFAULT_LOGIN_PORT),
+    rshPort: envPort("GENERA_RSH_PORT", DEFAULT_RSH_PORT),
     json: false,
     rest,
   };
@@ -1813,7 +1442,8 @@ function parseCli(argv: string[]): { verb: string; opts: CliOpts } {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--host") opts.host = argv[++i];
-    else if (a === "--port") opts.port = parseInt(argv[++i], 10);
+    else if (a === "--login-port") opts.loginPort = parseInt(argv[++i], 10);
+    else if (a === "--rsh-port") opts.rshPort = parseInt(argv[++i], 10);
     else if (a === "--json") opts.json = true;
     else if (a === "--pattern") opts.pattern = argv[++i];
     else if (a === "--stable-ms") opts.stableMs = parseInt(argv[++i], 10);
@@ -1824,77 +1454,107 @@ function parseCli(argv: string[]): { verb: string; opts: CliOpts } {
   return { verb, opts };
 }
 
-const CLI_USAGE = `genera-remote — drive a Genera Lisp Listener over telnet
+const CLI_USAGE =
+  `genera-remote — drive Genera over rsh and its 3600-LOGIN remote terminal
 
 USAGE:
-  genera-remote.ts <verb> [args] [--host H] [--port N] [--json]
+  genera-remote.ts <verb> [args] [--host H] [--login-port N] [--rsh-port N] [--json]
 
-VERBS:
-  mcp                        run as an MCP stdio server (default when no verb)
-  screen                     connect, print the screen, disconnect
-  type <text>                type literal text
-  key <name>                 press a named key (${"see 'keys'"})
-  keys                       list known key names
+VERBS (rsh; no login):
+  eval <form> [--timeout-ms N]     evaluate ONE form; prints output, then
+                                   "=> value" lines.  Exit 1 on error, 2 on timeout
+  command <text> [--timeout-ms N]  run a CP command, e.g. "Show Herald"
+
+VERBS (3600-LOGIN; each logs in, acts, and logs out):
+  screen                     print the screen after login
+  type <text>                type text (a newline in it is Return)
+  key <spec>...              press keys, e.g. Return c-m-Abort m-X Select
   wait [--pattern RE] [--stable-ms N] [--timeout-ms N]
-  eval <form> [--timeout-ms N]   evaluate a form, print its output
-  repl                       interactive line-mode session (stays connected)
+  repl                       interactive full-screen terminal (Ctrl-] ? for help)
+
+OTHER:
+  keys                       list key names and their Genera codes
+  mcp                        run as an MCP stdio server (default when no verb)
 
 OPTIONS:
-  --host H     default ${DEFAULT_HOST} (env GENERA_HOST)
-  --port N     default ${DEFAULT_PORT}  (env GENERA_PORT)
-  --json       machine-readable output where applicable
+  --host H          default ${DEFAULT_HOST} (env GENERA_HOST)
+  --login-port N    default ${DEFAULT_LOGIN_PORT} (env GENERA_LOGIN_PORT)
+  --rsh-port N      default ${DEFAULT_RSH_PORT} (env GENERA_RSH_PORT)
+  --json            machine-readable output where applicable
 
-Per-invocation verbs (screen/type/key/wait/eval) connect, act, and disconnect.
-Use 'repl' to hold one login open across many commands.`;
+Key specs: optional c- m- s- h- (control meta super hyper) and sh- prefixes,
+then one character or a key name ('keys' lists them).`;
 
 async function cliMain(verb: string, opts: CliOpts): Promise<number> {
   const out = (s: string) => console.log(s);
-  const session = new GeneraSession({ host: opts.host, port: opts.port });
+  const session = new GeneraSession({
+    host: opts.host,
+    loginPort: opts.loginPort,
+    rshPort: opts.rshPort,
+  });
 
   const settle = () => session.wait({ stableMs: 400, timeoutMs: 4000 });
 
   switch (verb) {
     case "keys": {
       for (const n of keyNames()) {
-        const d = lookupKey(n)!;
-        out(
-          `${n.padEnd(14)} ${
-            d.bytes.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")
-              .padEnd(20)
-          } ${d.note}`,
-        );
+        out(`${n.padEnd(14)} ${KEY_CODES[n].toString(8).padStart(3, "0")}`);
       }
       return 0;
     }
     case "repl":
-      return await cliRepl(session, opts);
+      return await cliRepl(opts);
+    case "eval": {
+      const r = await session.evalForm(
+        opts.rest.join(" "),
+        opts.timeoutMs ?? 30_000,
+      );
+      if (opts.json) out(JSON.stringify(r, null, 2));
+      else if (r.error !== undefined && !r.timedOut) {
+        const printed = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+        if (printed) out(printed);
+        console.error(`error: ${r.error}`);
+      } else out(formatEval(r));
+      return r.timedOut ? 2 : r.error !== undefined ? 1 : 0;
+    }
+    case "command": {
+      const r = await session.command(
+        opts.rest.join(" "),
+        opts.timeoutMs ?? 30_000,
+      );
+      if (opts.json) out(JSON.stringify(r, null, 2));
+      else {
+        const printed = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+        if (printed) out(printed);
+        if (r.timedOut) console.error(`TIMED OUT after ${r.elapsedMs}ms`);
+        else if (r.error !== undefined) console.error(`error: ${r.error}`);
+      }
+      return r.timedOut ? 2 : r.error !== undefined ? 1 : 0;
+    }
     case "screen":
     case "type":
     case "key":
-    case "wait":
-    case "eval": {
+    case "wait": {
       const entry = await session.connect();
       if (!session.connected) {
         console.error(`connect failed: ${entry.outcome}`);
         return 1;
       }
-      await settle();
+      await session.awaitHerald();
       let code = 0;
-      let result: unknown = null;
+      let result: Record<string, unknown> = {};
       try {
         switch (verb) {
-          case "screen":
-            result = { screen: session.screen.text(), state: session.state() };
-            break;
           case "type":
-            session.type(opts.rest.join(" "));
+            await session.type(opts.rest.join(" "));
             await settle();
-            result = { screen: session.screen.text(), state: session.state() };
             break;
           case "key":
-            session.key(opts.rest[0] ?? "");
-            await settle();
-            result = { screen: session.screen.text(), state: session.state() };
+            if (!opts.rest.length) throw new Error("key: no key spec given");
+            for (const spec of opts.rest) {
+              await session.key(spec);
+              await settle();
+            }
             break;
           case "wait": {
             const r = await session.wait({
@@ -1902,108 +1562,29 @@ async function cliMain(verb: string, opts: CliOpts): Promise<number> {
               stableMs: opts.stableMs,
               timeoutMs: opts.timeoutMs,
             });
-            result = { wait: r, screen: session.screen.text() };
-            if (r.timedOut) code = 2;
-            break;
-          }
-          case "eval": {
-            const r = await session.evalForm(
-              opts.rest.join(" "),
-              opts.timeoutMs ?? 30_000,
-            );
-            result = { timedOut: r.timedOut, screen: session.screen.text() };
+            result.wait = r;
             if (r.timedOut) code = 2;
             break;
           }
         }
       } catch (e) {
-        console.error(e instanceof Error ? e.message : String(e));
+        console.error(errText(e));
         code = 1;
       }
-      session.disconnect();
+      result = {
+        ...result,
+        screen: session.screen.text(),
+        state: session.state(),
+      };
+      await session.disconnect();
       if (opts.json) out(JSON.stringify(result, null, 2));
-      else if (result && typeof result === "object") {
-        const r = result as Record<string, unknown>;
-        if ("output" in r) out(String(r.output));
-        else if ("screen" in r) out(String(r.screen));
-        else out(JSON.stringify(r, null, 2));
-      }
+      else out(String(result.screen));
       return code;
     }
     default:
       console.error(CLI_USAGE);
       return verb ? 1 : 0;
   }
-}
-
-async function cliRepl(
-  session: GeneraSession,
-  _opts: CliOpts,
-): Promise<number> {
-  const entry = await session.connect();
-  if (!session.connected) {
-    console.error(`connect failed: ${entry.outcome}`);
-    return 1;
-  }
-  await session.wait({ stableMs: 400, timeoutMs: 4000 });
-  console.error(session.screen.text());
-  console.error(
-    "\n[genera-remote repl] blank line = Return; /screen /keys /key NAME /wait /quit\n",
-  );
-
-  const dec = new TextDecoder();
-  const buf = new Uint8Array(1024);
-  let pending = "";
-  let quit = false;
-
-  const handleLine = async (line: string): Promise<void> => {
-    if (line === "/quit") {
-      quit = true;
-      return;
-    }
-    if (line === "/screen") {
-      console.error(session.screen.text());
-      return;
-    }
-    if (line === "/keys") {
-      console.error(keyNames().join(", "));
-      return;
-    }
-    if (line.startsWith("/key ")) {
-      try {
-        session.key(line.slice(5).trim());
-      } catch (e) {
-        console.error(e instanceof Error ? e.message : String(e));
-        return;
-      }
-      await session.wait({ stableMs: 300, timeoutMs: 4000 });
-      console.error(session.screen.text());
-      return;
-    }
-    if (line === "/wait") {
-      await session.wait({ stableMs: 400, timeoutMs: 10000 });
-      console.error(session.screen.text());
-      return;
-    }
-    // Anything else is typed as a form + Return.
-    session.type(line + "\r");
-    await session.wait({ stableMs: 400, timeoutMs: 10000 });
-    console.error(session.screen.text());
-  };
-
-  while (!quit) {
-    const n = await Deno.stdin.read(buf);
-    if (n === null) break;
-    pending += dec.decode(buf.subarray(0, n));
-    let nl: number;
-    while ((nl = pending.indexOf("\n")) >= 0 && !quit) {
-      const line = pending.slice(0, nl).replace(/\r$/, "");
-      pending = pending.slice(nl + 1);
-      await handleLine(line);
-    }
-  }
-  session.disconnect();
-  return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -2013,7 +1594,11 @@ async function cliRepl(
 if (import.meta.main) {
   const { verb, opts } = parseCli(Deno.args);
   if (verb === "" || verb === "mcp") {
-    const session = new GeneraSession({ host: opts.host, port: opts.port });
+    const session = new GeneraSession({
+      host: opts.host,
+      loginPort: opts.loginPort,
+      rshPort: opts.rshPort,
+    });
     await runMcpServer(session);
     Deno.exit(0);
   } else if (verb === "-h" || verb === "--help" || verb === "help") {
