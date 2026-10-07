@@ -64,12 +64,19 @@ printer still emitting the LGP2 default (last-first) order.
      define .notdef as an empty glyph (invisible) while the resident core fonts
      image it as a visible box (e.g. the title page's "Draft <box> July 2026").
      We remap 141 -> /space in the 13 core fonts to match the bitmap fonts.
-   * In /Symbol the driver emits 183 (0o267) and 190 (0o276) for /bullet and
-     /arrowhorizex, which the old Type-1 SymbolEncoding carried at those code
-     points but the modern (TrueType) Symbol does not -- so Acrobat Distiller
-     resolves them to .notdef and drops them from the embedded subset (the
-     em-dash-like rule between clauses vanishes).  We restore them by glyph
-     name, which the modern Symbol still provides.
+   * In /Symbol the driver reaches the upper half by the old Type-1
+     SymbolEncoding code points -- 183 (0o267) /bullet, 190 (0o276)
+     /arrowhorizex (the em-dash-like rule between clauses), 174 (0o256)
+     /arrowright (the Debugger/FEP prompt arrow), 224 (0o340) /lozenge, ... --
+     which the modern (TrueType) Symbol still carries by glyph name but no
+     longer at those codes, so Acrobat Distiller resolves them to .notdef and
+     images a box or drops them.  Reencoding by name is not enough: Distiller
+     cannot resolve /arrowright, /lozenge, ... in the macOS Symbol.ttf either
+     (only /bullet survives, via WinAnsi), so we embed a Type 1 Symbol --
+     URW's StandardSymL (usyr.pfb, metric-compatible with Adobe Symbol, from
+     TeX Live via kpsewhich; --symbol-font to override) -- and register it
+     as /Symbol, then reinstall the whole classic upper half (0o241-0o376) by
+     glyph name.  Without a Type 1 Symbol the reencoding alone is applied.
    No page content is touched; only the prolog's font dicts are reencoded.
 
 This is a stdin -> stdout filter, not wired into lpdd: run it over a live
@@ -81,7 +88,10 @@ job or an already-spooled file.
 
 import argparse
 import logging
+import os
 import re
+import shutil
+import subprocess
 import sys
 
 PAGE_RE = re.compile(rb"^%%Page:\s+(\S+)\s+(-?\d+)\s*$")
@@ -139,25 +149,42 @@ ADDITIVE_SETUP = b"""\
 # module docstring).  It reencodes the 13 core PostScript fonts -- exactly the
 # resident set the LGP2 driver's make-builtin-lgp2-font can emit -- by (a)
 # remapping code 141 (stray #\Return) to /space, matching the empty .notdef of
-# Genera's downloaded bitmap fonts, and (b) for /Symbol only, restoring the two
-# glyphs the modern Symbol lost at their old Type-1 code points: 183 -> /bullet
-# and 190 -> /arrowhorizex.  Each patched code is emitted by the driver as an
+# Genera's downloaded bitmap fonts, and (b) for /Symbol only, reinstalling the
+# classic Type-1 SymbolEncoding upper half (0o241-0o376: /arrowright, /bullet,
+# /lozenge, ...) by glyph name, which the modern Symbol carries but no longer at
+# those code points.  Each patched code is emitted by the driver as an
 # isolated run with its own moveto, so a changed advance width is never visible,
-# and ASCII text (batched via the "s" operator) is untouched.  Must land before
-# /IntFonts (whose findfonts must get the patched fonts) and before the initial
-# `save` (NextPage does restore/save between pages, which would otherwise roll
-# the patch back on page 2+); injecting right before the /IntFonts line does both.
+# and ASCII text (batched via the "s" operator) is untouched.  Must land below
+# the job's BASE save -- the first `save lgp2-getmatrix`, at the end of the
+# prolog -- not merely before /IntFonts: between font runs the driver does
+# `restore restore save`, unwinding to VM level 0, which would roll back a
+# patch made above it, so every run after the first got the host fonts again.
 PATCH_MARKER = b"psrPatchFont"
 PATCH_SNIPPET = b"""\
-%%BeginProcSet: psfix-font-encoding 1.1
+%%BeginProcSet: psfix-font-encoding 1.2
 % linux-vlm psfix reencodes the 13 core fonts to fix two Genera-vs-modern
 % mismatches: (a) #\\Return (code 141 = 0o215), stranded before @end and imaged
 % as a .notdef box by the resident fonts, is remapped to /space (blank) to match
-% Genera's bitmap fonts' empty .notdef; (b) /Symbol reaches /bullet and
-% /arrowhorizex by the old Type-1 code points 183 (0o267) and 190 (0o276), which
-% the modern (TrueType) Symbol lacks there -- so Distiller drops them -- and we
-% restore them by glyph name.
+% Genera's bitmap fonts' empty .notdef; (b) /Symbol reaches its upper half
+% (/arrowright 0o256, /bullet 0o267, /lozenge 0o340, ...) by the old Type-1
+% SymbolEncoding code points, which the modern (TrueType) Symbol no longer
+% maps -- so Distiller images a box or drops them -- and we reinstall that
+% upper half (0o241-0o376) by glyph name.
 /psrBlankCode 141 def
+/psrSymbolHigh [                      % classic SymbolEncoding, 0o241-0o376
+  /Upsilon1 /minute /lessequal /fraction /infinity /florin /club
+  /diamond /heart /spade /arrowboth /arrowleft /arrowup /arrowright /arrowdown
+  /degree /plusminus /second /greaterequal /multiply /proportional /partialdiff /bullet
+  /divide /notequal /equivalence /approxequal /ellipsis /arrowvertex /arrowhorizex /carriagereturn
+  /aleph /Ifraktur /Rfraktur /weierstrass /circlemultiply /circleplus /emptyset /intersection
+  /union /propersuperset /reflexsuperset /notsubset /propersubset /reflexsubset /element /notelement
+  /angle /gradient /registerserif /copyrightserif /trademarkserif /product /radical /dotmath
+  /logicalnot /logicaland /logicalor /arrowdblboth /arrowdblleft /arrowdblup /arrowdblright /arrowdbldown
+  /lozenge /angleleft /registersans /copyrightsans /trademarksans /summation /parenlefttp /parenleftex
+  /parenleftbt /bracketlefttp /bracketleftex /bracketleftbt /bracelefttp /braceleftmid /braceleftbt /braceex
+  /.notdef /angleright /integral /integraltp /integralex /integralbt /parenrighttp /parenrightex
+  /parenrightbt /bracketrighttp /bracketrightex /bracketrightbt /bracerighttp /bracerightmid /bracerightbt
+] def
 /psrPatchFont {                       % /FontName  ->  -
   dup findfont
   dup length dict begin               % copy the font dict, skipping /FID
@@ -165,8 +192,7 @@ PATCH_SNIPPET = b"""\
     /Encoding Encoding 256 array copy def
     Encoding psrBlankCode /space put
     dup /Symbol eq {                  % restore glyphs the modern Symbol hides
-      Encoding 183 /bullet put         % old Type-1 SymbolEncoding 0o267
-      Encoding 190 /arrowhorizex put   % old Type-1 SymbolEncoding 0o276
+      Encoding 161 psrSymbolHigh putinterval   % 0o241 = 161
     } if
     currentdict
   end
@@ -179,7 +205,71 @@ PATCH_SNIPPET = b"""\
 %%EndProcSet
 """
 
+# Type 1 stand-ins for /Symbol, tried in order (font path dirs, then
+# kpsewhich): URW's Standard Symbols, as shipped by Ghostscript and TeX Live.
+SYMBOL_FONT_FILES = ["StandardSymbolsPS.t1", "StandardSymbolsPS.pfb",
+                     "s050000l.pfb", "usyr.pfb"]
+SYMBOL_FONT_DIRS = ["/opt/pkg/share/fonts", "/opt/pkg/share/ghostscript",
+                    "~/Library/Fonts", "/Library/Fonts"]
+
 log = logging.getLogger("psfix")
+
+
+def find_symbol_font(names=SYMBOL_FONT_FILES, dirs=SYMBOL_FONT_DIRS):
+    """Path of the first Type 1 Symbol substitute found, or None."""
+    wanted = {n.lower() for n in names}
+    for d in dirs:
+        for root, _, files in os.walk(os.path.expanduser(d)):
+            for f in files:
+                if f.lower() in wanted:
+                    return os.path.join(root, f)
+    kpse = shutil.which("kpsewhich")
+    if kpse:
+        for n in names:
+            r = subprocess.run([kpse, n], capture_output=True)
+            path = r.stdout.decode().strip()
+            if r.returncode == 0 and path:
+                return path
+    return None
+
+
+def type1_pfa(path):
+    """(FontName, PFA text) of a Type 1 font file, PFB or PFA."""
+    raw = open(path, "rb").read()
+    if raw[:1] == b"\x80":                # PFB: 0x80 kind len32le data ...
+        out, pos = [], 0
+        while pos + 1 < len(raw) and raw[pos] == 0x80 and raw[pos + 1] != 3:
+            kind = raw[pos + 1]
+            n = int.from_bytes(raw[pos + 2:pos + 6], "little")
+            seg = raw[pos + 6:pos + 6 + n]
+            if kind == 2:
+                hx = seg.hex()
+                seg = b"\n".join(hx[i:i + 64].encode()
+                                 for i in range(0, len(hx), 64)) + b"\n"
+            else:
+                seg = seg.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+            out.append(seg)
+            pos += 6 + n
+        raw = b"".join(out)
+    m = re.search(rb"/FontName\s*/(\S+)", raw)
+    if not m:
+        raise ValueError("%s: no /FontName" % path)
+    return m.group(1), raw.rstrip() + b"\n"
+
+
+def symbol_resource(path):
+    """Prolog text embedding the Type 1 at path and registering it as /Symbol.
+
+    The font keeps its own FontName (so the PDF names it honestly); only the
+    FontDirectory key the job's `/Symbol findfont` looks up is redirected.
+    """
+    name, pfa = type1_pfa(path)
+    return (b"%%%%BeginResource: font %s\n%s%%%%EndResource\n"
+            b"%% linux-vlm psfix: the job's /Symbol is this Type 1, not the\n"
+            b"%% host's TrueType Symbol, whose glyphs Distiller cannot name.\n"
+            b"/Symbol /%s findfont dup length dict begin\n"
+            b"  { 1 index /FID ne { def } { pop pop } ifelse } forall\n"
+            b"  currentdict end definefont pop\n" % (name, pfa, name))
 
 
 def split_lines(data):
@@ -328,23 +418,33 @@ def restructure(data):
     return out, True
 
 
-def patch_fonts(data):
+def patch_fonts(data, symbol=b""):
     """Return (output_bytes, patched_bool).
 
-    Inject PATCH_SNIPPET immediately before the first /IntFonts line so the core
-    fonts get the reencoding (blank 141; restore Symbol 183/190).  No-op
-    (unchanged) if the patch is already present or the input has no /IntFonts
-    prolog (not a Genera LGP2 job).
+    Inject symbol (the Type 1 /Symbol resource, if any) and PATCH_SNIPPET
+    immediately before the job's base save (the first `save lgp2-getmatrix`,
+    which precedes the first /IntFonts) so the core fonts get the reencoding
+    (blank 141; restore the Symbol upper half) at VM level 0, where the
+    driver's per-run `restore restore` cannot undo it.  No-op (unchanged) if
+    the patch is already present or the input has no /IntFonts prolog (not a
+    Genera LGP2 job).
     """
     if PATCH_MARKER in data:
         return data, False  # already patched -- idempotent
     lines = split_lines(data)
     for i, line in enumerate(lines):
+        if line.strip() == SAVE_LGP2:
+            break
         if INTFONTS_RE.match(line):
-            lines.insert(i, PATCH_SNIPPET)
-            return b"".join(lines), True
-    log.warning("no /IntFonts prolog found -- skipping font patch")
-    return data, False
+            log.warning("/IntFonts precedes the base save -- skipping font "
+                        "patch")
+            return data, False
+    else:
+        log.warning("no base `save lgp2-getmatrix` found -- skipping font "
+                    "patch")
+        return data, False
+    lines.insert(i, symbol + PATCH_SNIPPET)
+    return b"".join(lines), True
 
 
 def main(argv=None):
@@ -361,7 +461,15 @@ def main(argv=None):
     p.add_argument("--no-patch-fonts", dest="patch_fonts", action="store_false",
                    default=True,
                    help="do not repair font encodings (blank code 141, restore "
-                        "Symbol 183/190)")
+                        "the Symbol upper half)")
+    p.add_argument("--symbol-font", metavar="FILE",
+                   help="Type 1 font (.pfb/.pfa/.t1) to embed as /Symbol "
+                        "(default: the first of %s found in %s or by "
+                        "kpsewhich)" % (", ".join(SYMBOL_FONT_FILES),
+                                        ", ".join(SYMBOL_FONT_DIRS)))
+    p.add_argument("--no-symbol-font", dest="embed_symbol",
+                   action="store_false", default=True,
+                   help="keep the host's /Symbol (reencode it only)")
     args = p.parse_args(argv)
 
     logging.basicConfig(
@@ -374,7 +482,17 @@ def main(argv=None):
         data, reordered = restructure(data)
     patched = False
     if args.patch_fonts:
-        data, patched = patch_fonts(data)
+        symbol = b""
+        if args.embed_symbol:
+            path = args.symbol_font or find_symbol_font()
+            if path:
+                log.info("embedding %s as /Symbol", path)
+                symbol = symbol_resource(path)
+            else:
+                log.warning("no Type 1 Symbol found (%s) -- arrows, lozenge "
+                            "etc. may still print as boxes",
+                            ", ".join(SYMBOL_FONT_FILES))
+        data, patched = patch_fonts(data, symbol)
     log.info("pages %s, fonts %s (%d bytes)",
              "reordered" if reordered else "unchanged",
              "patched" if patched else "unchanged", len(data))

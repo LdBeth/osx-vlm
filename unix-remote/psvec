@@ -1,0 +1,1082 @@
+#!/usr/bin/env python3
+"""psvec -- give Genera hardcopy bitmap fonts real outlines.
+
+Open Genera's LGP2 hardcopy driver downloads every non-resident font -- the
+native Symbolics document fonts (LWCENTURYSCHOOLBOOK105, LWFIX10, CPTFONT9,
+...) and TeX PK fonts (PK-300-CMR10, ...) alike -- as a 300-dpi Type 3 bitmap
+font:
+
+    /FONT BSEncoding SetupBitmapFont
+    /FONT CurrentlyDefiningInFont
+    [/name w h leftkern bottom widthx widthy] DefineBitmapChar
+    <h*w/8 bytes of hex, read from currentfile by readhexstring>
+    ...
+    /FONT FinishFont
+
+and BuildBitmapChar1 images each glyph with imagemask, so anything distilled
+from the job is jagged when zoomed.  psvec rewrites each glyph record in one
+of four ways, keeping the Type 3 font machinery, encodings, the driver's
+advance widths and all page content untouched:
+
+1. Substitution -- when the bitmap font is a well-known face with a libre
+   Type 1 equivalent on this host, the glyph is drawn from that font:
+
+       [/name w h leftkern bottom widthx widthy] dx /glyph /psvecF0 DefineSubstChar
+
+   psvecF0 is the Type 1 font (embedded into the job) scaled to the bitmap
+   font's pixel em.  The glyph keeps the bitmap's advance width; dx shifts it
+   so its left side bearing meets the bitmap's leftmost ink (Genera's
+   LaserWriter bitmaps are hand-spaced, so the two can differ by pixels).  Known faces:
+     * LWCENTURYSCHOOLBOOK<size>[B|I|BI] -- Genera's LaserWriter-Plus New
+       Century Schoolbook (SYS:FONTS;NLGP2;) -> URW's metric-compatible clone:
+       C059 (urw-base35), Century Schoolbook L (pkgsrc ghostscript-fonts,
+       TeX Live ncntrsbk) or TeX Gyre Schola, whichever is installed.
+     * PK-<dpi>-<NAME> -- TeX PK fonts -> NAME.pfb found by kpsewhich (the
+       AMS Type 1 Computer Modern ships with every TeX Live).  Characters are
+       matched by code (the BSEncoding index the driver used), not by name.
+   A font is substituted only if its advance widths agree with the bitmaps'
+   (catches a wrong file or design size); a glyph the Type 1 font lacks falls
+   back to tracing.
+
+2. Pixel outlines -- an enlarged screen font (CPTFONT9 is the console font
+   at 3x) keeps its exact pixels, as one path of rectangles:
+
+       [/name w h leftkern bottom widthx widthy] { ...path... } DefineOutlineChar
+
+3. Drawn strokes -- a font with a hand-drawn stroke table, fonts/<font>.pen
+   (LWFIX10, a near-monoline font, redrawn in MetaPost in fonts/lwfix10.mp
+   with round and elliptical pens), is stroked from that table:
+
+       [/name w h leftkern bottom widthx widthy] { ...strokes... } DefineDrawnChar
+
+4. Tracing -- everything else is traced into Bezier outlines with potrace
+   (pkgsrc graphics/potrace), emitted as DefineOutlineChar.
+
+An injected procset (before the first save, so NextPage's restore never rolls
+it back) defines the operators and a BuildBitmapChar1 that dispatches on the
+glyph's kind, falling back to the driver's imagemask for untouched rasters.
+
+Glyph geometry (from the driver prolog): BuildBitmapChar1 images with the
+matrix `leftkern bottom neg translate` and no y flip, so the hex rows are
+stored BOTTOM-UP -- row r covers user y in [bottom+r, bottom+r+1] and column c
+covers x in [c-leftkern, c-leftkern+1], in pixel units (the font's FontMatrix
+is 72/300).  Rows are padded to w bits.
+
+The driver tears fonts down and re-downloads them run by run, so the same
+glyph recurs; each distinct bitmap is traced once, all in a single potrace
+process (its ps backend writes one page per image of a multi-image PBM).
+
+Chainable with psfix, in either order:
+
+    psfix < ~/genera-spool/genera-....ps | psvec > job.ps
+"""
+
+import argparse
+import collections
+import logging
+import math
+import os
+import re
+import shutil
+import statistics
+import subprocess
+import sys
+
+DEFINE_RE = re.compile(
+    rb"^\[(/\S+)((?:\s+-?\d+){6})\]\s+DefineBitmapChar\s*$")
+SETUP_RE = re.compile(rb"^/(\S+)\s+(\S+)\s+SetupBitmapFont\s*$")
+CURFONT_RE = re.compile(rb"^/(\S+)\s+CurrentlyDefiningInFont\s*$")
+BUILD1_RE = re.compile(rb"^/BuildBitmapChar1\s*\{")
+SAVE_RE = re.compile(rb"^\s*save\b")
+HEX_DIGITS = frozenset(b"0123456789abcdefABCDEF")
+WHITE = frozenset(b" \t\r\n\f")
+
+MARKER = b"psvec-outline-fonts"
+# Path operators for the outline procs.  Short, because a TeX job carries
+# thousands of glyphs; prefixed so they cannot collide with the driver's own
+# one-letter names (m x y s f r l Z P F ...).
+PROCSET = b"""\
+%%BeginProcSet: psvec-outline-fonts 3.1
+% linux-vlm psvec: DefineOutlineChar / DefineDrawnChar / DefineSubstChar are
+% DefineBitmapChar with, in place of the hex raster, an outline to fill /
+% hand-drawn strokes of a round or elliptical pen / a glyph of a substitute Type 1 font.
+% BuildBitmapChar1 draws whichever the glyph has, at the driver's own advance
+% width, and otherwise images the bitmap exactly as the driver does.  Coordinates are glyph-space pixels (the bitmap
+% font's 72/300 FontMatrix).
+/qm /moveto load def
+/ql /lineto load def
+/qc /curveto load def
+/qz /closepath load def
+/qe {                                 % ratio  ->  -   stroke with the pen
+	gsave 1 exch scale stroke grestore newpath } def   % squashed to ratio
+/psvecChar {                          % [/name w h lk bot wx wy] chardict  ->  -
+	$workingdict begin
+	/chardict xdef
+	chardict begin
+	  aload pop
+	  [/widthy /widthx /bottom /leftkern /rasterheight /rasterwidth /charcode]
+	     {xdef} forall
+	  /bytes 0 string def
+	  end
+	CurrentlyDefiningFont /chardefs get chardict /charcode get chardict put
+	CurrentlyDefiningFont /FontBBox get /bbox xdef
+	chardict begin
+	  bbox 0 bbox 0 get leftkern neg min put
+	  bbox 1 bbox 1 get bottom min put
+	  bbox 2 bbox 2 get rasterwidth leftkern sub max put
+	  bbox 3 bbox 3 get bottom rasterheight add max put
+	  end
+	end } def
+/DefineOutlineChar {                  % [hdr] {path}  ->  -
+	12 dict dup /outline 4 -1 roll put psvecChar } def
+/DefineDrawnChar {                    % [hdr] {strokes}  ->  -
+	12 dict dup /draw 4 -1 roll put psvecChar } def
+/DefineSubstChar {                    % [hdr] dx /glyph /fontkey  ->  -
+	12 dict dup /sfont 4 -1 roll put
+	dup /glyph 4 -1 roll put
+	dup /dx 4 -1 roll put psvecChar } def
+/BuildBitmapChar1 {
+	begin
+	currentdict /glyph known
+	{ widthx widthy setcharwidth
+	  sfont load setfont dx 0 moveto glyph glyphshow }
+	{ currentdict /draw known currentdict /outline known or
+	  { % drawn glyph: cache box 2 px wider than the raster, for round caps
+	    widthx widthy
+	       leftkern neg 2 sub bottom 2 sub
+	       rasterwidth leftkern sub 2 add bottom rasterheight add 2 add
+	       setcachedevice
+	    currentdict /draw known
+	    { 1 setlinecap 1 setlinejoin newpath draw }
+	    { newpath outline fill }
+	    ifelse }
+	  { widthx widthy
+	       leftkern neg bottom
+	       rasterwidth leftkern sub bottom rasterheight add
+	       setcachedevice
+	    rasterwidth rasterheight mul 0 ne
+	    { rasterwidth rasterheight true
+	       leftkern bottom neg BuildBitmapCharTempMatrix translate
+	       {bytes} imagemask
+	      } if }
+	  ifelse }
+	ifelse
+	end } def
+%%EndProcSet
+"""
+
+# Libre Type 1 equivalents of Genera's downloadable LaserWriter fonts, by
+# face code, in order of preference: URW base35 2017 (C059), the older URW
+# release as shipped by pkgsrc ghostscript-fonts and TeX Live ncntrsbk
+# (Century Schoolbook L, two file-naming schemes), then TeX Gyre Schola.
+LW_FAMILIES = {
+    b"LWCENTURYSCHOOLBOOK": {
+        b"": ["C059-Roman.t1", "C059-Roman.pfb", "c059013l.pfb",
+              "uncr8a.pfb", "qcsr.pfb"],
+        b"B": ["C059-Bold.t1", "C059-Bold.pfb", "c059016l.pfb",
+               "uncb8a.pfb", "qcsb.pfb"],
+        b"I": ["C059-Italic.t1", "C059-Italic.pfb", "c059033l.pfb",
+               "uncri8a.pfb", "qcsri.pfb"],
+        b"BI": ["C059-BdIta.t1", "C059-BdIta.pfb", "c059036l.pfb",
+                "uncbi8a.pfb", "qcsbi.pfb"],
+    },
+}
+LW_RE = re.compile(rb"^(LW[A-Z]+?)(\d+)(B|I|BI)?$")
+PK_RE = re.compile(rb"^PK-(\d+)-([A-Z0-9]+?)$")
+DEFAULT_FONT_DIRS = ["/opt/pkg/share/fonts", "/opt/pkg/share/ghostscript",
+                     "~/Library/Fonts", "/Library/Fonts"]
+
+log = logging.getLogger("psvec")
+
+
+class Bail(Exception):
+    """Input does not have the expected shape; pass it through unchanged."""
+
+
+# --------------------------------------------------------------------------
+# Parsing the job
+
+def parse_records(lines):
+    """Yield (start, end, font, name, nums, rest, raster) per DefineBitmapChar.
+
+    lines[start] is the header; the hex occupies lines[start+1:end], except
+    that `rest` holds whatever followed the last hex digit on lines[end-1]
+    (normally just its newline).  font is the CurrentlyDefiningInFont in
+    effect; raster is the decoded bytes.  Records with an empty raster
+    (spaces) are not yielded.
+    """
+    i = 0
+    n = len(lines)
+    font = None
+    while i < n:
+        m = DEFINE_RE.match(lines[i])
+        if not m:
+            c = CURFONT_RE.match(lines[i])
+            if c:
+                font = c.group(1)
+            i += 1
+            continue
+        nums = [int(t) for t in m.group(2).split()]
+        w, h = nums[0], nums[1]
+        need = 2 * (w * h // 8)
+        if need == 0:
+            i += 1
+            continue
+        if w % 8:
+            raise Bail("glyph %s: raster width %d not a multiple of 8"
+                       % (m.group(1).decode("latin-1"), w))
+        digits = bytearray()
+        j = i + 1
+        rest = b""
+        while len(digits) < need:
+            if j >= n:
+                raise Bail("hex for %s runs off the end of the job"
+                           % m.group(1).decode("latin-1"))
+            line = lines[j]
+            for k, c in enumerate(line):
+                if c in HEX_DIGITS:
+                    digits.append(c)
+                    if len(digits) == need:
+                        rest = line[k + 1:]
+                        break
+                elif c not in WHITE:
+                    raise Bail("non-hex byte %r in raster of %s"
+                               % (bytes([c]), m.group(1).decode("latin-1")))
+            j += 1
+        yield (i, j, font, m.group(1), nums, rest,
+               bytes.fromhex(digits.decode()))
+        i = j
+
+
+def job_encodings(data, lines):
+    """{font: [glyph names by code]} from SetupBitmapFont and its array."""
+    arrays = {}
+    out = {}
+    for line in lines:
+        m = SETUP_RE.match(line)
+        if not m:
+            continue
+        enc = m.group(2).lstrip(b"/")
+        if enc not in arrays:
+            a = re.search(rb"/" + re.escape(enc) + rb"\s*\[(.*?)\]\s*def",
+                          data, re.S)
+            arrays[enc] = a and re.findall(rb"/([^\s/\[\]]+)", a.group(1))
+        out[m.group(1)] = arrays[enc]
+    return out
+
+
+# --------------------------------------------------------------------------
+# Type 1 fonts
+
+def eexec_decrypt(data, r):
+    out = bytearray(len(data))
+    for i, c in enumerate(data):
+        out[i] = c ^ (r >> 8)
+        r = ((c + r) * 52845 + 22719) & 0xFFFF
+    return bytes(out)
+
+
+def charstring_metrics(cs):
+    """(left side bearing, advance width) from a decrypted charstring."""
+    nums = []
+    i = 0
+    while i < len(cs):
+        v = cs[i]
+        if v >= 32:
+            if v <= 246:
+                nums.append(v - 139)
+                i += 1
+            elif v <= 250:
+                nums.append((v - 247) * 256 + cs[i + 1] + 108)
+                i += 2
+            elif v <= 254:
+                nums.append(-(v - 251) * 256 - cs[i + 1] - 108)
+                i += 2
+            else:
+                nums.append(int.from_bytes(cs[i + 1:i + 5], "big", signed=True))
+                i += 5
+        elif v == 13:                         # hsbw: sbx wx
+            return nums[0], nums[1]
+        elif v == 12 and cs[i + 1] == 7:      # sbw: sbx sby wx wy
+            return nums[0], nums[2]
+        else:
+            return None
+    return None
+
+
+class Type1:
+    """Just enough of a Type 1 font: name, matrix, encoding, glyph widths."""
+
+    def __init__(self, path):
+        self.path = path
+        raw = open(path, "rb").read()
+        if raw[:1] == b"\x80":                # PFB: segments
+            clear, binary, trailer = [], [], []
+            pos = 0
+            while pos < len(raw) and raw[pos] == 0x80 and raw[pos + 1] != 3:
+                kind = raw[pos + 1]
+                n = int.from_bytes(raw[pos + 2:pos + 6], "little")
+                seg = raw[pos + 6:pos + 6 + n]
+                (binary if kind == 2 else trailer if binary else clear).append(seg)
+                pos += 6 + n
+            self.clear = b"".join(clear)
+            self.binary = b"".join(binary)
+            self.trailer = b"".join(trailer)
+        else:                                 # PFA: hex after eexec
+            k = raw.index(b"eexec") + len(b"eexec")
+            while raw[k:k + 1] in (b"\r", b"\n", b" ", b"\t"):
+                k += 1
+            self.clear = raw[:k]
+            z = raw.find(b"0000000000", k)
+            hexpart = raw[k:z if z >= 0 else len(raw)]
+            self.binary = bytes.fromhex(
+                bytes(c for c in hexpart if c in HEX_DIGITS).decode())
+            self.trailer = raw[z:] if z >= 0 else b""
+        m = re.search(rb"/FontName\s*/(\S+)", self.clear)
+        self.name = m.group(1)
+        m = re.search(rb"/FontMatrix\s*[\[{]([^\]}]*)[\]}]", self.clear)
+        self.units = 1 / float(m.group(1).split()[0]) if m else 1000.0
+        self.encoding = {}
+        for code, gname in re.findall(rb"dup\s+(\d+)\s*/(\S+)\s+put",
+                                      self.clear):
+            self.encoding[int(code)] = gname
+        # {glyph: (left side bearing, advance width)}, font units
+        self.metrics = self._widths(eexec_decrypt(self.binary, 55665)[4:])
+
+    @staticmethod
+    def _widths(private):
+        m = re.search(rb"/lenIV\s+(\d+)", private)
+        leniv = int(m.group(1)) if m else 4
+        pos = private.find(b"/CharStrings")
+        if pos < 0:
+            return {}
+        entry = re.compile(rb"/([^\s/]+)\s+(\d+)\s+(?:RD|-\|)\s")
+        widths = {}
+        while True:
+            m = entry.search(private, pos)
+            if not m:
+                break
+            n = int(m.group(2))
+            cs = eexec_decrypt(private[m.end():m.end() + n], 4330)[leniv:]
+            widths[m.group(1)] = charstring_metrics(cs)
+            pos = m.end() + n
+        return widths
+
+    def pfa(self):
+        """The font program as PFA text, for embedding in the job."""
+        hx = self.binary.hex()
+        body = b"\n".join(hx[i:i + 64].encode()
+                          for i in range(0, len(hx), 64))
+        clear = self.clear.rstrip() + b"\n"
+        trailer = self.trailer.replace(b"\r", b"\n")
+        return clear + body + b"\n" + trailer.strip() + b"\n"
+
+
+class FontFinder:
+    def __init__(self, dirs):
+        self.dirs = [os.path.expanduser(d) for d in dirs]
+        self._index = None
+
+    def _walk(self):
+        if self._index is None:
+            self._index = {}
+            for d in self.dirs:
+                for root, _, files in os.walk(d):
+                    for f in files:
+                        self._index.setdefault(f.lower(), os.path.join(root, f))
+        return self._index
+
+    def find(self, names):
+        """First existing file among names (font path dirs, then kpsewhich)."""
+        idx = self._walk()
+        for n in names:
+            if n.lower() in idx:
+                return idx[n.lower()]
+        kpse = shutil.which("kpsewhich")
+        if kpse:
+            for n in names:
+                r = subprocess.run([kpse, n], capture_output=True)
+                path = r.stdout.decode().strip()
+                if r.returncode == 0 and path:
+                    return path
+        return None
+
+
+# --------------------------------------------------------------------------
+# Choosing substitutes
+
+class Subst:
+    """A substitute for one bitmap font: Type 1 font + pixel em + glyph map."""
+
+    def __init__(self, t1, em, by_code, encoding):
+        self.t1 = t1
+        self.em = em
+        self.by_code = by_code        # PK fonts: match by character code
+        self.encoding = encoding      # the job's encoding for this font
+        self.key = None
+
+    def shift(self, g, nums, raster):
+        """x offset putting Type 1 glyph g where the bitmap drew it.
+
+        Zero unless the bitmap was re-spaced: TeX PK fonts share their
+        origin with the Type 1 outlines by construction, and a glyph whose
+        advance matches is taken to share it too.  Otherwise its left side
+        bearing is moved onto the bitmap's leftmost ink.
+        """
+        lsb, adv = self.t1.metrics[g]
+        scale = self.em / self.t1.units
+        if self.by_code or abs(adv * scale - nums[4]) <= 1:
+            return 0
+        dx = ink_left(nums, raster) - lsb * scale
+        return dx if abs(dx) >= 1 else 0
+
+    def glyph(self, name):
+        """Type 1 glyph name for the job's glyph name, or None."""
+        if self.by_code:
+            if not self.encoding or name not in self.encoding:
+                return None
+            g = self.t1.encoding.get(self.encoding.index(name))
+        else:
+            g = name
+        return g if g and g != b".notdef" and self.t1.metrics.get(g) else None
+
+
+def plan_substitute(font, encoding, finder):
+    """(Type1, nominal pixel em, by_code) for a well-known font, else None."""
+    m = LW_RE.match(font)
+    if m and m.group(1) in LW_FAMILIES:
+        files = LW_FAMILIES[m.group(1)].get(m.group(3) or b"")
+        size = int(m.group(2))
+        # Genera writes the point size without its decimal point (105 = 10.5).
+        pt = size / 10 if size >= 50 else size
+        path = files and finder.find(files)
+        if not path:
+            log.info("%s: no libre equivalent installed (looked for %s)",
+                     font.decode(), ", ".join(files or []))
+            return None
+        return Type1(path), pt * 300 / 72, False
+    m = PK_RE.match(font)
+    if m:
+        dpi, name = int(m.group(1)), m.group(2).decode().lower()
+        path = finder.find([name + ".pfb"])
+        if not path:
+            log.info("%s: %s.pfb not found", font.decode(), name)
+            return None
+        ds = re.search(r"(\d+)$", name)
+        return Type1(path), (int(ds.group(1)) if ds else 0) * dpi / 72, True
+    return None
+
+
+def choose_substitutes(records, encodings, finder):
+    """{font: Subst} for fonts whose Type 1 widths match the bitmaps'."""
+    by_font = {}
+    for rec in records:
+        by_font.setdefault(rec[2], []).append(rec)
+    out = {}
+    for font, recs in by_font.items():
+        if font is None:
+            continue
+        planned = plan_substitute(font, encodings.get(font), finder)
+        if not planned:
+            continue
+        t1, em, by_code = planned
+        sub = Subst(t1, em, by_code, encodings.get(font))
+        # One pair per glyph: the driver re-downloads common glyphs run
+        # after run, and those repeats must not outvote the rest.
+        widths = {}
+        for rec in recs:
+            g = sub.glyph(rec[3].lstrip(b"/"))
+            if g and t1.metrics[g][1]:
+                widths[g] = (rec[4][4], t1.metrics[g][1])
+        pairs = list(widths.values())
+        if not pairs:
+            log.warning("%s: %s has none of its glyphs -- tracing",
+                        font.decode(), t1.name.decode())
+            continue
+        # The em comes from the size in the name (or, lacking one, from the
+        # widths); the widths only vet it.  A wrong file or design size is
+        # 10% or more off; Genera's hand spacing moves the median ~2%.
+        fit = statistics.median(wx * t1.units / w for wx, w in pairs)
+        if em and abs(fit - em) / em > 0.05:
+            log.warning("%s: widths say %.2f px/em, name says %.2f -- tracing",
+                        font.decode(), fit, em)
+            continue
+        sub.em = em or fit
+        # Individual widths may still differ: Genera's LaserWriter bitmaps
+        # are hand-spaced (proportional digits, wider quotes), so each glyph
+        # keeps the bitmap's advance and is shifted onto the bitmap's ink.
+        off = sum(abs(w * sub.em / t1.units - wx) > max(1.0, 0.03 * wx)
+                  for wx, w in pairs)
+        if off:
+            log.info("%s: %d of %d glyphs are spaced differently from %s",
+                     font.decode(), off, len(pairs), t1.name.decode())
+        log.info("%s -> %s (%s) at %.2f px/em", font.decode(),
+                 t1.name.decode(), t1.path, sub.em)
+        out[font] = sub
+    return out
+
+
+# --------------------------------------------------------------------------
+# Tracing
+
+def to_pbm(w, h, raster):
+    """PBM (P4) of a bottom-up raster: PBM rows run top-down."""
+    stride = w // 8
+    rows = [raster[r * stride:(r + 1) * stride] for r in range(h)]
+    return b"P4\n%d %d\n" % (w, h) + b"".join(reversed(rows))
+
+
+def trace(potrace, bitmaps, opts):
+    """Trace [(w, h, raster)] -> [[subpath]] via one potrace run.
+
+    A subpath is [(x0, y0), seg, ...] with seg ('l', x, y) or
+    ('c', x1, y1, x2, y2, x3, y3), absolute, in pixels, y up from the
+    bottom-left corner of the image -- i.e. hex row 0 is y in [0, 1].
+    """
+    if not bitmaps:
+        return []
+    if not potrace:
+        raise RuntimeError("%d glyphs need tracing but potrace is not found "
+                           "-- install it (pkgin install potrace) or pass "
+                           "--potrace" % len(bitmaps))
+    pbm = b"".join(to_pbm(w, h, r) for w, h, r in bitmaps)
+    cmd = [potrace, "-b", "ps", "--cleartext", "-q", "-r", "72",
+           "-u", "100", "-t", str(opts.turdsize),
+           "-a", str(opts.alphamax), "-O", str(opts.opttolerance),
+           "-o", "-", "-"]
+    log.debug("running %s", " ".join(cmd))
+    proc = subprocess.run(cmd, input=pbm, capture_output=True)
+    if proc.returncode != 0:
+        raise RuntimeError("potrace failed: %s"
+                           % proc.stderr.decode("latin-1").strip())
+    glyphs = parse_potrace_ps(proc.stdout)
+    if len(glyphs) != len(bitmaps):
+        raise RuntimeError("potrace returned %d pages for %d glyphs"
+                           % (len(glyphs), len(bitmaps)))
+    return glyphs
+
+
+def parse_potrace_ps(out):
+    """Split potrace's multi-page cleartext PostScript into per-page paths."""
+    pages = []
+    paths = []
+    sub = None
+    scale = 1.0
+    cx = cy = 0.0
+    stack = []
+    for line in out.decode("latin-1").splitlines():
+        if line.startswith("%"):
+            continue
+        for tok in line.split():
+            if tok[0] in "-.0123456789":
+                stack.append(float(tok))
+                continue
+            if tok == "scale":
+                scale = stack[-2]
+            elif tok == "moveto":
+                cx, cy = stack[-2] * scale, stack[-1] * scale
+                sub = [(cx, cy)]
+                paths.append(sub)
+            elif tok == "rlineto":
+                cx += stack[-2] * scale
+                cy += stack[-1] * scale
+                sub.append(("l", cx, cy))
+            elif tok == "lineto":
+                cx, cy = stack[-2] * scale, stack[-1] * scale
+                sub.append(("l", cx, cy))
+            elif tok in ("rcurveto", "curveto"):
+                v = [t * scale for t in stack[-6:]]
+                if tok == "rcurveto":
+                    v = [v[0] + cx, v[1] + cy, v[2] + cx, v[3] + cy,
+                         v[4] + cx, v[5] + cy]
+                cx, cy = v[4], v[5]
+                sub.append(("c",) + tuple(v))
+            elif tok == "showpage":
+                pages.append(paths)
+                paths = []
+            elif tok in ("save", "restore", "translate", "setgray",
+                         "closepath", "fill", "newpath"):
+                pass
+            else:
+                raise RuntimeError("unexpected potrace operator %r" % tok)
+            stack.clear()
+    return pages
+
+
+# --------------------------------------------------------------------------
+# Pixel fonts: exact pixel outlines instead of tracing
+
+def runs(bits):
+    """Lengths of the ink runs and of the gaps between them in a 0/1 list."""
+    out = []
+    i, n = 0, len(bits)
+    while i < n and not bits[i]:
+        i += 1
+    while i < n:
+        j = i
+        while j < n and bits[j] == bits[i]:
+            j += 1
+        if j < n or bits[i]:          # a trailing gap is margin, not design
+            out.append(j - i)
+        i = j
+    return out
+
+
+def bit_rows(w, h, raster):
+    stride = w // 8
+    return [[(raster[r * stride + (c >> 3)] >> (7 - (c & 7))) & 1
+             for c in range(w)] for r in range(h)]
+
+
+def glyph_scale(w, h, raster):
+    """GCD of the glyph's ink runs and interior gaps, across and down."""
+    k = 0
+    rows = bit_rows(w, h, raster)
+    for line in rows + [list(col) for col in zip(*rows)]:
+        for n in runs(line):
+            k = math.gcd(k, n)
+            if k == 1:
+                return 1
+    return k
+
+
+def pixel_scale(rasters):
+    """k when the font is drawn in k x k blocks (k >= 2), else 1.
+
+    A screen font enlarged for the printer (CPTFONT9 is the console font
+    at 3x) has every ink run and interior gap of nearly every glyph a
+    multiple of its enlargement -- a few, like CPTFONT9's rounded period,
+    were touched up by hand -- while a smoothed or hinted outline font has
+    1-pixel runs almost everywhere.  So: a 75% vote over at least 3 glyphs.
+    """
+    votes = collections.Counter(glyph_scale(*r) for r in rasters)
+    k, n = max(votes.items(), key=lambda kv: (kv[0] > 1, kv[1]))
+    total = sum(votes.values())
+    return k if k > 1 and n >= 3 and n >= 0.75 * total else 1
+
+
+def pixel_paths(w, h, raster):
+    """The bitmap's exact outline: one rectangle per maximal vertical stack
+    of identical row runs, all counterclockwise, so a nonzero fill of the
+    single path is the exact union (no seams between rectangles)."""
+    open_runs = {}                    # (x0, x1) -> starting row
+    rects = []
+    for r, line in enumerate(bit_rows(w, h, raster) + [[0] * w]):
+        here = set()
+        c = 0
+        while c < w:
+            if line[c]:
+                e = c
+                while e < w and line[e]:
+                    e += 1
+                here.add((c, e))
+                c = e
+            else:
+                c += 1
+        for span in list(open_runs):
+            if span not in here:
+                rects.append((span[0], open_runs.pop(span), span[1], r))
+        for span in here:
+            open_runs.setdefault(span, r)
+    return [[(x0, y0), ("l", x1, y0), ("l", x1, y1), ("l", x0, y1)]
+            for x0, y0, x1, y1 in sorted(rects, key=lambda t: (t[1], t[0]))]
+
+
+# --------------------------------------------------------------------------
+# Drawn fonts: hand-drawn pen strokes from fonts/<font>.pen
+#
+# A near-monoline font (LWFIX10) is redrawn in MetaPost as strokes of round
+# and elliptical pens (fonts/lwfix10.mp); `mpost` writes the
+# stroke table fonts/lwfix10.pen that this reads.  Coordinates are bitmap
+# pixels with the origin on the glyph's origin, so they need no shifting.
+
+DRAWN_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fonts")
+
+
+def load_drawn(path):
+    """{glyph name: (advance, [(pen width, pen height, closed, start,
+    [(c1, c2, p)])])}.  A stroke line is "S w open|closed" for a round pen,
+    "S w h open|closed" for an elliptical one."""
+    glyphs = {}
+    cur = stroke = None
+    for line in open(path):
+        f = line.split()
+        if not f:
+            continue
+        if f[0] == "G":
+            cur = glyphs[f[1].encode()] = (float(f[2]), [])
+        elif f[0] == "S":
+            w = float(f[1])
+            h = float(f[2]) if len(f) > 3 else w
+            stroke = (w, h, f[-1] == "closed", None, [])
+            cur[1].append(stroke)
+        elif f[0] == "E":
+            cur = stroke = None
+        else:
+            v = [float(t) for t in f]
+            if len(v) == 2:
+                cur[1][-1] = stroke = stroke[:3] + (tuple(v), stroke[4])
+            else:
+                stroke[4].append((tuple(v[0:2]), tuple(v[2:4]), tuple(v[4:6])))
+    return glyphs
+
+
+def drawn_font(font):
+    """The stroke table for a bitmap font, or None."""
+    path = os.path.join(DRAWN_DIR, font.decode().lower() + ".pen")
+    return load_drawn(path) if os.path.exists(path) else None
+
+
+def on_chord(a, c, b, tol=0.02):
+    """Is control point c on the segment a-b (a straight Bezier)?"""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    L = math.hypot(dx, dy)
+    if not L:
+        return math.hypot(c[0] - a[0], c[1] - a[1]) <= tol
+    t = ((c[0] - a[0]) * dx + (c[1] - a[1]) * dy) / (L * L)
+    return (-tol <= t <= 1 + tol
+            and abs(dy * (c[0] - a[0]) - dx * (c[1] - a[1])) / L <= tol)
+
+
+def drawn_proc(strokes, width=100):
+    """PostScript that strokes a drawn glyph.  A dot is a zero-length
+    segment, which the round cap paints as a disk.  An elliptical pen is the
+    round one stroked under a squashed CTM: the path is already built, so
+    only the pen changes shape."""
+    words = []
+    for w, h, closed, start, segs in strokes:
+        words.append("%s setlinewidth %s %s qm" % (fmt(w), fmt(start[0]),
+                                                    fmt(start[1])))
+        if not segs:
+            words.append("%s %s ql" % (fmt(start[0]), fmt(start[1])))
+        for c1, c2, pt in segs:
+            if on_chord(start, c1, pt) and on_chord(start, c2, pt):
+                words.append("%s %s ql" % (fmt(pt[0]), fmt(pt[1])))
+            else:
+                words.append("%s %s %s %s %s %s qc" % tuple(
+                    fmt(v) for v in c1 + c2 + pt))
+            start = pt
+        if closed:
+            words.append("qz")
+        words.append("stroke" if h == w else "%s qe" % fmt(h / w))
+    return wrap_words(words, width)
+
+
+# --------------------------------------------------------------------------
+# Self-check: rasterize the outline at pixel centres, compare to the bitmap
+
+def flatten(paths, steps=8):
+    """Line segments ((x0, y0), (x1, y1)) of the closed outline."""
+    segs = []
+    for sub in paths:
+        start = px, py = sub[0]
+        for seg in sub[1:]:
+            if seg[0] == "l":
+                pts = [seg[1:]]
+            else:
+                x1, y1, x2, y2, x3, y3 = seg[1:]
+                pts = []
+                for k in range(1, steps + 1):
+                    t = k / steps
+                    u = 1 - t
+                    pts.append((u**3 * px + 3*u*u*t * x1 + 3*u*t*t * x2 + t**3 * x3,
+                                u**3 * py + 3*u*u*t * y1 + 3*u*t*t * y2 + t**3 * y3))
+            for q in pts:
+                segs.append(((px, py), q))
+                px, py = q
+        if (px, py) != start:
+            segs.append(((px, py), start))
+    return segs
+
+
+def mismatch(w, h, raster, paths):
+    """(differing pixels, ink pixels) between the bitmap and its outline."""
+    segs = flatten(paths)
+    stride = w // 8
+    diff = ink = 0
+    for r in range(h):
+        y = r + 0.5
+        xs = []
+        for (x0, y0), (x1, y1) in segs:
+            if (y0 <= y) != (y1 <= y):
+                xs.append((x0 + (y - y0) * (x1 - x0) / (y1 - y0),
+                           1 if y1 > y0 else -1))
+        xs.sort()
+        row = raster[r * stride:(r + 1) * stride]
+        k = wind = 0
+        for c in range(w):
+            x = c + 0.5
+            while k < len(xs) and xs[k][0] <= x:
+                wind += xs[k][1]
+                k += 1
+            on = (row[c >> 3] >> (7 - (c & 7))) & 1
+            ink += on
+            diff += on != (wind != 0)
+    return diff, ink
+
+
+# --------------------------------------------------------------------------
+# Emitting
+
+def fmt(v):
+    s = "%.2f" % v
+    s = s.rstrip("0").rstrip(".")
+    return "0" if s in ("-0", "") else s
+
+
+def outline_proc(paths, dx, dy, width=100):
+    """PostScript procedure body for paths shifted by (dx, dy)."""
+    words = []
+    for sub in paths:
+        x, y = sub[0]
+        words.append("%s %s qm" % (fmt(x + dx), fmt(y + dy)))
+        for seg in sub[1:]:
+            if seg[0] == "l":
+                words.append("%s %s ql" % (fmt(seg[1] + dx), fmt(seg[2] + dy)))
+            else:
+                v = seg[1:]
+                words.append(" ".join(fmt(v[i] + (dx if i % 2 == 0 else dy))
+                                      for i in range(6)) + " qc")
+        words.append("qz")
+    return wrap_words(words, width)
+
+
+def wrap_words(words, width):
+    lines = []
+    cur = ""
+    for wd in words:
+        if cur and len(cur) + 1 + len(wd) > width:
+            lines.append(cur)
+            cur = wd
+        else:
+            cur = cur + " " + wd if cur else wd
+    if cur:
+        lines.append(cur)
+    return "\n".join(lines).encode("ascii")
+
+
+def ink_left(nums, raster):
+    """Glyph-space x of the bitmap's leftmost inked column."""
+    w, h, leftkern = nums[0], nums[1], nums[2]
+    stride = w // 8
+    for c in range(w):
+        bit = 0x80 >> (c & 7)
+        if any(raster[r * stride + (c >> 3)] & bit for r in range(h)):
+            return c - leftkern
+    return 0
+
+
+def font_resources(substs):
+    """Embedded Type 1 programs plus the scaled psvecF<n> font definitions."""
+    out = []
+    embedded = set()
+    for i, sub in enumerate(substs):
+        sub.key = b"psvecF%d" % i
+        if sub.t1.name not in embedded:
+            embedded.add(sub.t1.name)
+            out.append(b"%%%%BeginResource: font %s\n%s%%%%EndResource\n"
+                       % (sub.t1.name, sub.t1.pfa()))
+    for sub in substs:
+        out.append(b"/%s /%s findfont %s scalefont def\n"
+                   % (sub.key, sub.t1.name, fmt(sub.em).encode()))
+    return b"".join(out)
+
+
+def vectorize(data, potrace, finder, opts):
+    """Return (output_bytes, {method: glyph count})."""
+    if MARKER in data:
+        log.info("already vectorized -- passing through unchanged")
+        return data, {}
+    lines = data.splitlines(keepends=True)
+
+    records = list(parse_records(lines))
+    if not records:
+        log.warning("no DefineBitmapChar rasters -- passing through unchanged")
+        return data, {}
+
+    # The procset must follow the driver's BuildBitmapChar1 (it replaces it)
+    # and precede the first save, so NextPage's restore never rolls it back.
+    build1 = next((i for i, l in enumerate(lines) if BUILD1_RE.match(l)), None)
+    setup = next((i for i, l in enumerate(lines) if SETUP_RE.match(l)), None)
+    if build1 is None or setup is None or build1 > setup:
+        raise Bail("driver prolog (BuildBitmapChar1 before SetupBitmapFont) "
+                   "not found")
+    if records[0][0] < setup:
+        raise Bail("a DefineBitmapChar precedes the first SetupBitmapFont")
+    if any(SAVE_RE.match(l) for l in lines[:setup]):
+        raise Bail("a save precedes the first SetupBitmapFont")
+
+    substs = {}
+    if opts.substitute:
+        substs = choose_substitutes(records, job_encodings(data, lines), finder)
+
+    drawn = {}
+    if opts.drawn:
+        for font in {rec[2] for rec in records} - set(substs):
+            table = font and drawn_font(font)
+            if table:
+                log.info("%s: drawn from %s.pen", font.decode(),
+                         font.decode().lower())
+                drawn[font] = table
+
+    # Each record is drawn from its substitute font or its drawn font if
+    # that has the glyph, otherwise traced.
+    kinds = []
+    unique = {}
+    for rec in records:
+        sub = substs.get(rec[2])
+        g = sub and sub.glyph(rec[3].lstrip(b"/"))
+        strokes = drawn.get(rec[2], {}).get(rec[3].lstrip(b"/"))
+        if g:
+            kinds.append(("subst", sub, g))
+        elif strokes:
+            kinds.append(("drawn", strokes[1]))
+        else:
+            kinds.append(None)
+            unique.setdefault((rec[4][0], rec[4][1], rec[6]), None)
+    for font, table in drawn.items():
+        missing = sorted({r[3].decode() for r, k in zip(records, kinds)
+                          if r[2] == font and not k})
+        if missing:
+            log.info("%s: traced, not in %s.pen: %s", font.decode(),
+                     font.decode().lower(), " ".join(missing))
+    for font, sub in substs.items():
+        missing = sorted({r[3].decode() for r, k in zip(records, kinds)
+                          if r[2] == font and not k})
+        if missing:
+            log.info("%s: traced, not in %s: %s", font.decode(),
+                     sub.t1.name.decode(), " ".join(missing))
+    keys = list(unique)
+    # Enlarged screen fonts keep their pixels; everything else is traced.
+    by_font = {}
+    for rec, kind in zip(records, kinds):
+        if not kind:
+            by_font.setdefault(rec[2], set()).add((rec[4][0], rec[4][1], rec[6]))
+    pixel = set()
+    for font, rasters in by_font.items():
+        name = (font or b"").decode()
+        forced = any(re.fullmatch(pat, name, re.I) for pat in opts.pixel)
+        k = pixel_scale(rasters) if opts.auto_pixel else 1
+        if forced or k > 1:
+            log.info("%s: pixel font (%s) -- exact pixel outlines", name,
+                     "%dx" % k if k > 1 else "--pixel")
+            pixel |= rasters
+    traced = [k for k in keys if k not in pixel]
+    for key in keys:
+        if key in pixel:
+            unique[key] = pixel_paths(*key)
+    for key, paths in zip(traced, trace(potrace, traced, opts)):
+        unique[key] = paths
+
+    if opts.check:
+        bad = 0
+        for (w, h, raster), paths in unique.items():
+            d, ink = mismatch(w, h, raster, paths)
+            if ink and d / ink > opts.check_threshold:
+                bad += 1
+                log.warning("glyph %dx%d: %d of %d ink pixels differ",
+                            w, h, d, ink)
+        log.info("check: %d of %d traced glyphs above %.0f%% mismatch",
+                 bad, len(unique), 100 * opts.check_threshold)
+
+    used = [s for s in substs.values()
+            if any(k and k[0] == "subst" and k[1] is s for k in kinds)]
+    # SetupBitmapFont precedes every DefineBitmapChar, so the procset goes
+    # into the first copied chunk.
+    out = lines[:setup] + [PROCSET, font_resources(used)]
+    pos = setup
+    for (start, end, font, name, nums, rest, raster), kind in zip(records, kinds):
+        out.extend(lines[pos:start])
+        hdr = b"[%s %s]" % (name, b" ".join(b"%d" % v for v in nums))
+        if kind and kind[0] == "subst":
+            _, sub, g = kind
+            dx = sub.shift(g, nums, raster)
+            out.append(b"%s %s /%s /%s DefineSubstChar\n"
+                       % (hdr, fmt(dx).encode(), g, sub.key))
+        elif kind:
+            out.append(b"%s {\n%s\n} DefineDrawnChar\n"
+                       % (hdr, drawn_proc(kind[1])))
+        else:
+            w, h, leftkern, bottom = nums[:4]
+            body = outline_proc(unique[(w, h, raster)], -leftkern, bottom)
+            out.append(b"%s {\n%s\n} DefineOutlineChar\n" % (hdr, body))
+        if rest.strip():
+            out.append(rest)
+        pos = end
+    out.extend(lines[pos:])
+    counts = collections.Counter()
+    for rec, kind in zip(records, kinds):
+        key = (rec[4][0], rec[4][1], rec[6])
+        counts[("substituted" if kind[0] == "subst" else "drawn") if kind
+               else "pixel" if key in pixel else "traced"] += 1
+    return b"".join(out), counts
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(
+        description="Replace the bitmap fonts in Genera hardcopy PostScript "
+                    "with libre Type 1 equivalents or traced outlines "
+                    "(potrace); stdin -> stdout")
+    p.add_argument("-v", "--verbose", action="count", default=0,
+                   help="-v info, -vv debug")
+    p.add_argument("--potrace", default=None,
+                   help="potrace binary (default: found on PATH)")
+    p.add_argument("--no-substitute", dest="substitute", action="store_false",
+                   default=True,
+                   help="trace every font, even well-known ones")
+    p.add_argument("--pixel", action="append", default=[], metavar="REGEX",
+                   help="draw fonts whose name matches as exact pixel "
+                        "outlines instead of tracing; repeatable")
+    p.add_argument("--no-auto-pixel", dest="auto_pixel", action="store_false",
+                   default=True,
+                   help="do not detect enlarged screen fonts (glyphs made of "
+                        "k x k blocks) as pixel fonts")
+    p.add_argument("--no-drawn", dest="drawn", action="store_false",
+                   default=True,
+                   help="ignore the hand-drawn stroke tables in %s" % DRAWN_DIR)
+    p.add_argument("--font-path", action="append", default=[],
+                   metavar="DIR",
+                   help="directory searched (recursively) for substitute "
+                        "Type 1 fonts, before the defaults %s and kpsewhich; "
+                        "repeatable" % ", ".join(DEFAULT_FONT_DIRS))
+    p.add_argument("--check", action="store_true",
+                   help="rasterize each traced glyph and report those that "
+                        "differ from the bitmap by more than --check-threshold")
+    p.add_argument("--check-threshold", type=float, default=0.25,
+                   help="fraction of ink pixels (default 0.25)")
+    p.add_argument("-t", "--turdsize", type=int, default=0,
+                   help="potrace -t: drop specks up to this many pixels "
+                        "(default 0 keeps every dot)")
+    p.add_argument("-a", "--alphamax", type=float, default=1.0,
+                   help="potrace -a: corner threshold, 0 = polygons, "
+                        "higher = rounder (default 1.0)")
+    p.add_argument("-O", "--opttolerance", type=float, default=0.2,
+                   help="potrace -O: curve optimization tolerance (default 0.2)")
+    args = p.parse_args(argv)
+
+    logging.basicConfig(
+        level=[logging.WARNING, logging.INFO, logging.DEBUG][min(args.verbose, 2)],
+        format="%(asctime)s psvec %(levelname)s %(message)s")
+
+    # Only needed when some glyph is neither substituted, drawn nor pixels.
+    potrace = args.potrace or shutil.which("potrace")
+    finder = FontFinder(args.font_path + DEFAULT_FONT_DIRS)
+
+    data = sys.stdin.buffer.read()
+    try:
+        data, counts = vectorize(data, potrace, finder, args)
+    except Bail as e:
+        log.warning("%s -- passing through unchanged", e)
+        counts = {}
+    except RuntimeError as e:
+        log.error("%s", e)
+        return 1
+    log.info("glyphs: %s (%d bytes)",
+             ", ".join("%d %s" % (n, m) for m, n in sorted(counts.items()))
+             or "none", len(data))
+    sys.stdout.buffer.write(data)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

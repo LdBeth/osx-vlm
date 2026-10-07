@@ -9,6 +9,7 @@ over the network:
   * `lpdd` — LPD print server that spools each hardcopy to a file; see below.
   * `org.genera.lpdd.plist` — launchd job for `lpdd`.
   * `psfix` — repairs font encodings (and optionally page order) in spooled Genera PostScript; see below.
+  * `psvec` — replaces the downloaded bitmap fonts in spooled Genera PostScript with libre Type 1 equivalents or traced outlines (potrace); see below.
   * `genera-remote.ts` — drives Genera over rsh (eval, CP commands) and its
     3600-LOGIN remote terminal, as an MCP server and a CLI; see below.
   * `supdup.ts` — interactive SUPDUP (RFC 734) terminal client for logging in
@@ -235,8 +236,10 @@ the spool dir; open it in Preview to confirm.
     never `0.0.0.0`.
   * `psfix` is a stdin/stdout filter (not run inside `lpdd`) that repairs two
     modern-font encoding mismatches in captured Genera PostScript — it blanks
-    the stray `#\Return` (code 141) and restores the two Symbol glyphs modern
-    fonts drop (183/190). Run it over a capture before distilling to PDF:
+    the stray `#\Return` (code 141) and replaces the host's TrueType `/Symbol`
+    — whose → ← ◊ ≥ … Distiller cannot resolve and images as boxes — with an
+    embedded Type 1 (URW `usyr.pfb` via `kpsewhich`; `--symbol-font FILE` to
+    override), reencoded to the classic Symbol upper half (0o241–0o376). Run it over a capture before distilling to PDF:
 
         ./psfix < ~/genera-spool/genera-....ps > fixed.ps
 
@@ -248,6 +251,57 @@ the spool dir; open it in Preview to confirm.
     do you need `psfix --reorder`, which reverses the pages safely despite the
     driver's incremental glyph download. Without `--reorder` the page order is
     left untouched.
+  * `psvec` is another stdin/stdout filter. It replaces the 300-dpi bitmap fonts
+    the driver downloads with vector glyphs, choosing per font:
+
+    - **Substitution** for well-known faces, from a libre Type 1 equivalent
+      embedded in the job. `LWCENTURYSCHOOLBOOK105[B|I|BI]` becomes URW Century
+      Schoolbook (C059, Century Schoolbook L from `pkgin install
+      ghostscript-fonts` or `tlmgr install ncntrsbk`, or TeX Gyre Schola).
+      TeX `PK-<dpi>-CM*` becomes the AMS Computer Modern `.pfb` that kpsewhich
+      finds. Genera's Century Schoolbook bitmaps are hand-spaced (proportional
+      digits, for example), so glyphs whose width differs are shifted onto the
+      bitmap's ink. A substitute whose median glyph width disagrees with the
+      size in the font's name by more than 5% (a wrong file or design size) is
+      not used.
+    - **Pixel outlines** for enlarged screen fonts such as `CPTFONT9`, the
+      console font at 3×. These are detected because nearly all of their glyphs
+      are built from k×k blocks, and they keep their exact pixel shape.
+    - **Drawn strokes** for fonts redrawn by hand as pen strokes in
+      MetaPost. The pens are round or elliptical; psvec strokes an elliptical
+      pen under a squashed transform. So far that is `LWFIX10`, Genera's monoline fixed-width font,
+      in `fonts/lwfix10.mp`. psvec reads the stroke table `fonts/lwfix10.pen`
+      that MetaPost writes from it.
+    - **potrace tracing** (`pkgin install potrace`) for everything else,
+      including a glyph that a substitute or a drawn font lacks. potrace is
+      needed only when some glyph is left to trace; without it such a job
+      fails, and any other job runs fine.
+
+    Every glyph keeps the driver's advance width, so layout is unchanged.
+    `--pixel REGEX` forces a font into pixel mode and `--no-auto-pixel` turns
+    the detection off. `--no-substitute` and `--no-drawn` skip those methods,
+    and `--font-path DIR` adds a font directory. It chains with `psfix` in either order and is idempotent:
+
+        ./psfix < ~/genera-spool/genera-....ps | ./psvec > fixed.ps
+
+    `-v` reports the method chosen for each font and the glyph counts.
+    `--check` rasterizes every traced glyph and warns when one differs from its
+    bitmap by more than 25% of its ink. Smoothing alone costs about 8%, while a
+    misplaced glyph costs 30% or more. `-a 0` makes potrace produce sharp
+    polygons instead of curves.
+
+    To change a drawn font, edit its `.mp` file. Coordinates are pixels of
+    the original 300-dpi bitmap, with the origin on the baseline at the left
+    of the cell. Then rebuild the table and proof it against the bitmaps in
+    spooled jobs (MetaPost comes with TeX Live):
+
+        cd fonts && mpost lwfix10.mp && rm lwfix10.log
+        ./proof lwfix10.pen ~/genera-spool/genera-*.ps -o proof.png
+
+    In the proof, black is where the strokes and the bitmap agree, blue is
+    bitmap ink the strokes miss, and red is stroke where the bitmap is
+    white. Faint fringes are pixel stair-steps; a solid band means a stroke
+    is misplaced.
 
 # Listener driver (`genera-remote.ts`)
 

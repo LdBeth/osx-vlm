@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""proof -- overlay a drawn font's strokes on the bitmaps they redraw.
+
+    proof lwfix10.pen ~/genera-spool/genera-*.ps -o proof.png [GLYPH ...]
+
+Collects the font's bitmap glyphs (the font named by the .pen file) from
+the spooled jobs, draws each glyph's strokes over its bitmap, and writes a
+PNG: black where both have ink, blue where only the bitmap does (the
+strokes miss it), red where only the strokes do.  The lighter grid marks
+the bitmap's pixels, the grey bars the 22-pixel cell and the baseline.
+
+On stdout, per glyph: the bitmap pixels whose centres the strokes miss and
+the stroked pixel centres the bitmap leaves white.  A redraw that follows
+the bitmap's centrelines with its pen scores a few of each -- the round pen
+cannot follow square ends and pixel stair-steps -- while a misplaced
+stroke scores dozens.
+"""
+
+import argparse
+import importlib.machinery
+import importlib.util
+import math
+import os
+import struct
+import sys
+import zlib
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+_loader = importlib.machinery.SourceFileLoader(
+    "psvec", os.path.join(HERE, "..", "psvec"))
+_spec = importlib.util.spec_from_loader("psvec", _loader)
+psvec = importlib.util.module_from_spec(_spec)
+_loader.exec_module(psvec)
+
+S = 8                                   # proof pixels per bitmap pixel
+X0, X1, Y0, Y1 = -2, 24, -9, 30         # cell, in bitmap pixels
+PER_ROW = 10
+
+
+def bezier(p0, c1, c2, p3, n=16):
+    pts = []
+    for k in range(1, n + 1):
+        t = k / n
+        u = 1 - t
+        pts.append(tuple(u**3 * p0[i] + 3 * u * u * t * c1[i]
+                         + 3 * u * t * t * c2[i] + t**3 * p3[i]
+                         for i in range(2)))
+    return pts
+
+
+def stroke_mask(strokes):
+    """Set of proof pixels (x, y) covered by the strokes, y up."""
+    cov = set()
+    for w, h, closed, start, segs in strokes:
+        pts = [start]
+        for c1, c2, p in segs:
+            pts.extend(bezier(pts[-1], c1, c2, p))
+        if closed:
+            pts.append(start)
+        rx, ry = w / 2, h / 2
+        pairs = list(zip(pts, pts[1:])) or [(start, start)]
+        for a, b in pairs:
+            lo_x = int(math.floor((min(a[0], b[0]) - rx) * S))
+            hi_x = int(math.ceil((max(a[0], b[0]) + rx) * S))
+            lo_y = int(math.floor((min(a[1], b[1]) - ry) * S))
+            hi_y = int(math.ceil((max(a[1], b[1]) + ry) * S))
+            # in pen space, where the pen is the unit disk
+            ax, ay = a[0] / rx, a[1] / ry
+            dx, dy = (b[0] - a[0]) / rx, (b[1] - a[1]) / ry
+            L2 = dx * dx + dy * dy
+            for X in range(lo_x, hi_x):
+                px = (X + 0.5) / S
+                for Y in range(lo_y, hi_y):
+                    if (X, Y) in cov:
+                        continue
+                    py = (Y + 0.5) / S
+                    ux, uy = px / rx - ax, py / ry - ay
+                    t = 0 if not L2 else max(0, min(1, (ux * dx + uy * dy) / L2))
+                    if math.hypot(ux - t * dx, uy - t * dy) <= 1:
+                        cov.add((X, Y))
+    return cov
+
+
+def bitmap_ink(rec):
+    w, h, leftkern, bottom = rec[4][:4]
+    rows = psvec.bit_rows(w, h, rec[6])
+    return {(x - leftkern, y + bottom)
+            for y in range(h) for x in range(w) if rows[y][x]}
+
+
+def png(path, w, h, rgb):
+    raw = b"".join(b"\0" + bytes(rgb[y * w * 3:(y + 1) * w * 3])
+                   for y in range(h))
+
+    def chunk(t, d):
+        return (struct.pack(">I", len(d)) + t + d
+                + struct.pack(">I", zlib.crc32(t + d)))
+    with open(path, "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n"
+                + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+                + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    p.add_argument("pen", help="stroke table, e.g. lwfix10.pen")
+    p.add_argument("jobs", nargs="+", help="spooled Genera PostScript jobs")
+    p.add_argument("-o", "--output", default="proof.png")
+    p.add_argument("-g", "--glyph", action="append", default=[],
+                   help="proof only this glyph (repeatable)")
+    args = p.parse_args()
+
+    font = os.path.basename(args.pen).rsplit(".", 1)[0].upper().encode()
+    table = psvec.load_drawn(args.pen)
+    bitmaps = {}
+    for job in args.jobs:
+        lines = open(job, "rb").read().splitlines(keepends=True)
+        for rec in psvec.parse_records(lines):
+            if rec[2] == font:
+                bitmaps.setdefault(rec[3].lstrip(b"/"), rec)
+    names = [n.encode() for n in args.glyph] or sorted(
+        set(table) | set(bitmaps), key=lambda n: (len(n) > 1, n))
+
+    cw, ch = (X1 - X0) * S, (Y1 - Y0) * S
+    rows = (len(names) + PER_ROW - 1) // PER_ROW
+    W, H = PER_ROW * cw, rows * ch
+    img = bytearray(b"\xff" * (W * H * 3))
+
+    def put(px, py, col):
+        if 0 <= px < W and 0 <= py < H:
+            i = (py * W + px) * 3
+            img[i:i + 3] = bytes(col)
+
+    for n, name in enumerate(names):
+        ox, oy = (n % PER_ROW) * cw, (n // PER_ROW) * ch
+        ink = bitmap_ink(bitmaps[name]) if name in bitmaps else set()
+        strokes = table.get(name, (0, []))[1]
+        cov = stroke_mask(strokes)
+        for X in range(X0 * S, X1 * S):
+            for Y in range(Y0 * S, Y1 * S):
+                b = (X // S, Y // S) in ink
+                s = (X, Y) in cov
+                if b and s:
+                    col = (0, 0, 0)
+                elif b:
+                    col = (110, 160, 255)
+                elif s:
+                    col = (255, 70, 70)
+                elif X % S == 0 or Y % S == 0:
+                    col = (235, 235, 235)
+                else:
+                    continue
+                if not b and not s and (X in (0, 22 * S) or Y == 0):
+                    col = (190, 190, 190)
+                put(ox + X - X0 * S, oy + (Y1 * S - 1 - Y), col)
+        miss = sum(1 for x, y in ink
+                   if (int((x + 0.5) * S), int((y + 0.5) * S)) not in cov)
+        extra = sum(1 for X, Y in cov
+                    if X % S == S // 2 and Y % S == S // 2
+                    and (X // S, Y // S) not in ink)
+        status = ("no bitmap" if not ink else "not drawn" if not strokes
+                  else "miss %3d  extra %3d" % (miss, extra))
+        print("%-14s %s" % (name.decode(), status))
+    png(args.output, W, H, img)
+    print(args.output, file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
