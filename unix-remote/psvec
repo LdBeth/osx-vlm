@@ -441,7 +441,7 @@ class Subst:
         return g if g and g != b".notdef" and self.t1.metrics.get(g) else None
 
 
-def plan_substitute(font, encoding, finder):
+def plan_substitute(font, finder):
     """(Type1, nominal pixel em, by_code) for a well-known font, else None."""
     m = LW_RE.match(font)
     if m and m.group(1) in LW_FAMILIES:
@@ -476,7 +476,7 @@ def choose_substitutes(records, encodings, finder):
     for font, recs in by_font.items():
         if font is None:
             continue
-        planned = plan_substitute(font, encodings.get(font), finder)
+        planned = plan_substitute(font, finder)
         if not planned:
             continue
         t1, em, by_code = planned
@@ -632,7 +632,7 @@ def glyph_scale(w, h, raster):
     """GCD of the glyph's ink runs and interior gaps, across and down."""
     k = 0
     rows = bit_rows(w, h, raster)
-    for line in rows + [list(col) for col in zip(*rows)]:
+    for line in rows + list(zip(*rows)):
         for n in runs(line):
             k = math.gcd(k, n)
             if k == 1:
@@ -821,7 +821,7 @@ def mismatch(w, h, raster, paths):
 def fmt(v):
     s = "%.2f" % v
     s = s.rstrip("0").rstrip(".")
-    return "0" if s in ("-0", "") else s
+    return "0" if s == "-0" else s
 
 
 def outline_proc(paths, dx, dy, width=100):
@@ -934,18 +934,14 @@ def vectorize(data, potrace, finder, opts):
         else:
             kinds.append(None)
             unique.setdefault((rec[4][0], rec[4][1], rec[6]), None)
-    for font, table in drawn.items():
+    sources = ([(font, font.decode().lower() + ".pen") for font in drawn]
+               + [(font, sub.t1.name.decode()) for font, sub in substs.items()])
+    for font, source in sources:
         missing = sorted({r[3].decode() for r, k in zip(records, kinds)
                           if r[2] == font and not k})
         if missing:
-            log.info("%s: traced, not in %s.pen: %s", font.decode(),
-                     font.decode().lower(), " ".join(missing))
-    for font, sub in substs.items():
-        missing = sorted({r[3].decode() for r, k in zip(records, kinds)
-                          if r[2] == font and not k})
-        if missing:
-            log.info("%s: traced, not in %s: %s", font.decode(),
-                     sub.t1.name.decode(), " ".join(missing))
+            log.info("%s: traced, not in %s: %s", font.decode(), source,
+                     " ".join(missing))
     keys = list(unique)
     # Enlarged screen fonts keep their pixels; everything else is traced.
     by_font = {}
@@ -985,6 +981,7 @@ def vectorize(data, potrace, finder, opts):
     # into the first copied chunk.
     out = lines[:setup] + [PROCSET, font_resources(used)]
     pos = setup
+    counts = collections.Counter()
     for (start, end, font, name, nums, rest, raster), kind in zip(records, kinds):
         out.extend(lines[pos:start])
         hdr = b"[%s %s]" % (name, b" ".join(b"%d" % v for v in nums))
@@ -993,22 +990,20 @@ def vectorize(data, potrace, finder, opts):
             dx = sub.shift(g, nums, raster)
             out.append(b"%s %s /%s /%s DefineSubstChar\n"
                        % (hdr, fmt(dx).encode(), g, sub.key))
+            counts["substituted"] += 1
         elif kind:
             out.append(b"%s {\n%s\n} DefineDrawnChar\n"
                        % (hdr, drawn_proc(kind[1])))
+            counts["drawn"] += 1
         else:
             w, h, leftkern, bottom = nums[:4]
             body = outline_proc(unique[(w, h, raster)], -leftkern, bottom)
             out.append(b"%s {\n%s\n} DefineOutlineChar\n" % (hdr, body))
+            counts["pixel" if (w, h, raster) in pixel else "traced"] += 1
         if rest.strip():
             out.append(rest)
         pos = end
     out.extend(lines[pos:])
-    counts = collections.Counter()
-    for rec, kind in zip(records, kinds):
-        key = (rec[4][0], rec[4][1], rec[6])
-        counts[("substituted" if kind[0] == "subst" else "drawn") if kind
-               else "pixel" if key in pixel else "traced"] += 1
     return b"".join(out), counts
 
 

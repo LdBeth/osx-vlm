@@ -379,36 +379,23 @@ export class GeneraSession {
       (opts.pattern === undefined ? 400 : undefined);
     const re = opts.pattern !== undefined ? new RegExp(opts.pattern) : null;
     const start = Date.now();
+    const result = (matched: boolean, stable: boolean, timedOut: boolean) => ({
+      matched,
+      stable,
+      timedOut,
+      elapsedMs: Date.now() - start,
+    });
 
     while (true) {
-      if (re && re.test(this.screen.text())) {
-        return {
-          matched: true,
-          stable: false,
-          timedOut: false,
-          elapsedMs: Date.now() - start,
-        };
-      }
+      if (re && re.test(this.screen.text())) return result(true, false, false);
       // "Stable" means stableMs with no change *since this call began*, so an
       // in-flight round trip (which bumps #lastChangeAt) always gets a chance
       // to land before we declare the screen settled.
       const quietSince = Math.max(this.#lastChangeAt, start);
       if (stableMs !== undefined && Date.now() - quietSince >= stableMs) {
-        return {
-          matched: false,
-          stable: true,
-          timedOut: false,
-          elapsedMs: Date.now() - start,
-        };
+        return result(false, true, false);
       }
-      if (Date.now() - start >= timeoutMs) {
-        return {
-          matched: false,
-          stable: false,
-          timedOut: true,
-          elapsedMs: Date.now() - start,
-        };
-      }
+      if (Date.now() - start >= timeoutMs) return result(false, false, true);
       await sleep(15);
     }
   }
@@ -495,9 +482,10 @@ export class GeneraSession {
 
   /** Resize the grid and, when logged in, tell Genera the new size. */
   async resize(cols: number, rows: number): Promise<void> {
-    const [, c, r] = encodeSize(cols, rows);
+    const size = encodeSize(cols, rows);
+    const [, c, r] = size;
     this.screen.resize(c, r);
-    if (this.connected) await this.#send(encodeSize(c, r));
+    if (this.connected) await this.#send(size);
     this.note(`resize ${c}x${r}`, this.connected ? "sent" : "local only");
   }
 }
@@ -554,19 +542,16 @@ export class ScreenRenderer {
     const full = trimBlankEdges(lines).join("\n");
     if (mode === "full") return full;
 
-    if (
-      prev && prev.length === lines.length &&
-      prev.every((l, i) => l === lines[i])
-    ) {
-      return "(screen unchanged)";
-    }
-
     if (!prev) return full;
 
     const changed: number[] = [];
     const n = Math.max(prev.length, lines.length);
     for (let i = 0; i < n; i++) {
       if ((prev[i] ?? "") !== (lines[i] ?? "")) changed.push(i);
+    }
+    // A shorter or longer grid whose extra rows are blank is still a change.
+    if (!changed.length && prev.length === lines.length) {
+      return "(screen unchanged)";
     }
     const diff = "changed:\n" +
       changed.map((i) => `${String(i).padStart(2)}| ${lines[i] ?? ""}`)
@@ -599,13 +584,16 @@ export function clampLines(text: string, max: number): string {
 // Eval / command results as text
 // ---------------------------------------------------------------------------
 
+/** Reply text without its leading newline and trailing blanks. */
+const trimOutput = (s: string) => s.replace(/^\n/, "").replace(/\s+$/, "");
+
 /**
  * Plain-text rendering of an eval result: what the form printed, then one
  * `=> value` line per value, or the error.  Shared by MCP and the CLI.
  */
 export function formatEval(r: EvalResult & { elapsedMs?: number }): string {
   const parts: string[] = [];
-  const out = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+  const out = trimOutput(r.output);
   if (out) parts.push(out);
   if (r.timedOut) {
     parts.push(
@@ -688,6 +676,20 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     const q = ms ?? 300;
     if (q > 0) {
       await session.wait({ stableMs: q, timeoutMs: Math.max(q * 8, 2000) });
+    }
+  };
+  /** Send input, settle, and return the screen (genera_type, genera_key). */
+  const input = async (
+    send: () => Promise<unknown>,
+    mode?: ScreenMode,
+    settleMs?: number,
+  ) => {
+    try {
+      await send();
+      await settle(settleMs);
+      return reply([screenOf(mode ?? "auto"), footer()]);
+    } catch (e) {
+      return fail(errText(e));
     }
   };
 
@@ -805,15 +807,7 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
       mode?: ScreenMode;
       settle_ms?: number;
     },
-  ) => {
-    try {
-      await session.type(text);
-      await settle(settle_ms);
-      return reply([screenOf(mode ?? "auto"), footer()]);
-    } catch (e) {
-      return fail(errText(e));
-    }
-  });
+  ) => input(() => session.type(text), mode, settle_ms));
 
   registerGated("genera_key", {
     title: "Press a key",
@@ -832,15 +826,7 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
       mode?: ScreenMode;
       settle_ms?: number;
     },
-  ) => {
-    try {
-      await session.key(name);
-      await settle(settle_ms);
-      return reply([screenOf(mode ?? "auto"), footer()]);
-    } catch (e) {
-      return fail(errText(e));
-    }
-  });
+  ) => input(() => session.key(name), mode, settle_ms));
 
   registerGated(
     "genera_wait",
@@ -935,7 +921,7 @@ export async function runMcpServer(session: GeneraSession): Promise<void> {
     },
   ) => {
     const r = await session.command(text, timeout_ms ?? 30_000);
-    const out = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+    const out = trimOutput(r.output);
     const tail = r.timedOut
       ? `TIMED OUT after ${r.elapsedMs}ms (only our socket was closed)`
       : r.error !== undefined
@@ -1511,7 +1497,7 @@ async function cliMain(verb: string, opts: CliOpts): Promise<number> {
       );
       if (opts.json) out(JSON.stringify(r, null, 2));
       else if (r.error !== undefined && !r.timedOut) {
-        const printed = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+        const printed = trimOutput(r.output);
         if (printed) out(printed);
         console.error(`error: ${r.error}`);
       } else out(formatEval(r));
@@ -1524,7 +1510,7 @@ async function cliMain(verb: string, opts: CliOpts): Promise<number> {
       );
       if (opts.json) out(JSON.stringify(r, null, 2));
       else {
-        const printed = r.output.replace(/^\n/, "").replace(/\s+$/, "");
+        const printed = trimOutput(r.output);
         if (printed) out(printed);
         if (r.timedOut) console.error(`TIMED OUT after ${r.elapsedMs}ms`);
         else if (r.error !== undefined) console.error(`error: ${r.error}`);

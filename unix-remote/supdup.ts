@@ -188,6 +188,9 @@ const TD_ARGS: Record<number, number> = {
 /** Control bytes passed through to the local terminal: BEL BS TAB LF CR. */
 const PASS_CONTROLS = new Set([0o7, 0o10, 0o11, 0o12, 0o15]);
 
+/** A byte the local terminal can show as-is: printing ASCII or a pass control. */
+const shown = (b: number) => (b >= 0o40 && b < 0o177) || PASS_CONTROLS.has(b);
+
 function csi(n: number, final: string): string {
   return n > 0 ? `${ESC}[${n}${final}` : "";
 }
@@ -212,19 +215,14 @@ export class SupdupDecoder {
         }
         continue;
       }
-      if (b >= 0o40 && b < 0o177) out += String.fromCharCode(b);
-      else if (b < 0o40) {
-        if (PASS_CONTROLS.has(b)) out += String.fromCharCode(b);
-      } else if (b in TD_ARGS) {
-        this.#op = b;
-      } else {
-        out += this.#simple(b);
-      }
+      if (shown(b)) out += String.fromCharCode(b);
+      else if (b in TD_ARGS) this.#op = b;
+      else out += this.#simple(b);
     }
     return out;
   }
 
-  /** Zero-argument codes; unknown bytes >= 0200 (and DEL) vanish. */
+  /** Zero-argument codes; unknown bytes (DEL, other controls) vanish. */
   #simple(b: number): string {
     switch (b) {
       case TD.EOF:
@@ -268,10 +266,7 @@ export class SupdupDecoder {
         return csi(a[0], "P");
       case TD.QOT: {
         // Quoted byte: output it if the local terminal can show it as-is.
-        const q = a[0];
-        return (q >= 0o40 && q < 0o177) || PASS_CONTROLS.has(q)
-          ? String.fromCharCode(q)
-          : "";
+        return shown(a[0]) ? String.fromCharCode(a[0]) : "";
       }
       default: // %TDRSU / %TDRSD: region scroll is not advertised; ignore.
         return "";

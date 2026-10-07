@@ -158,27 +158,22 @@ class Tape:
         """
         out = bytearray()
         while len(out) < count:
+            if not self.pending:
+                pos = self.f.tell()
+                kind, data = self.read_block()
+                if kind == "mark":
+                    if out:
+                        self.f.seek(pos)        # leave it for the next, empty read
+                    else:
+                        self.saw_filemark = True    # zero-length read consumes it
+                    break
+                if kind == "eom":               # read_block left us on the marker
+                    break
+                self.saw_filemark = False
+                self.pending = data
             need = count - len(out)
-            if self.pending:
-                out += self.pending[:need]
-                self.pending = self.pending[need:]
-                continue
-            pos = self.f.tell()
-            kind, data = self.read_block()
-            if kind == "mark":
-                if out:
-                    self.f.seek(pos)        # leave it for the next, empty read
-                else:
-                    self.saw_filemark = True    # zero-length read consumes it
-                break
-            if kind == "eom":               # read_block left us on the marker
-                break
-            self.saw_filemark = False
-            if len(data) > need:
-                out += data[:need]
-                self.pending = data[need:]
-            else:
-                out += data
+            out += self.pending[:need]
+            self.pending = self.pending[need:]
         return bytes(out)
 
     # --- status -----------------------------------------------------------

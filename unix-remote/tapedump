@@ -90,8 +90,8 @@ def main():
     show = args.verbose or args.hex
 
     for kind, payload in records(data):
+        in_scope = (args.file is None or args.file == fileno)
         if kind == "data":
-            in_scope = (args.file is None or args.file == fileno)
             if show and in_scope:
                 print("file %d record %d  len=%d  |%s|"
                       % (fileno, recno, len(payload), preview(payload)))
@@ -103,10 +103,9 @@ def main():
             cur[1] += len(payload)
             recno += 1
         elif kind == "mark":
-            if args.file is None or args.file == fileno:
-                if show:
-                    print("file %d: <filemark> after %d record(s), %d byte(s)"
-                          % (fileno, cur[0], cur[1]))
+            if show and in_scope:
+                print("file %d: <filemark> after %d record(s), %d byte(s)"
+                      % (fileno, cur[0], cur[1]))
             files.append(tuple(cur))
             fileno += 1
             recno = 0

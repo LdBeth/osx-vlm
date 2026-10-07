@@ -161,7 +161,7 @@ ADDITIVE_SETUP = b"""\
 # patch made above it, so every run after the first got the host fonts again.
 PATCH_MARKER = b"psrPatchFont"
 PATCH_SNIPPET = b"""\
-%%BeginProcSet: psfix-font-encoding 1.2
+%%BeginProcSet: psfix-font-encoding 1.3
 % linux-vlm psfix reencodes the 13 core fonts to fix two Genera-vs-modern
 % mismatches: (a) #\\Return (code 141 = 0o215), stranded before @end and imaged
 % as a .notdef box by the resident fonts, is remapped to /space (blank) to match
@@ -185,8 +185,8 @@ PATCH_SNIPPET = b"""\
   /.notdef /angleright /integral /integraltp /integralex /integralbt /parenrighttp /parenrightex
   /parenrightbt /bracketrighttp /bracketrightex /bracketrightbt /bracerighttp /bracerightmid /bracerightbt
 ] def
-/psrPatchFont {                       % /FontName  ->  -
-  dup findfont
+/psrPatchFont {                       % /FontName /SourceFont  ->  -
+  findfont
   dup length dict begin               % copy the font dict, skipping /FID
     { 1 index /FID ne { def } { pop pop } ifelse } forall
     /Encoding Encoding 256 array copy def
@@ -200,10 +200,12 @@ PATCH_SNIPPET = b"""\
 } bind def
 [/Helvetica /Helvetica-Bold /Helvetica-Oblique /Helvetica-BoldOblique
  /Times-Roman /Times-Bold /Times-Italic /Times-BoldItalic
- /Courier /Courier-Bold /Courier-Oblique /Courier-BoldOblique /Symbol]
-{ psrPatchFont } forall
-%%EndProcSet
+ /Courier /Courier-Bold /Courier-Oblique /Courier-BoldOblique]
+{ dup psrPatchFont } forall
 """
+# Closes PATCH_SNIPPET: /Symbol is built from the embedded Type 1 when there is
+# one (keeping that font's own FontName), else from the host's /Symbol.
+PATCH_SYMBOL = b"/Symbol /%s psrPatchFont\n%%%%EndProcSet\n"
 
 # Type 1 stand-ins for /Symbol, tried in order (font path dirs, then
 # kpsewhich): URW's Standard Symbols, as shipped by Ghostscript and TeX Live.
@@ -258,23 +260,15 @@ def type1_pfa(path):
 
 
 def symbol_resource(path):
-    """Prolog text embedding the Type 1 at path and registering it as /Symbol.
+    """(FontName, prolog text embedding the Type 1 at path).
 
-    The font keeps its own FontName (so the PDF names it honestly); only the
-    FontDirectory key the job's `/Symbol findfont` looks up is redirected.
+    psrPatchFont registers a reencoded copy as /Symbol; the font keeps its own
+    FontName (so the PDF names it honestly), and the job's `/Symbol findfont`
+    gets it instead of the host's TrueType Symbol, whose glyphs Distiller
+    cannot name.
     """
     name, pfa = type1_pfa(path)
-    return (b"%%%%BeginResource: font %s\n%s%%%%EndResource\n"
-            b"%% linux-vlm psfix: the job's /Symbol is this Type 1, not the\n"
-            b"%% host's TrueType Symbol, whose glyphs Distiller cannot name.\n"
-            b"/Symbol /%s findfont dup length dict begin\n"
-            b"  { 1 index /FID ne { def } { pop pop } ifelse } forall\n"
-            b"  currentdict end definefont pop\n" % (name, pfa, name))
-
-
-def split_lines(data):
-    """Split into lines keeping line terminators, like bytes.splitlines(True)."""
-    return data.splitlines(keepends=True)
+    return name, b"%%%%BeginResource: font %s\n%s%%%%EndResource\n" % (name, pfa)
 
 
 def find_declared_pages(lines):
@@ -315,8 +309,7 @@ def split_document(lines):
     header = lines[: page_idx[0]]
     chunks = [(ordinal, lines[start:stop])
               for ordinal, start, stop in zip(ordinals, page_idx, ends)]
-    trailer = lines[trailer_start:] if trailer_start is not None else []
-    return header, chunks, trailer
+    return header, chunks, lines[end:]
 
 
 def split_chunk(chunk):
@@ -365,7 +358,7 @@ def restructure(data):
     On any structural mismatch, return the input unchanged (native order is
     still valid PostScript -- just reversed -- so a bail never corrupts).
     """
-    lines = split_lines(data)
+    lines = data.splitlines(keepends=True)
     split = split_document(lines)
     if split is None:
         return data, False            # no %%Page comments -- nothing to do
@@ -389,7 +382,7 @@ def restructure(data):
                         "passing through unchanged", ordinal)
             return data, False
         drawing, mach = parts
-        drawings.append((ordinal, drawing))
+        drawings.append(drawing)
         machinery.extend(mach)
 
     # Locate the base save (first `save lgp2-getmatrix`) and the page save
@@ -410,18 +403,17 @@ def restructure(data):
                   + machinery
                   + header[page_i:])
 
-    body = []
-    for _, drawing in sorted(drawings, key=lambda t: t[0]):
-        body.extend(drawing)
-
-    out = b"".join(new_header) + b"".join(body) + b"".join(trailer)
-    return out, True
+    # The ordinals check above pinned the chunks to pages N..1, so ascending
+    # page order is just the reverse of document order.
+    body = [line for drawing in reversed(drawings) for line in drawing]
+    return b"".join(new_header + body + trailer), True
 
 
-def patch_fonts(data, symbol=b""):
+def patch_fonts(data, symbol=(b"Symbol", b"")):
     """Return (output_bytes, patched_bool).
 
-    Inject symbol (the Type 1 /Symbol resource, if any) and PATCH_SNIPPET
+    Inject symbol -- (source FontName, resource text) for /Symbol, by default
+    the host's own -- and PATCH_SNIPPET
     immediately before the job's base save (the first `save lgp2-getmatrix`,
     which precedes the first /IntFonts) so the core fonts get the reencoding
     (blank 141; restore the Symbol upper half) at VM level 0, where the
@@ -431,7 +423,7 @@ def patch_fonts(data, symbol=b""):
     """
     if PATCH_MARKER in data:
         return data, False  # already patched -- idempotent
-    lines = split_lines(data)
+    lines = data.splitlines(keepends=True)
     for i, line in enumerate(lines):
         if line.strip() == SAVE_LGP2:
             break
@@ -443,7 +435,8 @@ def patch_fonts(data, symbol=b""):
         log.warning("no base `save lgp2-getmatrix` found -- skipping font "
                     "patch")
         return data, False
-    lines.insert(i, symbol + PATCH_SNIPPET)
+    name, resource = symbol
+    lines.insert(i, resource + PATCH_SNIPPET + PATCH_SYMBOL % name)
     return b"".join(lines), True
 
 
@@ -482,7 +475,7 @@ def main(argv=None):
         data, reordered = restructure(data)
     patched = False
     if args.patch_fonts:
-        symbol = b""
+        symbol = (b"Symbol", b"")
         if args.embed_symbol:
             path = args.symbol_font or find_symbol_font()
             if path:

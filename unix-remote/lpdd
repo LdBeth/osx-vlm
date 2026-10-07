@@ -26,6 +26,7 @@ queue name is ignored here -- every job lands in the spool dir regardless.
 
 import argparse
 import errno
+import itertools
 import logging
 import os
 import socket
@@ -51,13 +52,7 @@ ACK = b"\x00"                 # positive acknowledgement octet
 log = logging.getLogger("lpdd")
 
 # Monotonic per-run counter so two jobs in the same second don't collide.
-_seq = 0
-
-
-def _next_seq():
-    global _seq
-    _seq += 1
-    return _seq
+_seq = itertools.count(1)
 
 
 def read_exact(rfile, n):
@@ -75,11 +70,8 @@ def read_exact(rfile, n):
 
 def parse_subheader(line):
     """A control/data subcommand line is "<count> <name>\\n".  Return (count, name)."""
-    rest = line.rstrip(b"\r\n")
-    parts = rest.split(b" ", 1)
-    count = int(parts[0]) if parts[0] else 0
-    name = parts[1].decode("ascii", "replace") if len(parts) > 1 else ""
-    return count, name
+    count, _, name = line.rstrip(b"\r\n").partition(b" ")
+    return (int(count) if count else 0), name.decode("ascii", "replace")
 
 
 def parse_control(text):
@@ -100,7 +92,7 @@ def parse_control(text):
 def make_filename(spool, ctl, data_name, data):
     """Build a unique, descriptive spool path for one job's data file."""
     ts = time.strftime("%Y%m%d-%H%M%S")
-    seq = _next_seq()
+    seq = next(_seq)
     # Prefer the job name, then the source file name, then the LPD data-file name.
     tag = ctl.get("J") or ctl.get("N") or data_name or "job"
     # Keep the tag filesystem-safe and short.

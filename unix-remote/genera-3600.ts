@@ -442,11 +442,8 @@ function textCode(ch: string): number | undefined {
  * character Genera has no code for.
  */
 export function encodeText(str: string): number[] {
-  const out: number[] = [];
-  const chars = [...str];
-  for (let i = 0; i < chars.length; i++) {
-    const ch = chars[i];
-    if (ch === "\r" && chars[i + 1] === "\n") continue; // CRLF = one Return
+  // CRLF = one Return.
+  return [...str.replace(/\r\n/g, "\n")].flatMap((ch) => {
     const code = textCode(ch);
     if (code === undefined) {
       throw new Error(
@@ -455,9 +452,8 @@ export function encodeText(str: string): number[] {
         }): no Genera character code`,
       );
     }
-    out.push(...encodeChar(code));
-  }
-  return out;
+    return encodeChar(code);
+  });
 }
 
 const PREFIX_RE = /^(sh|c|m|s|h)-(.+)$/i;
